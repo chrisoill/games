@@ -1,0 +1,5672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Composer Clash Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: auto;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 24px;
+      right: 24px;
+      top: 10px;
+      max-height: 198px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 10px 10px 8px;
+      background: rgba(16, 24, 39, 0.94);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 5px;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverScore {
+      line-height: 1.22;
+      margin: 0 0 6px;
+      font-size: 12px;
+    }
+
+    .scoreBreakdown {
+      display: inline-block;
+      text-align: left;
+      margin-top: 4px;
+      padding: 5px 7px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      font-size: 11px;
+      line-height: 1.2;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 6px 9px;
+      margin: 2px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* Composer Clash mobile layout: one joystick plus the main battle buttons. */
+    #buttonY {
+      display: none;
+    }
+
+    #buttonA,
+    #buttonB,
+    #buttonX {
+      font-size: 12px;
+      letter-spacing: 0;
+    }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+      display: none;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+    .shellActionBtn {
+      width: 100%;
+      min-height: 39px;
+      margin: 6px 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+  
+
+    #cardDetailBox {
+      display: none;
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      top: 13px;
+      z-index: 9;
+      background: rgba(248,251,255,0.98);
+      color: #111827;
+      border: 3px solid #ffe08a;
+      border-radius: 16px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.48);
+      padding: 12px;
+      text-align: left;
+    }
+
+    #cardDetailBox.open {
+      display: block;
+    }
+
+    #cardDetailTitle {
+      margin: 0 0 4px;
+      font-size: 18px;
+      line-height: 1.08;
+    }
+
+    #cardDetailMeta {
+      margin: 0 0 6px;
+      color: #475569;
+      font-weight: bold;
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    #cardDetailRules {
+      margin: 0 0 9px;
+      color: #111827;
+      font-size: 12px;
+      line-height: 1.28;
+    }
+
+    #cardDetailActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    #cardDetailActions button {
+      min-height: 31px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 13px;
+      font-weight: bold;
+      padding: 5px 8px;
+    }
+
+    #cardDetailPlayBtn {
+      background: #dff3ff !important;
+    }
+
+
+    #difficultyRow {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 7px;
+      align-items: center;
+      margin: 0 auto 8px;
+      max-width: 350px;
+      color: #f8fbff;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    #difficultySelect { width: 100%; }
+
+    #cardDetailBox {
+      top: 8px;
+      left: 48px;
+      right: 48px;
+      min-height: 198px;
+      background:
+        radial-gradient(circle at 50% 16%, rgba(255,224,138,0.24), transparent 35%),
+        linear-gradient(180deg, #fffaf0, #f8fbff);
+      border: 4px solid #111827;
+      outline: 2px solid #ffe08a;
+      box-shadow: 0 9px 0 rgba(0,0,0,0.34), 0 14px 32px rgba(0,0,0,0.50);
+      text-align: center;
+    }
+
+    #cardDetailTitle {
+      min-height: 37px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 7px;
+      background: #101827;
+      color: #f8fbff;
+      border: 2px solid #ffe08a;
+      border-radius: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      font-size: 15px;
+    }
+
+    #cardDetailMeta {
+      display: inline-block;
+      margin: 7px auto;
+      padding: 3px 7px;
+      background: #ffe08a;
+      color: #111827;
+      border: 2px solid #111827;
+      border-radius: 999px;
+      font-size: 10px;
+    }
+
+    #cardDetailRules {
+      min-height: 67px;
+      padding: 7px;
+      background: rgba(16,24,39,0.07);
+      border: 2px dashed #334155;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+
+
+    /* Composer Clash v2 card-detail skin: retro collectible-card layout */
+    #cardDetailBox {
+      top: 7px;
+      left: 53px;
+      right: 53px;
+      min-height: 204px;
+      padding: 8px;
+      background:
+        linear-gradient(45deg, rgba(0,0,0,0.04) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.04) 75%),
+        linear-gradient(45deg, rgba(0,0,0,0.04) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.04) 75%),
+        #ead38c;
+      background-position: 0 0, 3px 3px, 0 0;
+      background-size: 6px 6px, 6px 6px, auto;
+      border: 4px solid #111827;
+      outline: 2px solid #facc15;
+      border-radius: 3px;
+      box-shadow: 5px 5px 0 rgba(0,0,0,0.82), 0 12px 26px rgba(0,0,0,0.52);
+      color: #111827;
+      font-family: "Courier New", monospace;
+      image-rendering: pixelated;
+      text-align: center;
+    }
+
+    #cardDetailTitle {
+      min-height: 30px;
+      margin: 0 0 5px;
+      padding: 4px 5px;
+      background: #111827;
+      color: #f8fafc;
+      border: 2px solid #f8fafc;
+      border-radius: 0;
+      font-family: "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.05;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    #cardDetailMeta {
+      display: block;
+      margin: 0 0 5px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      color: #111827;
+      font-family: "Courier New", monospace;
+      font-size: 9px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    #cardDetailMeta::before {
+      content: "";
+      display: block;
+      height: 63px;
+      margin: 0 0 4px;
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 34% 38%, #facc15 0 7px, transparent 8px),
+        linear-gradient(135deg, #dbeafe, #fff7ed 54%, #dbeafe);
+      background-size: 8px 8px, 8px 8px, auto, auto;
+      border: 3px solid #111827;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.55), 2px 2px 0 #000;
+    }
+
+    #cardDetailBox[data-card-type="energy"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 45%, #22d3ee 0 9px, transparent 10px),
+        linear-gradient(135deg, #cffafe, #f0f9ff 56%, #67e8f9);
+      background-size: 8px 8px, 8px 8px, auto, auto;
+    }
+
+    #cardDetailBox[data-card-type="item"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 42%, #f97316 0 8px, transparent 9px),
+        linear-gradient(135deg, #fef3c7, #fff7ed 52%, #fed7aa);
+      background-size: 8px 8px, 8px 8px, auto, auto;
+    }
+
+    #cardDetailRules {
+      min-height: 44px;
+      margin: 0 0 6px;
+      padding: 5px;
+      background: #f8fafc;
+      color: #111827;
+      border: 2px solid #111827;
+      border-radius: 0;
+      box-shadow: 2px 2px 0 #000;
+      font-family: "Courier New", monospace;
+      font-size: 9px;
+      line-height: 1.16;
+    }
+
+    #cardDetailActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    #cardDetailActions button {
+      min-height: 27px;
+      border-radius: 0;
+      border: 2px solid #111827;
+      box-shadow: 2px 2px 0 #000;
+      font-family: "Courier New", monospace;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+  
+
+    /* v3: fit the overlay inside the emulator screen and highlight overlay buttons */
+    #cardDetailBox {
+      top: 4px;
+      left: 58px;
+      right: 58px;
+      height: 207px;
+      min-height: 0;
+      max-height: 207px;
+      padding: 6px;
+      border-width: 3px;
+      outline-width: 2px;
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.82), 0 10px 20px rgba(0,0,0,0.48);
+      overflow: hidden;
+    }
+
+    #cardDetailTitle {
+      min-height: 24px;
+      margin-bottom: 4px;
+      padding: 3px 4px;
+      font-size: 10px;
+      line-height: 1.05;
+      border-width: 2px;
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    #cardDetailMeta {
+      margin-bottom: 4px;
+      font-size: 8px;
+      line-height: 1;
+    }
+
+    #cardDetailMeta::before {
+      height: 48px;
+      margin-bottom: 3px;
+      border-width: 2px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.55), 2px 2px 0 #000;
+    }
+
+    #cardDetailRules {
+      min-height: 41px;
+      max-height: 47px;
+      overflow: hidden;
+      margin-bottom: 5px;
+      padding: 4px;
+      border-width: 2px;
+      font-size: 8px;
+      line-height: 1.08;
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    #cardDetailActions {
+      gap: 5px;
+    }
+
+    #cardDetailActions button {
+      min-height: 24px;
+      padding: 3px 4px;
+      font-size: 9px;
+      border-width: 2px;
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    #cardDetailActions button.is-selected,
+    #cardDetailActions button:focus-visible {
+      background: #fff7d6 !important;
+      outline: 3px solid #ffe08a;
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0 #000;
+    }
+
+
+
+    /* v3: card-detail art uses the same type colors as board cards */
+    #cardDetailBox[data-card-type="piece"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 42%, #ef7777 0 8px, transparent 9px),
+        linear-gradient(135deg, #ffc9c9, #fff1f1 52%, #f28b8b);
+      background-size: 8px 8px, 8px 8px, auto, auto;
+    }
+
+    #cardDetailBox[data-card-type="energy"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 45%, #7bd878 0 9px, transparent 10px),
+        linear-gradient(135deg, #c8f7c5, #ecffea 56%, #7bd878);
+      background-size: 8px 8px, 8px 8px, auto, auto;
+    }
+
+    #cardDetailBox[data-card-type="item"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 42%, #80aef2 0 8px, transparent 9px),
+        linear-gradient(135deg, #c7ddff, #edf5ff 52%, #80aef2);
+      background-size: 8px 8px, 8px 8px, auto, auto;
+    }
+
+
+
+    #cardDetailPlayBtn:disabled {
+      background: #cbd5e1 !important;
+      color: #475569 !important;
+      cursor: not-allowed;
+      opacity: 1;
+      transform: none !important;
+      outline: none !important;
+      box-shadow: 2px 2px 0 #000 !important;
+    }
+
+    .scoreBreakdown {
+      max-height: 82px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-right: 6px;
+    }
+
+    #gameCanvas {
+      touch-action: none;
+    }
+
+</style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1 id="gameOverTitle">Defeat!</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+          <div id="cardDetailBox" aria-hidden="true">
+            <h2 id="cardDetailTitle"></h2>
+            <p id="cardDetailMeta"></p>
+            <p id="cardDetailRules"></p>
+            <div id="cardDetailActions">
+              <button id="cardDetailPlayBtn" type="button">Play</button>
+              <button id="cardDetailCloseBtn" type="button">Close</button>
+            </div>
+          </div>
+
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">STREAK: <span id="score">0</span></div>
+          <div id="lcdBest">BEST STREAK: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">A</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">START</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+    const STORAGE_KEY = "composerClashMobilePlayers_v1";
+    const FIRST_TIME_HELP_VERSION = "composerClashHowToPlay_v1";
+    const SCORE_LABEL = "Streak";
+
+    // Wix mobile storage bridge.
+    // The Wix page code listens for messages from PianoArcadeShell
+    // and replies as PianoArcadeWixStorage.
+    const MESSAGE_FROM_GAME = "PianoArcadeShell";
+    const MESSAGE_FROM_WIX = "PianoArcadeWixStorage";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+    const difficultySelect = document.getElementById("difficultySelect");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverTitle = document.getElementById("gameOverTitle");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const cardDetailBox = document.getElementById("cardDetailBox");
+    const cardDetailTitle = document.getElementById("cardDetailTitle");
+    const cardDetailMeta = document.getElementById("cardDetailMeta");
+    const cardDetailRules = document.getElementById("cardDetailRules");
+    const cardDetailPlayBtn = document.getElementById("cardDetailPlayBtn");
+    const cardDetailCloseBtn = document.getElementById("cardDetailCloseBtn");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    const buttonA = document.getElementById("buttonA");
+    const buttonB = document.getElementById("buttonB");
+    const buttonX = document.getElementById("buttonX");
+    const selectButton = document.getElementById("selectButton");
+    const startButton = document.getElementById("startButton");
+
+    if (buttonA) buttonA.textContent = "PLAY";
+    if (buttonB) buttonB.textContent = "BACK";
+    if (buttonX) buttonX.textContent = "ZONE";
+    if (selectButton) selectButton.textContent = "CARD";
+    if (startButton) startButton.textContent = "MENU";
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>D-pad / left joystick:</strong> Move the highlight.</li>
+            <li><strong>PLAY:</strong> Choose the highlighted card or button.</li>
+            <li><strong>BACK:</strong> Close, cancel, or end your turn.</li>
+            <li><strong>ZONE:</strong> Jump to another group of choices.</li>
+            <li><strong>CARD:</strong> Read the highlighted card.</li>
+            <li><strong>MENU:</strong> Open help and exit options.</li>
+          </ul>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <p>Pick a composer, play cards, and try to reduce the opposing composer to 0 HP.</p>
+          <p>Play Staff cards to build energy, Piece cards to attack, and Item cards for special effects.</p>
+        `
+      },
+      {
+        id: "quit",
+        label: "Quit",
+        html: `
+          <h3>Pause</h3>
+          <p>Leave the current battle or go back to the player menu.</p>
+          <button class="shellActionBtn" type="button" data-shell-action="characters">Choose Composer</button>
+          <button class="shellActionBtn" type="button" data-shell-action="players">Player Menu</button>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "controls";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+    }
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-shell-action]");
+      if (!actionButton) return;
+      const action = actionButton.dataset.shellAction;
+      if (action === "characters") returnToCharacterSelect();
+      if (action === "players") returnToPlayerMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+  function setScore(newScore) {
+    score = Math.max(0, Math.floor(newScore));
+    updateStreakDisplays();
+  }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    function applyLoadedPlayers(loadedPlayers) {
+      players = loadedPlayers && typeof loadedPlayers === "object" ? loadedPlayers : {};
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+      updateStreakDisplays();
+    }
+
+    function readLocalPlayersFallback() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+      } catch (err) {
+        return {};
+      }
+    }
+
+    function requestPlayersFromWixStorage() {
+      try {
+        window.parent.postMessage({
+          source: MESSAGE_FROM_GAME,
+          type: "ARCADE_STORAGE_LOAD",
+          storageKey: STORAGE_KEY
+        }, "*");
+      } catch (err) {}
+    }
+
+    function savePlayersToWixStorage() {
+      try {
+        window.parent.postMessage({
+          source: MESSAGE_FROM_GAME,
+          type: "ARCADE_STORAGE_SAVE",
+          storageKey: STORAGE_KEY,
+          payload: players
+        }, "*");
+      } catch (err) {}
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") {
+        return;
+      }
+
+      if (data.source !== MESSAGE_FROM_WIX) {
+        return;
+      }
+
+      if (String(data.storageKey || "") !== STORAGE_KEY) {
+        return;
+      }
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        applyLoadedPlayers(data.payload || {});
+      }
+    });
+
+    function loadPlayers() {
+      // Immediate fallback for desktop preview/testing.
+      applyLoadedPlayers(readLocalPlayersFallback());
+
+      // Real mobile Wix storage load.
+      requestPlayersFromWixStorage();
+    }
+
+    function savePlayers() {
+      // Local fallback for desktop preview/testing.
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(players));
+      } catch (err) {}
+
+      // Real mobile Wix storage save.
+      savePlayersToWixStorage();
+    }
+
+  function winText(count) {
+    const wins = Math.max(0, Number(count || 0));
+    return `${wins} win${wins === 1 ? "" : "s"} in a row`;
+  }
+
+  function normalizePlayerRecord(data = {}) {
+    data.currentStreak = Math.max(0, Number(data.currentStreak || data.winStreak || 0));
+    data.bestStreak = Math.max(data.currentStreak, Number(data.bestStreak || data.bestWinStreak || 0));
+    data.lastEndedStreak = Math.max(0, Number(data.lastEndedStreak || 0));
+    return data;
+  }
+
+  function getPlayerRecord(name = selectedPlayer) {
+    if (!name) return normalizePlayerRecord({});
+    players[name] = normalizePlayerRecord(players[name] || {});
+    return players[name];
+  }
+
+  function isGuestPlayerName(name) {
+    return String(name || "").trim().toLowerCase() === "guest";
+  }
+
+  function shouldShowFirstTimeHelp() {
+    if (!selectedPlayer || isGuestPlayerName(selectedPlayer)) return true;
+    const data = getPlayerRecord(selectedPlayer);
+    return data.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
+  }
+
+  function markFirstTimeHelpSeen() {
+    if (!selectedPlayer || isGuestPlayerName(selectedPlayer)) return;
+    const data = getPlayerRecord(selectedPlayer);
+    data.helpSeenVersion = FIRST_TIME_HELP_VERSION;
+    savePlayers();
+  }
+
+  function maybeOpenFirstTimeHelp() {
+    if (!shouldShowFirstTimeHelp()) return;
+    markFirstTimeHelpSeen();
+    openShellMenu("instructions");
+  }
+
+  function updateStreakDisplays() {
+    const data = getPlayerRecord(selectedPlayer);
+    scoreEl.textContent = data.currentStreak || 0;
+    bestScoreEl.textContent = data.bestStreak || 0;
+  }
+
+  function renderLeaderboard() {
+    leaderboardList.innerHTML = "";
+    Object.keys(players).forEach(name => normalizePlayerRecord(players[name]));
+    const ranked = Object.entries(players)
+      .sort((a, b) => (b[1].currentStreak || 0) - (a[1].currentStreak || 0) || (b[1].bestStreak || 0) - (a[1].bestStreak || 0))
+      .slice(0, 5);
+
+    if (ranked.length === 0) {
+      leaderboardList.innerHTML = "<li>No streaks yet</li>";
+      return;
+    }
+
+    ranked.forEach(([name, data]) => {
+      const li = document.createElement("li");
+      li.textContent = `${name}: ${winText(data.currentStreak || 0)}`;
+      leaderboardList.appendChild(li);
+    });
+  }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — ${winText(getPlayerRecord(name).currentStreak || 0)}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+      players[selectedPlayer].lastScore = 0;
+      players[selectedPlayer].currentStreak = 0;
+      players[selectedPlayer].bestStreak = 0;
+      players[selectedPlayer].lastEndedStreak = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0, lastScore: 0, currentStreak: 0, bestStreak: 0, lastEndedStreak: 0 };
+        savePlayers();
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    function ensurePlayablePlayer() {
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0, lastScore: 0, currentStreak: 0, bestStreak: 0, lastEndedStreak: 0 };
+        savePlayers();
+      }
+    }
+
+    function beginGameWithFirstTimeHelp(options = {}) {
+      const shouldCheckHelp = options.firstTimeHelp !== false;
+      closeShellMenu({ resume: false });
+      ensurePlayablePlayer();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+
+      if (shouldCheckHelp) maybeOpenFirstTimeHelp();
+    }
+
+    startGameBtn.onclick = () => beginGameWithFirstTimeHelp();
+
+    playAgainBtn.onclick = () => beginGameWithFirstTimeHelp();
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+        if (stick === sticks.left) maybeSendLeftJoystickInput(stick, true);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+        if (stick === sticks.left) maybeSendLeftJoystickInput(stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    canvas.addEventListener("pointerdown", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      gamePointer({
+        x: (event.clientX - rect.left) * (canvas.width / rect.width),
+        y: (event.clientY - rect.top) * (canvas.height / rect.height),
+        originalEvent: event
+      });
+    });
+
+    let leftStickLastInput = 0;
+    let leftStickLastDirection = "";
+    function joystickDirection(stick) {
+      const ax = Math.abs(stick.x);
+      const ay = Math.abs(stick.y);
+      if (Math.max(ax, ay) < 0.48) return "";
+      return ax > ay ? (stick.x < 0 ? "left" : "right") : (stick.y < 0 ? "up" : "down");
+    }
+
+    function maybeSendLeftJoystickInput(stick, force = false) {
+      const direction = joystickDirection(stick);
+      if (!direction) {
+        leftStickLastDirection = "";
+        return;
+      }
+      const now = performance.now();
+      if (force || direction !== leftStickLastDirection || now - leftStickLastInput > 220) {
+        leftStickLastDirection = direction;
+        leftStickLastInput = now;
+        handleInput(direction);
+      }
+    }
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      updateStreakDisplays();
+      gameOverBox.style.display = "none";
+
+      setMessage("");
+      gameInit();
+
+      loop();
+    }
+
+    function returnToCharacterSelect() {
+      closeShellMenu({ resume: false });
+      closeCardDetail();
+      gameOverBox.style.display = "none";
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+    }
+
+    function returnToPlayerMenu() {
+      closeShellMenu({ resume: false });
+      closeCardDetail();
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+  function endGame(reason = "Defeat!") {
+    if (!running) return;
+    stopGame();
+    const won = /victory|win/i.test(reason);
+    if (won) soundWin(); else soundLose();
+
+    const data = getPlayerRecord(selectedPlayer);
+    data.lastScore = score;
+    data.lastBattleWon = won;
+    if (won) {
+      data.currentStreak = Math.max(0, Number(data.currentStreak || 0)) + 1;
+      data.bestStreak = Math.max(Number(data.bestStreak || 0), data.currentStreak);
+    } else {
+      data.lastEndedStreak = Math.max(0, Number(data.currentStreak || 0));
+      data.currentStreak = 0;
+    }
+    data.best = data.bestStreak;
+
+    savePlayers();
+    renderPlayers();
+    renderLeaderboard();
+    updateStreakDisplays();
+    if (gameOverTitle) gameOverTitle.textContent = won ? "Victory!" : "Defeat!";
+    gameOverScore.innerHTML = finalScoreHtml(reason);
+    gameOverBox.style.display = "block";
+  }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("quit");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCorrect() {
+      beep(660, 0.08, "square", 0.06);
+      setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+      });
+    }
+
+    function soundLose() {
+      [300, 220, 160, 100].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+      });
+    }
+
+    /* =========================
+       GAME MODULE — Composer Clash Expansion Foundation
+       ========================= */
+
+    const COMPOSERS = [
+      {
+        "name": "Bach",
+        "style": "Counterpoint",
+        "color": "#2563eb",
+        "focus": "synergy",
+        "pieces": [
+          "Minuet in G",
+          "Prelude in C",
+          "Invention No. 1",
+          "Little Prelude",
+          "Sinfonia No. 15",
+          "French Suite",
+          "English Suite",
+          "Partita No. 1",
+          "Italian Concerto",
+          "Chromatic Fantasy",
+          "Toccata in E minor",
+          "Goldberg Aria",
+          "Well-Tempered Clavier",
+          "Goldberg Variations",
+          "Art of Fugue",
+          "Bach-Busoni Chaconne"
+        ],
+        "items": [
+          {
+            "name": "Fugue Subject",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Counterpoint",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Leipzig Cantor",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Pedal Point",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Church Organ",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Well-Tempered Study",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Kapellmeister",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Cantata Workshop",
+            "cost": 3,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Family Ensemble",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Final Cadence",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Mozart",
+        "style": "Efficiency",
+        "color": "#7c3aed",
+        "focus": "speed",
+        "pieces": [
+          "Minuet in F",
+          "Sonata in C",
+          "K. 545 Allegro",
+          "Rondo alla Turca",
+          "Fantasia in D minor",
+          "Sonata in A minor",
+          "Sonata in F",
+          "Sonata in B-flat",
+          "Variations on Ah vous dirai-je",
+          "Adagio in B minor",
+          "Piano Concerto No. 20",
+          "Piano Concerto No. 21",
+          "Piano Concerto No. 23",
+          "Piano Concerto No. 24",
+          "Piano Concerto No. 27",
+          "D minor Fantasy"
+        ],
+        "items": [
+          {
+            "name": "Child Prodigy",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Clear Phrase",
+            "cost": 1,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Opera Spark",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Royal Lesson",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Improvisation",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Vienna Stage",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Comic Timing",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Fast Passagework",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Elegant Cadence",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Finale Burst",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Beethoven",
+        "style": "Power",
+        "color": "#dc2626",
+        "focus": "power",
+        "pieces": [
+          "Ecossaise",
+          "Für Elise",
+          "Sonatina in G",
+          "Moonlight Sonata",
+          "Pathétique Sonata",
+          "Tempest Sonata",
+          "Waldstein Sonata",
+          "Appassionata",
+          "Les Adieux",
+          "Diabelli Variations",
+          "Rage Over a Lost Penny",
+          "Eroica Variations",
+          "Piano Concerto No. 3",
+          "Emperor Concerto",
+          "Hammerklavier",
+          "Late Sonata Op. 111"
+        ],
+        "items": [
+          {
+            "name": "Hearing Loss",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Fate Motif",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Vienna Premiere",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Immortal Beloved",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Stormy Temper",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Sketchbook",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Heroic Resolve",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Cadenza",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Patron Support",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Thunderous Finale",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Schubert",
+        "style": "Lyric Endurance",
+        "color": "#059669",
+        "focus": "endurance",
+        "pieces": [
+          "German Dance",
+          "Moment Musical",
+          "Impromptu in G-flat",
+          "Impromptu in A-flat",
+          "Impromptu in E-flat",
+          "Impromptu in B-flat",
+          "Drei Klavierstücke",
+          "Sonata in A minor",
+          "Sonata in A major",
+          "Sonata in B-flat",
+          "Wanderer Fantasy",
+          "Military March",
+          "Lebensstürme",
+          "Fantasy in F minor",
+          "Sonata in C minor",
+          "Great C Major Sonata"
+        ],
+        "items": [
+          {
+            "name": "Lied Melody",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Song Circle",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Wandering Theme",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Vienna Salon",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Long Line",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Warm Cadence",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Dramatic Turn",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Four-Hand Friends",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Hidden Strength",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Wanderer Strike",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Chopin",
+        "style": "Precision",
+        "color": "#db2777",
+        "focus": "precision",
+        "pieces": [
+          "Prelude in E minor",
+          "Waltz in A minor",
+          "Minute Waltz",
+          "Nocturne in E-flat",
+          "Raindrop Prelude",
+          "Mazurka in A minor",
+          "Polonaise in A major",
+          "Revolutionary Étude",
+          "Black Key Étude",
+          "Fantaisie-Impromptu",
+          "Scherzo No. 2",
+          "Ballade No. 1",
+          "Heroic Polonaise",
+          "Barcarolle",
+          "Sonata No. 2",
+          "Ballade No. 4"
+        ],
+        "items": [
+          {
+            "name": "Rubato",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Salon Poise",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Bel Canto Line",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Paris Lesson",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Polish Dance",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Étude Focus",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Sharp Turn",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Nocturne Calm",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Brilliant Passage",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Final Flourish",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Robert Schumann",
+        "style": "Character Pieces",
+        "color": "#9333ea",
+        "focus": "swing",
+        "pieces": [
+          "Melody",
+          "Träumerei",
+          "The Wild Horseman",
+          "Arabeske",
+          "Papillons",
+          "Kinderszenen",
+          "Album for the Young",
+          "Carnaval",
+          "Kreisleriana",
+          "Fantasiestücke",
+          "Novelette",
+          "Humoreske",
+          "Symphonic Études",
+          "Fantasy in C",
+          "Toccata",
+          "Piano Concerto"
+        ],
+        "items": [
+          {
+            "name": "Florestan",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Eusebius",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Carnival Mask",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Character Sketch",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Clara Theme",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Dichterliebe",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Davidsbund",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Sudden Mood",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "March Attack",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Grand Finale",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Clara Schumann",
+        "style": "Romantic Command",
+        "color": "#0891b2",
+        "focus": "precision",
+        "pieces": [
+          "Romance",
+          "Scherzo No. 1",
+          "Scherzo No. 2",
+          "Soirées Musicales",
+          "Variations",
+          "Prelude and Fugue",
+          "Nocturne",
+          "Mazurka",
+          "Piano Trio",
+          "Romances Op. 21",
+          "Piano Concerto",
+          "Quatre pièces fugitives",
+          "Polonaise",
+          "Caprice",
+          "Concert Variations",
+          "Impromptu"
+        ],
+        "items": [
+          {
+            "name": "Concert Pianist",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Romantic Line",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Teaching Studio",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Family Strength",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Touring Star",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Album Leaf",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Supportive Voice",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Resilience",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Brilliant Touch",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Encore Applause",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Liszt",
+        "style": "Virtuoso Finishers",
+        "color": "#ea580c",
+        "focus": "finish",
+        "pieces": [
+          "Consolation No. 3",
+          "Liebestraum",
+          "Un Sospiro",
+          "La Campanella",
+          "Hungarian Rhapsody No. 2",
+          "Mephisto Waltz",
+          "Funérailles",
+          "B minor Sonata",
+          "Transcendental Étude",
+          "Mazeppa",
+          "Feux follets",
+          "Totentanz",
+          "Dante Sonata",
+          "Spanish Rhapsody",
+          "Don Juan Fantasy",
+          "Réminiscences de Norma"
+        ],
+        "items": [
+          {
+            "name": "Virtuoso Tour",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Piano Thunder",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Transcendental Technique",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Showpiece Cadenza",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Salon Fame",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Hungarian Fire",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Sight-Reading Stunt",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Octave Blast",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Late Reflection",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Virtuoso Finale",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Brahms",
+        "style": "Durable Midrange",
+        "color": "#4b5563",
+        "focus": "endurance",
+        "pieces": [
+          "Waltz in A-flat",
+          "Intermezzo in A",
+          "Intermezzo in E-flat",
+          "Rhapsody in G minor",
+          "Ballade",
+          "Klavierstücke",
+          "Paganini Variations",
+          "Handel Variations",
+          "Rhapsody in B minor",
+          "Capriccio in D minor",
+          "Intermezzo in B-flat",
+          "Sonata No. 3",
+          "Piano Quartet",
+          "Piano Concerto No. 1",
+          "Piano Concerto No. 2",
+          "Variations on a Theme by Schumann"
+        ],
+        "items": [
+          {
+            "name": "Warm Intermezzo",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Thick Texture",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Variation Craft",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Autumn Color",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Rhythmic Weight",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Chorale Strength",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Inner Voice",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Deep Bass",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Quiet Resolve",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Grand Sonata",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Debussy",
+        "style": "Color & Evasion",
+        "color": "#0ea5e9",
+        "focus": "evasion",
+        "pieces": [
+          "The Little Shepherd",
+          "Arabesque No. 1",
+          "Clair de lune",
+          "Doctor Gradus",
+          "Golliwog's Cakewalk",
+          "La fille aux cheveux de lin",
+          "La cathédrale engloutie",
+          "Jardins sous la pluie",
+          "Reflets dans l'eau",
+          "Poissons d'or",
+          "L'isle joyeuse",
+          "Feux d'artifice",
+          "Ondine",
+          "Estampes",
+          "Pour le piano",
+          "Études"
+        ],
+        "items": [
+          {
+            "name": "Whole-Tone Mist",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Soft Pedal",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Color Wash",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Impressionist Blur",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Bell Sonority",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Paris Exposition",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Water Reflection",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Layered Color",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Fireworks",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Sunken Cathedral",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Ravel",
+        "style": "Technical Timing",
+        "color": "#14b8a6",
+        "focus": "precision",
+        "pieces": [
+          "Pavane",
+          "Sonatine",
+          "Jeux d'eau",
+          "Menuet antique",
+          "Ondine",
+          "Le gibet",
+          "Scarbo",
+          "Alborada",
+          "Oiseaux tristes",
+          "Une barque sur l'océan",
+          "La vallée des cloches",
+          "Miroirs",
+          "Gaspard de la nuit",
+          "Valses nobles",
+          "Piano Concerto in G",
+          "Left Hand Concerto"
+        ],
+        "items": [
+          {
+            "name": "Clockwork Detail",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Orchestral Color",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Precise Pedal",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Water Mechanism",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Spanish Spark",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Elegant Distance",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Left-Hand Strength",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Brilliant Surface",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Scarbo Trick",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Gaspard Strike",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Joplin",
+        "style": "Rhythm Tempo",
+        "color": "#ca8a04",
+        "focus": "speed",
+        "pieces": [
+          "Maple Leaf Rag",
+          "The Entertainer",
+          "Elite Syncopations",
+          "Solace",
+          "Bethena",
+          "Pine Apple Rag",
+          "Easy Winners",
+          "Magnetic Rag",
+          "The Chrysanthemum",
+          "Fig Leaf Rag",
+          "Gladiolus Rag",
+          "Peacherine Rag",
+          "Sugar Cane",
+          "Euphonic Sounds",
+          "Heliotrope Bouquet",
+          "Treemonisha Rag"
+        ],
+        "items": [
+          {
+            "name": "Syncopation",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Ragtime Bounce",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Maple Leaf Club",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Left-Hand Stride",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Piano Roll",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 2,
+            "text": "Restore 2 HP."
+          },
+          {
+            "name": "Dance Hall",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Sharp Syncopation",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Missouri Rhythm",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Cakewalk Kick",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Ragtime Finale",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Florence Price",
+        "style": "Symphonic Voice",
+        "color": "#16a34a",
+        "focus": "synergy",
+        "pieces": [
+          "Ticklin' Toes",
+          "Nimble Feet",
+          "Clouds",
+          "The Goblin",
+          "Silk Hat and Walking Cane",
+          "Dances in the Canebrakes",
+          "Fantasie Nègre No. 1",
+          "Fantasie Nègre No. 2",
+          "Fantasie Nègre No. 3",
+          "Piano Sonata",
+          "Thumbnail Sketches",
+          "Juba Dance",
+          "Cotton Dance",
+          "Negro Folksongs in Counterpoint",
+          "Piano Concerto",
+          "Symphony Themes"
+        ],
+        "items": [
+          {
+            "name": "Juba Rhythm",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Chicago Support",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Canebrake Dance",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Spiritual Melody",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Teaching Studio",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Orchestral Voice",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Prize Winner",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Quiet Strength",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Dance Accent",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Concert Finale",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Amy Beach",
+        "style": "Lyric Power",
+        "color": "#e11d48",
+        "focus": "power",
+        "pieces": [
+          "Children's Carnival",
+          "Fireflies",
+          "Dreaming",
+          "Scottish Legend",
+          "Hermit Thrush",
+          "From Blackbird Hills",
+          "Sketches",
+          "A Hermit Thrush at Eve",
+          "A Hermit Thrush at Morn",
+          "Variations on Balkan Themes",
+          "Piano Concerto",
+          "Ballad",
+          "Tyrolean Valse-Fantaisie",
+          "From Grandmother's Garden",
+          "Improvisation",
+          "Prelude and Fugue"
+        ],
+        "items": [
+          {
+            "name": "Self-Taught Drive",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Boston Stage",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Gaelic Theme",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Birdsong",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Concert Strength",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Adaptive Voice",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Festival Color",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Quiet Study",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Brilliant Run",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Grand Concerto",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      },
+      {
+        "name": "Rachmaninoff",
+        "style": "Late-Game Force",
+        "color": "#1e40af",
+        "focus": "finish",
+        "pieces": [
+          "Prelude in C-sharp",
+          "Prelude in G minor",
+          "Elegie",
+          "Moment Musical",
+          "Étude-tableau",
+          "Corelli Variations",
+          "Vocalise",
+          "Lilacs",
+          "Daisies",
+          "Piano Concerto No. 2",
+          "Piano Concerto No. 3",
+          "Rhapsody on Paganini",
+          "Sonata No. 2",
+          "Études-tableaux Op. 39",
+          "Variations on Chopin",
+          "Symphonic Dances"
+        ],
+        "items": [
+          {
+            "name": "Huge Hands",
+            "cost": 2,
+            "effect": "buff",
+            "amount": 1,
+            "text": "Give your first Piece +1 Attack and +1 HP."
+          },
+          {
+            "name": "Bell Tone",
+            "cost": 2,
+            "effect": "direct",
+            "amount": 2,
+            "text": "Deal 2 damage."
+          },
+          {
+            "name": "Dark Lyricism",
+            "cost": 1,
+            "effect": "heal",
+            "amount": 3,
+            "text": "Restore 3 HP."
+          },
+          {
+            "name": "Virtuoso Return",
+            "cost": 2,
+            "effect": "ready",
+            "amount": 1,
+            "text": "Ready one Piece."
+          },
+          {
+            "name": "Romantic Surge",
+            "cost": 3,
+            "effect": "allBuff",
+            "amount": 1,
+            "text": "All your Pieces gain +1 Attack."
+          },
+          {
+            "name": "Practice Discipline",
+            "cost": 1,
+            "effect": "draw",
+            "amount": 1,
+            "text": "Draw 1 card."
+          },
+          {
+            "name": "Concert Hall",
+            "cost": 2,
+            "effect": "draw",
+            "amount": 2,
+            "text": "Draw 2 cards."
+          },
+          {
+            "name": "Deep Bass Strike",
+            "cost": 3,
+            "effect": "direct",
+            "amount": 3,
+            "text": "Deal 3 damage."
+          },
+          {
+            "name": "Resonance",
+            "cost": 2,
+            "effect": "heal",
+            "amount": 4,
+            "text": "Restore 4 HP."
+          },
+          {
+            "name": "Final Bell",
+            "cost": 4,
+            "effect": "direct",
+            "amount": 4,
+            "text": "Deal 4 damage."
+          }
+        ]
+      }
+    ];
+
+    const IS_MOBILE_CANVAS = canvas.width <= 420;
+    const HAND_SIZE = 5;
+  const MAX_BOARD = 999;
+  const ANIMATION_SLOWDOWN = 1.85;
+  const CPU_ACTION_DELAY_MULTIPLIER = 3;
+  const DIFFICULTY_SETTINGS = {
+    normal: { label: "Normal", maxCpuPlays: 3, attackChance: 0.84, randomPlayChance: 0.20, randomTargetChance: 0.25 }
+  };
+
+  function getSelectedDifficultyKey() {
+    return "normal";
+  }
+    const STARTING_HP = 30;
+    const ENERGY_CARDS = 14;
+    const PIECE_COSTS = [1,1,2,2,2,3,3,3,4,4,4,5,5,6,6,7];
+    const ITEM_TEMPLATES = [
+      { "name": "Practice Run", "cost": 1, "effect": "buff", "amount": 1, "text": "Give your first Piece +1 Attack and +1 HP." },
+      { "name": "Quiet Focus", "cost": 1, "effect": "heal", "amount": 3, "text": "Restore 3 HP." },
+      { "name": "Encore", "cost": 2, "effect": "draw", "amount": 2, "text": "Draw 2 cards." },
+      { "name": "Crescendo", "cost": 3, "effect": "allBuff", "amount": 1, "text": "All your Pieces gain +1 Attack." },
+      { "name": "Sharp Accent", "cost": 2, "effect": "direct", "amount": 2, "text": "Deal 2 damage." },
+      { "name": "Second Theme", "cost": 2, "effect": "draw", "amount": 1, "text": "Draw 1 card." },
+      { "name": "Steady Pulse", "cost": 1, "effect": "heal", "amount": 2, "text": "Restore 2 HP." },
+      { "name": "Rehearsal", "cost": 2, "effect": "ready", "amount": 1, "text": "Ready one Piece." },
+      { "name": "Fortissimo", "cost": 3, "effect": "direct", "amount": 3, "text": "Deal 3 damage." },
+      { "name": "Bravura Finish", "cost": 4, "effect": "direct", "amount": 4, "text": "Deal 4 damage." }
+    ];
+  const BALANCED_ITEM_SLOTS = [
+    {
+      "cost": 1,
+      "effect": "nextAttack",
+      "amount": 1,
+      "text": "Your next attack deals +1 damage."
+    },
+    {
+      "cost": 1,
+      "effect": "heal",
+      "amount": 2,
+      "text": "Restore 2 HP."
+    },
+    {
+      "cost": 1,
+      "effect": "shield",
+      "amount": 2,
+      "text": "Your next enemy attack deals 2 less damage."
+    },
+    {
+      "cost": 2,
+      "effect": "draw",
+      "amount": 1,
+      "text": "Draw 1 card."
+    },
+    {
+      "cost": 2,
+      "effect": "nextAttack",
+      "amount": 2,
+      "text": "Your next attack deals +2 damage."
+    },
+    {
+      "cost": 2,
+      "effect": "heal",
+      "amount": 3,
+      "text": "Restore 3 HP."
+    },
+    {
+      "cost": 2,
+      "effect": "shield",
+      "amount": 3,
+      "text": "Your next enemy attack deals 3 less damage."
+    },
+    {
+      "cost": 3,
+      "effect": "draw",
+      "amount": 2,
+      "text": "Draw 2 cards."
+    },
+    {
+      "cost": 3,
+      "effect": "nextAttack",
+      "amount": 3,
+      "text": "Your next attack deals +3 damage."
+    },
+    {
+      "cost": 4,
+      "effect": "nextAttack",
+      "amount": 4,
+      "text": "Your next attack deals +4 damage."
+    }
+  ];
+
+
+    const KEYWORD_TEXT = {
+      quick: "Ready right away",
+      echo: "Draw 1 card when played",
+      inspire: "+1 Attack to another Piece",
+      pierce: "Extra damage spills through",
+      steady: "+1 HP when played"
+    };
+
+    const CARD_TYPE_LABELS = {
+      energy: "Staff",
+      piece: "Piece",
+      item: "Item"
+    };
+
+    function keywordName(keyword) {
+      if (!keyword) return "";
+      return keyword.charAt(0).toUpperCase() + keyword.slice(1);
+    }
+
+    function cardRulesText(card) {
+      if (!card) return "";
+      if (card.type === "energy") return "Adds 1 staff for future turns.";
+      if (card.type === "piece") {
+        const parts = [];
+        parts.push(`ATK ${card.atk} / DEF ${card.hp}`);
+        if (card.keyword) parts.push(`${keywordName(card.keyword)}: ${KEYWORD_TEXT[card.keyword] || card.abilityText || "Special effect"}`);
+        return parts.join(" • ");
+      }
+      return card.text || "";
+    }
+
+    
+function selectedCardForDisplay() {
+    if (!state || phaseScreen !== "battle") return null;
+    if (selectedZone === "hand") return state.player.hand[selectedIndex] || null;
+    return null;
+  }
+
+  function selectedCardLine(fallback = lastLog) {
+    const card = selectedCardForDisplay();
+    if (!card) return fallback;
+    return cardInfoText(card);
+  }
+
+  let phaseScreen = "composerSelect";
+  let composerIndex = 0;
+  let selectedComposerCard = COMPOSERS[0];
+  let cursorPulse = 0;
+  let helpRegistered = false;
+  let nextCardId = 1;
+  let selectedZone = "hand";
+  let selectedIndex = 0;
+  let lastHitboxes = [];
+  let state = null;
+  let lastLog = "Choose a composer.";
+
+  let detailSelection = null;
+  let detailButtonIndex = 0;
+  let visualEffects = [];
+  let finalScoreDetails = null;
+  let attackTargetIndex = null;
+  let discardMode = false;
+  let forcedDiscardCount = 0;
+
+  function getCardFromZone(zone, index) {
+    if (!state) return null;
+    if (zone === "hand") return state.player.hand[index] || null;
+    return null;
+  }
+
+  function cardMetaText(card) {
+    if (!card) return "";
+    if (card.type === "energy") return "Staff";
+    if (card.type === "item") return `Item • Cost ${card.cost}`;
+    if (card.type === "piece") return `Piece • Cost ${card.cost} • ATK ${card.atk}`;
+    return CARD_TYPE_LABELS[card.type] || "Card";
+  }
+
+  function cardDetailRulesText(card) {
+    if (!card) return "";
+    if (card.type === "energy") return "Adds 1 staff for future turns. You can play one Staff card each turn.";
+    if (card.type === "piece") return `${card.name} is a direct attack card. Play it to fire ${card.symbol || "♪"} at the enemy composer for ${card.atk} damage.`;
+    return card.text || "One-time effect.";
+  }
+
+function setCardDetailOpen(isOpen) {
+    if (!cardDetailBox) return;
+    if (isOpen) {
+      cardDetailBox.classList.add("is-open");
+      cardDetailBox.classList.add("open");
+      cardDetailBox.style.display = "block";
+      cardDetailBox.setAttribute("aria-hidden", "false");
+    } else {
+      cardDetailBox.classList.remove("is-open");
+      cardDetailBox.classList.remove("open");
+      cardDetailBox.style.display = "none";
+      cardDetailBox.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  function isCardDetailOpen() {
+    return !!(cardDetailBox && cardDetailBox.style.display === "block");
+  }
+
+  
+function visibleDetailButtons() {
+    const buttons = [];
+    if (cardDetailPlayBtn && cardDetailPlayBtn.style.display !== "none" && !cardDetailPlayBtn.disabled) buttons.push({ kind: "play", el: cardDetailPlayBtn });
+    if (cardDetailCloseBtn) buttons.push({ kind: "close", el: cardDetailCloseBtn });
+    return buttons;
+  }
+
+  function syncCardDetailButtonHighlight() {
+    const buttons = visibleDetailButtons();
+    if (!buttons.length) return;
+    detailButtonIndex = clampValue(detailButtonIndex, 0, buttons.length - 1);
+    [cardDetailPlayBtn, cardDetailCloseBtn].forEach(btn => {
+      if (!btn) return;
+      btn.classList.remove("is-selected");
+      btn.setAttribute("aria-selected", "false");
+    });
+    const active = buttons[detailButtonIndex];
+    if (active && active.el) {
+      active.el.classList.add("is-selected");
+      active.el.setAttribute("aria-selected", "true");
+    }
+  }
+
+  function moveCardDetailButton(direction) {
+    const buttons = visibleDetailButtons();
+    if (!buttons.length) return false;
+    const step = direction === "left" || direction === "up" ? -1 : 1;
+    detailButtonIndex = (detailButtonIndex + step + buttons.length) % buttons.length;
+    syncCardDetailButtonHighlight();
+    return true;
+  }
+
+  function activateSelectedCardDetailButton() {
+    const buttons = visibleDetailButtons();
+    if (!buttons.length) return false;
+    detailButtonIndex = clampValue(detailButtonIndex, 0, buttons.length - 1);
+    const active = buttons[detailButtonIndex];
+    if (!active) return false;
+    if (active.kind === "play") confirmCardDetail();
+    else closeCardDetail();
+    return true;
+  }
+
+  function openCardDetail(zone = selectedZone, index = selectedIndex) {
+    const card = getCardFromZone(zone, index);
+    if (!card) return false;
+
+    detailSelection = { zone, index };
+    if (cardDetailBox) cardDetailBox.dataset.cardType = card.type || "card";
+    if (cardDetailTitle) cardDetailTitle.textContent = card.name;
+    if (cardDetailMeta) cardDetailMeta.textContent = cardMetaText(card);
+    if (cardDetailRules) cardDetailRules.textContent = cardDetailRulesText(card);
+
+    const playerCanAct = state && state.turn === "player" && !state.battleOver;
+    let canAct = false;
+    let actionLabel = "Play";
+
+    let blockedReason = "";
+    if (playerCanAct && zone === "hand") {
+      if (forcedDiscardCount > 0 || discardMode) {
+        canAct = true;
+        actionLabel = "Discard";
+      } else if (card.type === "energy") {
+        canAct = !state.player.energyPlayed;
+        actionLabel = canAct ? "Play Staff" : "Staff Already Played";
+        blockedReason = actionLabel;
+      } else if (typeof card.cost === "number" && card.cost > state.player.energy) {
+        canAct = false;
+        actionLabel = "Not Enough Staves";
+        blockedReason = actionLabel;
+      } else {
+        canAct = true;
+        actionLabel = card.type === "item" ? "Play Item" : "Play Attack";
+      }
+    }
+
+    if (cardDetailPlayBtn) {
+      cardDetailPlayBtn.style.display = playerCanAct && zone === "hand" ? "inline-block" : "none";
+      cardDetailPlayBtn.textContent = actionLabel;
+      cardDetailPlayBtn.disabled = !!(playerCanAct && zone === "hand" && !canAct && blockedReason);
+      cardDetailPlayBtn.setAttribute("aria-disabled", cardDetailPlayBtn.disabled ? "true" : "false");
+    }
+
+    detailButtonIndex = cardDetailPlayBtn && cardDetailPlayBtn.disabled ? 1 : 0;
+    setCardDetailOpen(true);
+    syncCardDetailButtonHighlight();
+    return true;
+  }
+
+  
+function openSelectedDetail() {
+    if (phaseScreen !== "battle" || !state) return false;
+    if (selectedZone !== "hand") return false;
+    return openCardDetail(selectedZone, selectedIndex);
+  }
+
+function closeCardDetail() {
+    detailSelection = null;
+    [cardDetailPlayBtn, cardDetailCloseBtn].forEach(btn => {
+      if (!btn) return;
+      btn.classList.remove("is-selected");
+      btn.setAttribute("aria-selected", "false");
+    });
+    if (cardDetailPlayBtn) {
+      cardDetailPlayBtn.disabled = false;
+      cardDetailPlayBtn.removeAttribute("aria-disabled");
+    }
+    setCardDetailOpen(false);
+  }
+
+  
+function confirmCardDetail() {
+    if (!detailSelection || !state || state.turn !== "player") {
+      closeCardDetail();
+      return;
+    }
+
+    const { zone, index } = detailSelection;
+    closeCardDetail();
+
+    selectedZone = zone;
+    selectedIndex = index;
+    playerAction();
+  }
+
+  if (cardDetailCloseBtn) {
+    cardDetailCloseBtn.addEventListener("pointerenter", () => { detailButtonIndex = visibleDetailButtons().findIndex(btn => btn.el === cardDetailCloseBtn); syncCardDetailButtonHighlight(); });
+    cardDetailCloseBtn.addEventListener("click", closeCardDetail);
+  }
+  if (cardDetailPlayBtn) {
+    cardDetailPlayBtn.addEventListener("pointerenter", () => { detailButtonIndex = visibleDetailButtons().findIndex(btn => btn.el === cardDetailPlayBtn); syncCardDetailButtonHighlight(); });
+    cardDetailPlayBtn.addEventListener("click", confirmCardDetail);
+  }
+  function registerComposerClashHelp() {
+    if (helpRegistered) return;
+    helpRegistered = true;
+
+    updateShellMenuTab("controls", `
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>D-pad / left joystick:</strong> Move the highlight between cards and buttons.</li>
+        <li><strong>PLAY:</strong> Choose the highlighted card or button. If a card is open, PLAY uses it.</li>
+        <li><strong>BACK:</strong> Close a card, cancel an attack, or end your turn.</li>
+        <li><strong>ZONE:</strong> Jump to another group, such as your hand, your played cards, or the action buttons.</li>
+        <li><strong>CARD:</strong> Open the highlighted card to read it.</li>
+        <li><strong>MENU:</strong> Open help and exit options.</li>
+      </ul>
+      <p>You can also tap cards and buttons directly on the screen.</p>
+    `);
+
+    updateShellMenuTab("instructions", `
+      <h3>How to Play</h3>
+      <p>Pick a composer, then win a card battle against another composer.</p>
+      <ul>
+        <li><strong>Your goal:</strong> Reduce the opposing composer to 0 HP.</li>
+        <li><strong>Staves are your energy:</strong> Play Staff cards to increase how many staves you can spend each turn.</li>
+        <li><strong>Piece cards attack:</strong> Use them to damage the opponent.</li>
+        <li><strong>Item cards help:</strong> Items can heal, draw cards, boost your next attack, or weaken the next enemy attack.</li>
+        <li><strong>Each turn:</strong> Play useful cards, then choose End Turn.</li>
+        <li><strong>Need details?</strong> Open a card to read what it does before playing it.</li>
+      </ul>
+    `);
+
+    registerShellMenuTab("cards", "Cards", `
+      <h3>Card Types</h3>
+      <ul>
+        <li><strong>Staff:</strong> Gives you more staves to spend on later turns.</li>
+        <li><strong>Pieces:</strong> Attack cards. They cost staves and damage the opponent.</li>
+        <li><strong>Items:</strong> Special help cards. They might heal, draw cards, boost an attack, or block damage.</li>
+      </ul>
+      <p>When you are unsure, open the card first and read the short description.</p>
+    `);
+  }
+
+const STATUS_CARD_RETURN_DELAY_MS = 1100;
+  let statusOverrideUntil = 0;
+  let statusRefreshTimer = null;
+
+function writeStatusDisplay(text) {
+    const value = String(text || "");
+    if (phaseScreen === "composerSelect") {
+      if (typeof setMessage === "function") setMessage("");
+      if (typeof questionBox !== "undefined" && questionBox) {
+        questionBox.textContent = "";
+        questionBox.style.display = "none";
+      }
+      return;
+    }
+    if (typeof setMessage === "function") setMessage(value.toUpperCase().slice(0, IS_MOBILE_CANVAS ? 36 : 28));
+    if (typeof questionBox !== "undefined" && questionBox) {
+      questionBox.textContent = value;
+      questionBox.style.display = value ? "block" : "none";
+    }
+  }
+
+  function refreshStatusDisplay() {
+    const card = selectedCardForDisplay();
+    const cardText = card ? cardInfoText(card) : "";
+    if (cardText && performance.now() >= statusOverrideUntil) writeStatusDisplay(cardText);
+    else writeStatusDisplay(lastLog);
+  }
+
+function setStatus(text, options = {}) {
+    lastLog = text;
+    if (statusRefreshTimer) {
+      clearTimeout(statusRefreshTimer);
+      statusRefreshTimer = null;
+    }
+    const card = selectedCardForDisplay();
+    const cardText = card ? cardInfoText(card) : "";
+    const holdMs = cardText ? (options.holdMs ?? STATUS_CARD_RETURN_DELAY_MS) : 0;
+    statusOverrideUntil = performance.now() + holdMs;
+    refreshStatusDisplay();
+    if (cardText && holdMs > 0) {
+      statusRefreshTimer = setTimeout(refreshStatusDisplay, holdMs + 30);
+    }
+  }
+
+    function clampValue(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }  function shortText(text, maxChars) {
+    const s = String(text || "");
+    return s.length > maxChars ? s.slice(0, maxChars - 1) + "…" : s;
+  }
+
+  function composerFirstName(sideKey = "cpu") {
+    const composer = sideKey === "player" ? state?.player?.composer : state?.cpu?.composer;
+    const fullName = String(composer?.name || (sideKey === "player" ? "Player" : "Opponent")).trim();
+    return fullName.split(/\s+/)[0] || fullName || (sideKey === "player" ? "Player" : "Opponent");
+  }
+
+  function scoreFactor(label, points) {
+    if (!state || !label || !Number.isFinite(points) || points === 0) return;
+    state.scoreFactors = state.scoreFactors || {};
+    if (!state.scoreFactors[label]) state.scoreFactors[label] = { label, points: 0 };
+    state.scoreFactors[label].points += points;
+  }
+
+  function scoreFactorRows() {
+    if (!state || !state.scoreFactors) return [];
+    return Object.values(state.scoreFactors).filter(row => row.points !== 0);
+  }
+
+  function escapeHtml(text) {
+    return String(text || "").replace(/[&<>"]/g, ch => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;"
+    }[ch] || ch));
+  }
+
+  function finalScoreHtml(reason) {
+    const won = /victory|win/i.test(reason || "");
+    const data = getPlayerRecord(selectedPlayer);
+    if (won) {
+      return `<strong>${winText(data.currentStreak || 0)}</strong><br><span>Best streak: ${winText(data.bestStreak || 0)}</span>`;
+    }
+    const endedAt = Math.max(0, Number(data.lastEndedStreak || 0));
+    const endedText = endedAt > 0 ? `Your streak ended at ${winText(endedAt)}.` : "No active win streak.";
+    return `<strong>Win streak reset.</strong><br><span>${endedText}</span><br><span>Best streak: ${winText(data.bestStreak || 0)}</span>`;
+  }
+
+  function wrapTextLines(context, text, maxWidth, maxLines = 2) {
+    const words = String(text || "").split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = "";
+
+    words.forEach(word => {
+      const test = current ? `${current} ${word}` : word;
+      if (context.measureText(test).width <= maxWidth || !current) {
+        current = test;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+
+    if (current) lines.push(current);
+
+    if (lines.length > maxLines) {
+      const kept = lines.slice(0, maxLines);
+      let last = kept[kept.length - 1];
+      while (last.length > 1 && context.measureText(`${last}…`).width > maxWidth) {
+        last = last.slice(0, -1);
+      }
+      kept[kept.length - 1] = `${last}…`;
+      return kept;
+    }
+
+    return lines;
+  }
+
+  function shuffle(array) {
+      const copy = array.slice();
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function makeCard(base) {
+      return { ...base, id: nextCardId++ };
+    }
+
+    function pieceKeywordFor(cost, composer, index) {
+    return "";
+  }
+
+  function pieceSymbolForName(name) {
+    const label = String(name || "").toLowerCase();
+    if (/fugue|invent|counterpoint|canon/.test(label)) return "𝄞";
+    if (/waltz|mazurka|minuet|dance|rondo/.test(label)) return "♩";
+    if (/prelude|nocturne|berceuse|arabesque|clair/.test(label)) return "♪";
+    if (/etude|study|exercise|toccata/.test(label)) return "♬";
+    if (/sonata|fantasy|ballade|impromptu/.test(label)) return "♫";
+    if (/concerto|rhapsody|polonaise|appassionata/.test(label)) return "♯";
+    if (/rag|march|suite/.test(label)) return "♭";
+    const symbols = ["♪", "♫", "♬", "♩", "♯", "♭", "𝄞"];
+    let total = 0;
+    for (const ch of label) total += ch.charCodeAt(0);
+    return symbols[total % symbols.length];
+  }
+
+  function repurposeItemTemplate(template, slotIndex = 0) {
+    const balancedSlot = BALANCED_ITEM_SLOTS[slotIndex % BALANCED_ITEM_SLOTS.length] || BALANCED_ITEM_SLOTS[0];
+    return {
+      ...template,
+      cost: balancedSlot.cost,
+      effect: balancedSlot.effect,
+      amount: balancedSlot.amount,
+      text: balancedSlot.text
+    };
+  }
+
+  function applyPieceEntryAbility(side, foe, card, isCpu = false) {
+    return;
+  }
+
+  function pieceStats(cost, composer) {
+    return { atk: Math.max(1, cost) };
+  }
+
+  function buildDeck(composer) {
+    const deck = [];
+
+    for (let i = 0; i < ENERGY_CARDS; i++) {
+      deck.push(makeCard({
+        type: "energy",
+        name: "Staff",
+        cost: 0,
+        text: "Gain 1 staff."
+      }));
+    }
+
+    PIECE_COSTS.forEach((cost, i) => {
+      const stats = pieceStats(cost, composer);
+      const pieceName = composer.pieces[i % composer.pieces.length];
+      deck.push(makeCard({
+        type: "piece",
+        name: pieceName,
+        cost,
+        atk: stats.atk,
+        symbol: pieceSymbolForName(pieceName),
+        text: `Attack for ${stats.atk} damage.`
+      }));
+    });
+
+    const itemPool = composer.items || ITEM_TEMPLATES;
+    itemPool.forEach((template, itemIndex) => {
+      deck.push(makeCard({
+        type: "item",
+        composer: composer.name,
+        ...repurposeItemTemplate(template, itemIndex)
+      }));
+    });
+
+    return shuffle(deck);
+  }
+
+  function makeSide(composer) {
+    return {
+      composer,
+      hp: STARTING_HP,
+      maxEnergy: 0,
+      energy: 0,
+      energyPlayed: false,
+      deck: buildDeck(composer),
+      hand: [],
+      discard: [],
+      board: [],
+      nextAttackBonus: 0,
+      shield: 0
+    };
+  }
+
+  
+function drawCard(side, count = 1) {
+    let drawn = 0;
+    for (let i = 0; i < count; i++) {
+      if (side.deck.length === 0) {
+        side.hp -= 1;
+        continue;
+      }
+      side.hand.push(side.deck.pop());
+      drawn += 1;
+    }
+    return drawn;
+  }
+
+  function drawToHandSize(side, isCpu = false) {
+    const needed = Math.max(0, HAND_SIZE - side.hand.length);
+    if (needed <= 0) return 0;
+    const drawn = drawCard(side, needed);
+    if (drawn > 0) queueBattleEffect("draw", isCpu ? "cpu" : "player", `Draw to ${HAND_SIZE}`, drawn);
+    return drawn;
+  }
+
+  function discardCardFromHand(side, index, isCpu = false) {
+    const card = side.hand[index];
+    if (!card) return false;
+    side.hand.splice(index, 1);
+    side.discard.push(card);
+
+    if (!isCpu) {
+      if (forcedDiscardCount > 0) {
+        forcedDiscardCount = Math.max(0, forcedDiscardCount - 1);
+        if (forcedDiscardCount > 0) {
+          setStatus(`Discard ${forcedDiscardCount} more card${forcedDiscardCount === 1 ? "" : "s"}.`);
+        } else {
+          discardMode = false;
+          setStatus("Discard complete. Keep playing.");
+        }
+      } else if (discardMode) {
+        setStatus(`${card.name} discarded.`);
+      }
+    }
+
+    selectedIndex = clampValue(selectedIndex, 0, Math.max(0, side.hand.length - 1));
+    normalizeSelection();
+    return true;
+  }
+
+  function cpuDiscardDownToHandSize(cpu) {
+    while (cpu.hand.length > HAND_SIZE) {
+      let worstIndex = 0;
+      let worstScore = 999999;
+      cpu.hand.forEach((card, i) => {
+        const score = playableCpuCardScore(card, i);
+        if (score < worstScore) {
+          worstScore = score;
+          worstIndex = i;
+        }
+      });
+      discardCardFromHand(cpu, worstIndex, true);
+    }
+  }
+
+  function enforceHandLimitAfterDraw(side, isCpu = false) {
+    if (side.hand.length <= HAND_SIZE) return;
+    const extra = side.hand.length - HAND_SIZE;
+
+    if (isCpu) {
+      cpuDiscardDownToHandSize(side);
+      return;
+    }
+
+    forcedDiscardCount += extra;
+    discardMode = false;
+    attackTargetIndex = null;
+    selectedZone = "hand";
+    selectedIndex = clampValue(selectedIndex, 0, Math.max(0, side.hand.length - 1));
+    setStatus(`Hand is full. Discard ${forcedDiscardCount} card${forcedDiscardCount === 1 ? "" : "s"}.`);
+  }
+
+  function drawOpeningHand(side) {
+    drawCard(side, HAND_SIZE);
+    if (side.hand.some(card => card.type === "energy")) return;
+
+    const energyIndex = side.deck.findIndex(card => card.type === "energy");
+    if (energyIndex >= 0) {
+      const energy = side.deck.splice(energyIndex, 1)[0];
+      side.deck.push(side.hand.shift());
+      side.hand.unshift(energy);
+    }
+  }
+
+  function normalizeSelection() {
+    if (!state) return;
+    const player = state.player;
+
+    if (phaseScreen !== "battle") return;
+
+    if (forcedDiscardCount > 0) {
+      selectedZone = "hand";
+      selectedIndex = clampValue(selectedIndex, 0, Math.max(0, player.hand.length - 1));
+      return;
+    }
+
+    if (selectedZone === "hand" && player.hand.length === 0) {
+      selectedZone = "action";
+      selectedIndex = 0;
+    }
+
+    if (selectedZone !== "hand" && selectedZone !== "action") {
+      selectedZone = player.hand.length ? "hand" : "action";
+      selectedIndex = 0;
+    }
+
+    if (selectedZone === "hand") selectedIndex = clampValue(selectedIndex, 0, Math.max(0, player.hand.length - 1));
+    if (selectedZone === "action") selectedIndex = discardMode ? 0 : clampValue(selectedIndex, 0, 1);
+  }
+
+  
+function startBattle() {
+    closeCardDetail();
+    selectedComposerCard = COMPOSERS[composerIndex];
+    const possibleOpponents = COMPOSERS.filter((_, i) => i !== composerIndex);
+    const cpuComposer = possibleOpponents[Math.floor(Math.random() * possibleOpponents.length)];
+    state = {
+      player: makeSide(selectedComposerCard),
+      cpu: makeSide(cpuComposer),
+      turn: "player",
+      playerTurns: 1,
+      defeatedPieces: 0,
+      cardsPlayed: 0,
+      damageDealt: 0,
+      energyPlayedCount: 0,
+      scoreFactors: {},
+      battleOver: false,
+      difficulty: "normal"
+    };
+
+    state.cpu.hp = STARTING_HP;
+    finalScoreDetails = null;
+    discardMode = false;
+    forcedDiscardCount = 0;
+    attackTargetIndex = null;
+    drawOpeningHand(state.player);
+    drawOpeningHand(state.cpu);
+    state.player.energy = state.player.maxEnergy;
+    state.cpu.energy = state.cpu.maxEnergy;
+    phaseScreen = "battle";
+    selectedZone = "hand";
+    selectedIndex = 0;
+    setScore(0);
+    setStatus(`${selectedComposerCard.name} vs ${cpuComposer.name}`, { holdMs: 900 });
+    soundCorrect();
+  }
+
+    function gameInit() {
+      registerComposerClashHelp();
+      phaseScreen = "composerSelect";
+      composerIndex = 0;
+      selectedComposerCard = COMPOSERS[0];
+      cursorPulse = 0;
+      state = null;
+      selectedZone = "hand";
+      selectedIndex = 0;
+      lastHitboxes = [];
+      setScore(0);
+      setStatus("Choose your composer.");
+    }
+
+    
+function gameUpdate() {
+    cursorPulse += 0.035;
+    if (typeof sticks !== "undefined" && sticks.left?.active) maybeSendLeftJoystickInput(sticks.left);
+  }
+
+    function drawRoundedRect(x, y, w, h, r, fill, stroke = null, lineWidth = 2) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
+      if (stroke) {
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      }
+    }
+
+  
+
+  
+function queueBattleEffect(kind, side = "player", label = "", amount = 0) {
+    if (!state || phaseScreen !== "battle") return;
+    const baseDuration = kind === "attack" ? 860 : kind === "energy" ? 560 : 760;
+    visualEffects.push({
+      kind,
+      side,
+      label: String(label || ""),
+      amount: Number(amount || 0),
+      start: performance.now(),
+      duration: baseDuration * ANIMATION_SLOWDOWN
+    });
+    if (visualEffects.length > 14) visualEffects = visualEffects.slice(-14);
+  }
+
+  function battleLaneY(side) {
+    return composerAnchor(side).y - (IS_MOBILE_CANVAS ? 42 : 86);
+  }
+
+  function composerAnchor(side) {
+    const floorY = IS_MOBILE_CANVAS ? 128 : 332;
+    if (side === "player") return { x: IS_MOBILE_CANVAS ? 84 : 176, y: floorY };
+    return { x: IS_MOBILE_CANVAS ? 306 : 544, y: floorY };
+  }
+
+  function composerFigureSpec(composer) {
+    const name = String(composer?.name || "").toLowerCase();
+    const base = { skin: "#f2d0b2", hair: "#3b2b22", coat: composer?.color || "#334155", accent: "#ffe08a", wig: false, beard: false, mustache: false, longHair: false, dress: false, bow: false };
+    if (name.includes("bach")) return { ...base, hair: "#f3efe4", coat: "#1f2937", wig: true };
+    if (name.includes("mozart")) return { ...base, hair: "#f4efe4", coat: "#b91c1c", accent: "#f7d58d", wig: true, bow: true };
+    if (name.includes("beethoven")) return { ...base, hair: "#4b3229", coat: "#1e3a8a", longHair: true };
+    if (name.includes("schubert")) return { ...base, hair: "#5b3b2f", coat: "#6b4f3a", glasses: true };
+    if (name.includes("chopin")) return { ...base, hair: "#3f2c24", coat: "#14532d" };
+    if (name.includes("robert schumann")) return { ...base, hair: "#4a3427", coat: "#365314", longHair: true };
+    if (name.includes("clara schumann")) return { ...base, hair: "#2f241d", coat: "#7f1d1d", longHair: true, dress: true };
+    if (name.includes("liszt")) return { ...base, hair: "#332722", coat: "#111827", longHair: true };
+    if (name.includes("brahms")) return { ...base, hair: "#d6d0c7", coat: "#374151", beard: true };
+    if (name.includes("debussy")) return { ...base, hair: "#544139", coat: "#1d4ed8", beard: true };
+    if (name.includes("ravel")) return { ...base, hair: "#2f2723", coat: "#0f766e", mustache: true };
+    if (name.includes("joplin")) return { ...base, skin: "#6b3f2c", hair: "#141414", coat: "#7c2d12", mustache: true };
+    if (name.includes("florence price")) return { ...base, skin: "#7a4a33", hair: "#1f1b1b", coat: "#6d28d9", longHair: true, dress: true };
+    if (name.includes("amy beach")) return { ...base, hair: "#6b3f2f", coat: "#1d4ed8", longHair: true, dress: true };
+    if (name.includes("rachmaninoff")) return { ...base, hair: "#1f1b1a", coat: "#111827" };
+    return base;
+  }
+
+  function drawComposerFigure(composer, side) {
+    const spec = composerFigureSpec(composer);
+    const anchor = composerAnchor(side);
+    const dir = side === "player" ? 1 : -1;
+    const scale = IS_MOBILE_CANVAS ? 1 : 1.75;
+    const px = value => Math.round(value * scale);
+    const x = anchor.x;
+    const y = anchor.y;
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    ctx.fillStyle = "rgba(0,0,0,0.28)";
+    ctx.fillRect(x - px(18), y + px(2), px(38), px(7));
+
+    drawPixelPanel(x - px(10), y - px(56), px(20), px(18), spec.skin, "#111827", 2);
+
+    ctx.fillStyle = spec.hair;
+    if (spec.wig) {
+      ctx.fillRect(x - px(13), y - px(58), px(26), px(8));
+      ctx.fillRect(x - px(15), y - px(52), px(5), px(12));
+      ctx.fillRect(x + px(10), y - px(52), px(5), px(12));
+    } else {
+      ctx.fillRect(x - px(12), y - px(60), px(24), px(10));
+      if (spec.longHair) {
+        ctx.fillRect(x - px(14), y - px(50), px(6), px(18));
+        ctx.fillRect(x + px(8), y - px(50), px(6), px(18));
+      }
+    }
+    if (spec.mustache) ctx.fillRect(x - px(5), y - px(44), px(10), px(2));
+    if (spec.beard) ctx.fillRect(x - px(8), y - px(40), px(16), px(8));
+    if (spec.glasses) {
+      ctx.fillRect(x - px(8), y - px(48), px(6), px(3));
+      ctx.fillRect(x + px(2), y - px(48), px(6), px(3));
+    }
+
+    drawPixelPanel(x - px(14), y - px(30), px(28), px(spec.dress ? 30 : 24), spec.coat, "#111827", 2);
+    ctx.fillStyle = spec.accent;
+    ctx.fillRect(x - px(2), y - px(28), px(4), px(20));
+    if (spec.bow) ctx.fillRect(x - px(6), y - px(28), px(12), px(3));
+
+    ctx.fillStyle = spec.skin;
+    ctx.fillRect(x - px(18), y - px(26), px(4), px(16));
+    ctx.fillRect(x + px(14), y - px(26), px(4), px(16));
+    ctx.fillRect(x - px(9), y - px(6), px(4), px(10));
+    ctx.fillRect(x + px(5), y - px(6), px(4), px(10));
+
+    const handX = x + dir * px(18);
+    const handY = y - px(18);
+    ctx.strokeStyle = "#f8fafc";
+    ctx.lineWidth = IS_MOBILE_CANVAS ? 2 : 4;
+    ctx.beginPath();
+    ctx.moveTo(handX, handY);
+    ctx.lineTo(handX + dir * px(18), handY - px(8));
+    ctx.stroke();
+    ctx.fillStyle = spec.accent;
+    ctx.fillRect(handX + dir * px(18) - px(2), handY - px(10), px(4), px(4));
+
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.font = cardFont(IS_MOBILE_CANVAS ? 6.5 : 10.5, "bold");
+    ctx.textAlign = "center";
+    ctx.fillText(shortText(composer?.name || "Composer", IS_MOBILE_CANVAS ? 12 : 16).toUpperCase(), x, y + (IS_MOBILE_CANVAS ? 14 : 24));
+
+    ctx.restore();
+  }
+
+  function drawStageBackdrop() {
+    const w = canvas.width;
+    const h = canvas.height;
+
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, "#101827");
+    sky.addColorStop(0.55, "#172554");
+    sky.addColorStop(1, "#0f172a");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+
+    ctx.save();
+    ctx.globalAlpha = 0.20;
+    ctx.fillStyle = "#f8fafc";
+    const beamW = IS_MOBILE_CANVAS ? 72 : 140;
+    for (let i = 0; i < 4; i++) {
+      const x = (w / 4) * i + (IS_MOBILE_CANVAS ? 12 : 34);
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + beamW, h);
+      ctx.lineTo(x - beamW * 0.25, h);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    const floorY = IS_MOBILE_CANVAS ? 129 : 340;
+    ctx.fillStyle = "rgba(15, 23, 42, 0.84)";
+    ctx.fillRect(0, floorY, w, h - floorY);
+
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    const step = IS_MOBILE_CANVAS ? 26 : 42;
+    for (let x = -w; x < w * 2; x += step) {
+      ctx.beginPath();
+      ctx.moveTo(x, floorY);
+      ctx.lineTo(x + w * 0.18, h);
+      ctx.stroke();
+    }
+    for (let y = floorY + step; y < h; y += step) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawBattleEffects() {
+    if (!visualEffects.length) return;
+    const now = performance.now();
+    visualEffects = visualEffects.filter(effect => now - effect.start < effect.duration);
+
+    visualEffects.forEach(effect => {
+      const t = clampValue((now - effect.start) / effect.duration, 0, 1);
+      const alpha = Math.max(0, 1 - t);
+      const from = composerAnchor(effect.side);
+      const to = composerAnchor(effect.side === "player" ? "cpu" : "player");
+
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.textAlign = "center";
+
+      if (effect.kind === "attack") {
+        for (let i = 0; i < 6; i++) {
+          const tt = clampValue(t * 1.25 - i * 0.08, 0, 1);
+          const sx = from.x + (to.x - from.x) * tt;
+          const sy = (from.y - (IS_MOBILE_CANVAS ? 32 : 74)) + (to.y - from.y) * tt + Math.sin(tt * Math.PI * 2 + i) * (IS_MOBILE_CANVAS ? 7 : 12);
+          ctx.fillStyle = "#fff7d6";
+          ctx.font = IS_MOBILE_CANVAS ? "bold 15px Arial, sans-serif" : "bold 28px Arial, sans-serif";
+          ctx.fillText(effect.label || "♪", sx, sy);
+        }
+        ctx.fillStyle = "#fee2e2";
+        ctx.font = IS_MOBILE_CANVAS ? "bold 15px Arial, sans-serif" : "bold 28px Arial, sans-serif";
+        ctx.fillText(`-${effect.amount}`, to.x, to.y - (IS_MOBILE_CANVAS ? 54 : 104) - t * (IS_MOBILE_CANVAS ? 8 : 18));
+      } else if (effect.kind === "boost") {
+        for (let i = 0; i < 4; i++) {
+          const ang = t * Math.PI * 2 + i * (Math.PI / 2);
+          const radius = (IS_MOBILE_CANVAS ? 12 : 24) + t * (IS_MOBILE_CANVAS ? 5 : 10);
+          const sx = from.x + Math.cos(ang) * radius;
+          const sy = from.y - (IS_MOBILE_CANVAS ? 38 : 72) + Math.sin(ang) * radius;
+          ctx.fillStyle = "#dbeafe";
+          ctx.font = IS_MOBILE_CANVAS ? "bold 12px Arial, sans-serif" : "bold 22px Arial, sans-serif";
+          ctx.fillText("♫", sx, sy);
+        }
+      } else if (effect.kind === "shield") {
+        ctx.strokeStyle = "#93c5fd";
+        ctx.lineWidth = IS_MOBILE_CANVAS ? 2 : 4;
+        for (let ring = 0; ring < 2; ring++) {
+          ctx.beginPath();
+          ctx.arc(from.x, from.y - (IS_MOBILE_CANVAS ? 34 : 72), (IS_MOBILE_CANVAS ? 14 : 28) + ring * (IS_MOBILE_CANVAS ? 7 : 12) + t * (IS_MOBILE_CANVAS ? 3 : 6), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      } else if (effect.kind === "heal") {
+        ctx.fillStyle = "#bbf7d0";
+        for (let i = 0; i < 5; i++) {
+          const sx = from.x + Math.cos(i * 1.3 + t * 4) * (IS_MOBILE_CANVAS ? 18 : 30);
+          const sy = from.y - (IS_MOBILE_CANVAS ? 34 : 70) + Math.sin(i * 1.4 + t * 4) * (IS_MOBILE_CANVAS ? 10 : 18);
+          ctx.fillRect(sx - 2, sy - 6, 4, 12);
+          ctx.fillRect(sx - 6, sy - 2, 12, 4);
+        }
+      } else if (effect.kind === "draw" || effect.kind === "energy") {
+        ctx.strokeStyle = effect.kind === "energy" ? "#67e8f9" : "#fef3c7";
+        ctx.lineWidth = IS_MOBILE_CANVAS ? 2 : 3;
+        ctx.beginPath();
+        ctx.arc(from.x, from.y - (IS_MOBILE_CANVAS ? 34 : 70), (IS_MOBILE_CANVAS ? 16 : 28) + t * (IS_MOBILE_CANVAS ? 10 : 16), 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    });
+  }
+
+  function drawBattleStatusBadges(side, leftX, topY) {
+    const labels = [];
+    if (side.nextAttackBonus > 0) labels.push(`NEXT +${side.nextAttackBonus}`);
+    if (side.shield > 0) labels.push(`BLOCK ${side.shield}`);
+    if (!labels.length) return;
+
+    labels.forEach((label, idx) => {
+      const w = IS_MOBILE_CANVAS ? 48 : 88;
+      const h = IS_MOBILE_CANVAS ? 12 : 20;
+      const x = leftX + idx * (w + (IS_MOBILE_CANVAS ? 4 : 6));
+      const y = topY;
+      drawPixelPanel(x, y, w, h, "rgba(248,251,255,0.92)", "#111827", 2);
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.font = cardFont(IS_MOBILE_CANVAS ? 6.2 : 10, "bold");
+      ctx.fillText(label, x + w / 2, y + h / 2 + (IS_MOBILE_CANVAS ? 2 : 4));
+    });
+  }
+
+function drawComposerGrid() {
+      lastHitboxes = [];
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#101827";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#f8fbff";
+      ctx.textAlign = "center";
+      ctx.font = IS_MOBILE_CANVAS ? "bold 18px Arial, sans-serif" : "bold 34px Arial, sans-serif";
+      ctx.fillText("Composer Clash", canvas.width / 2, IS_MOBILE_CANVAS ? 22 : 45);
+      const cols = IS_MOBILE_CANVAS ? 3 : 5;
+      const cardW = IS_MOBILE_CANVAS ? 112 : 126;
+      const cardH = IS_MOBILE_CANVAS ? 31 : 92;
+      const gapX = IS_MOBILE_CANVAS ? 8 : 12;
+      const gapY = IS_MOBILE_CANVAS ? 6 : 12;
+      const startX = (canvas.width - (cols * cardW + (cols - 1) * gapX)) / 2;
+      const startY = IS_MOBILE_CANVAS ? 34 : 98;
+
+      COMPOSERS.forEach((composer, i) => {
+        const col = i % cols;
+        const row = Math.floor(i / cols);
+        const x = startX + col * (cardW + gapX);
+        const y = startY + row * (cardH + gapY);
+        const selected = i === composerIndex;
+        const glow = selected ? 4 + Math.sin(cursorPulse) * 1.5 : 0;
+
+        drawRoundedRect(x, y, cardW, cardH, IS_MOBILE_CANVAS ? 8 : 14, selected ? "#fff7d6" : "#f8fbff", selected ? "#ffe08a" : "#334155", selected ? 3 : 1.5);
+        ctx.fillStyle = composer.color;
+        if (IS_MOBILE_CANVAS) ctx.fillRect(x + 5, y + 5, 12, cardH - 10);
+        else ctx.fillRect(x + 10, y + 10, cardW - 20, 16 + glow * 0.2);
+
+        ctx.fillStyle = "#111827";
+        ctx.textAlign = IS_MOBILE_CANVAS ? "left" : "center";
+        ctx.font = IS_MOBILE_CANVAS
+          ? (composer.name.length > 13 ? "bold 9px Arial, sans-serif" : "bold 11px Arial, sans-serif")
+          : (composer.name.length > 14 ? "bold 14px Arial, sans-serif" : "bold 16px Arial, sans-serif");
+        ctx.fillText(composer.name, IS_MOBILE_CANVAS ? x + 22 : x + cardW / 2, IS_MOBILE_CANVAS ? y + 14 : y + 44);
+
+        ctx.fillStyle = "#475569";
+        ctx.font = IS_MOBILE_CANVAS ? "8px Arial, sans-serif" : "12px Arial, sans-serif";
+        ctx.fillText(composer.style, IS_MOBILE_CANVAS ? x + 22 : x + cardW / 2, IS_MOBILE_CANVAS ? y + 25 : y + 68);
+
+        lastHitboxes.push({ type: "composer", index: i, x, y, w: cardW, h: cardH });
+      });
+    // Composer cards now speak for themselves; no extra instruction/details line at the bottom.
+    }
+
+    function drawHealthBar(x, y, w, h, hp, label, color) {
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = color;
+      ctx.fillRect(x, y, w * clampValue(hp / STARTING_HP, 0, 1), h);
+      ctx.strokeStyle = "#f8fbff";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, w, h);
+      ctx.fillStyle = "#f8fbff";
+      ctx.textAlign = "left";
+      ctx.font = IS_MOBILE_CANVAS ? "bold 9px Arial, sans-serif" : "bold 15px Arial, sans-serif";
+      ctx.fillText(`${label} HP ${Math.max(0, hp)}`, x, y - (IS_MOBILE_CANVAS ? 3 : 6));
+    }  
+function cardFont(size, weight = "bold") {
+    return `${weight} ${Math.max(5, size).toFixed(1)}px "Courier New", monospace`;
+  }
+
+  function fitCardText(text, maxWidth, startSize, minSize = 5, weight = "bold") {
+    const value = String(text || "").toUpperCase();
+    let size = startSize;
+    while (size > minSize) {
+      ctx.font = cardFont(size, weight);
+      if (ctx.measureText(value).width <= maxWidth) break;
+      size -= 0.5;
+    }
+    ctx.font = cardFont(size, weight);
+    return value;
+  }
+
+  function drawPixelPanel(x, y, w, h, fill, stroke = "#111827", lineWidth = 2) {
+    ctx.fillStyle = fill;
+    ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, Math.round(w) - 1, Math.round(h) - 1);
+    }
+  }
+
+  function cardTypePalette(card, owner = "player") {
+    if (!card) return { bg: "#f8fafc", light: "#ffffff", mid: "#cbd5e1", dark: "#111827", shadow: "#64748b" };
+    if (card.type === "energy") {
+      return { bg: "#c8f7c5", light: "#ecffea", mid: "#7bd878", dark: "#1f6f3a", shadow: "#4ca35b" };
+    }
+    if (card.type === "item") {
+      return { bg: "#c7ddff", light: "#edf5ff", mid: "#80aef2", dark: "#1e3f75", shadow: "#5f87c9" };
+    }
+    return { bg: "#ffc9c9", light: "#fff1f1", mid: "#f28b8b", dark: "#7f1d1d", shadow: "#c76565" };
+  }
+
+  function cardInfoText(card) {
+    if (!card) return lastLog || "";
+    if (card.type === "energy") return "+1 STAFF FOR FUTURE TURNS";
+    if (card.type === "item") return (card.text || "ITEM EFFECT").toUpperCase();
+    return `ATK ${card.atk} • DIRECT ATTACK`;
+  }
+
+function cardCostLabel(card) {
+    if (!card) return "";
+    if (card.type === "energy") return "+1";
+    if (typeof card.cost === "number") return String(card.cost);
+    return "";
+  }
+
+  function wrapCardTitleLines(text, maxWidth, maxLines = 3, truncate = false) {
+    const words = String(text || "").toUpperCase().split(/\s+/).filter(Boolean);
+    const lines = [];
+    let current = "";
+
+    words.forEach(word => {
+      const test = current ? `${current} ${word}` : word;
+      if (!current || ctx.measureText(test).width <= maxWidth) {
+        current = test;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    });
+
+    if (current) lines.push(current);
+    if (!lines.length) lines.push("");
+
+    let output = lines;
+    if (truncate && output.length > maxLines) {
+      output = output.slice(0, maxLines);
+      output[output.length - 1] = `${output[output.length - 1]}…`;
+    }
+
+    if (truncate) {
+      output = output.map((line, i) => {
+        let value = line;
+        const needsEllipsis = i === output.length - 1 && (lines.length > maxLines || ctx.measureText(value).width > maxWidth);
+        const suffix = needsEllipsis && !value.endsWith("…") ? "…" : "";
+        if (suffix) value += suffix;
+        while (value.length > 1 && ctx.measureText(value).width > maxWidth) {
+          value = value.replace(/…$/, "").slice(0, -1) + "…";
+        }
+        return value;
+      });
+    }
+
+    return output;
+  }
+
+  function fitWrappedCardTitle(text, maxWidth, maxLines, startSize, minSize) {
+    const value = String(text || "").toUpperCase();
+    for (let size = startSize; size >= minSize; size -= 0.5) {
+      ctx.font = cardFont(size, "bold");
+      const lines = wrapCardTitleLines(value, maxWidth, maxLines, false);
+      const fits = lines.length <= maxLines && lines.every(line => ctx.measureText(line).width <= maxWidth);
+      if (fits) return { size, lines };
+    }
+
+    ctx.font = cardFont(minSize, "bold");
+    return { size: minSize, lines: wrapCardTitleLines(value, maxWidth, maxLines, true) };
+  }
+
+  function drawCardFace(card, x, y, w, h, selected = false, owner = "player") {
+    const palette = cardTypePalette(card, owner);
+    const tiny = w < 34 || h < 42;
+    const snapX = Math.round(x);
+    const snapY = Math.round(y);
+    const snapW = Math.round(w);
+    const snapH = Math.round(h);
+    const outer = selected ? "#ffe08a" : "#111827";
+    const scale = clampValue(Math.min(w / (IS_MOBILE_CANVAS ? 56 : 88), h / (IS_MOBILE_CANVAS ? 58 : 108)), 0.52, 1.22);
+    const pad = Math.max(3, Math.round((IS_MOBILE_CANVAS ? 4 : 5) * scale));
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+
+    if (selected) {
+      ctx.save();
+      ctx.globalAlpha = 0.46 + Math.sin(cursorPulse * 2) * 0.10;
+      ctx.fillStyle = "#ffe08a";
+      ctx.fillRect(snapX - 5, snapY - 5, snapW + 10, snapH + 10);
+      ctx.restore();
+    }
+
+    ctx.fillStyle = "rgba(0,0,0,0.42)";
+    ctx.fillRect(snapX + 3, snapY + 3, snapW, snapH);
+    drawPixelPanel(snapX, snapY, snapW, snapH, palette.bg, outer, selected ? 4 : 3);
+
+    if (snapW > 30 && snapH > 42) {
+      ctx.save();
+      ctx.globalAlpha = 0.18;
+      ctx.fillStyle = palette.light;
+      ctx.fillRect(snapX + pad, snapY + pad, Math.max(1, snapW - pad * 2), Math.max(1, Math.round(4 * scale)));
+      ctx.restore();
+    }
+
+    const cost = cardCostLabel(card);
+    let mobileTitleTopReserve = 0;
+    if (cost && snapW > 27 && snapH > 35) {
+      const badge = clampValue(Math.round((IS_MOBILE_CANVAS ? 18 : 20) * scale), IS_MOBILE_CANVAS ? 15 : 14, IS_MOBILE_CANVAS ? 23 : 24);
+      const bx = snapX + snapW - badge - Math.max(2, pad - 1);
+      const by = snapY + Math.max(2, pad - 1);
+      drawPixelPanel(bx, by, badge, badge, "#fff7d6", "#111827", 2);
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.font = cardFont(IS_MOBILE_CANVAS ? badge * 0.62 : badge * 0.54, "bold");
+      ctx.fillText(cost, bx + badge / 2, by + badge * (IS_MOBILE_CANVAS ? 0.72 : 0.70));
+      if (IS_MOBILE_CANVAS) mobileTitleTopReserve = Math.min(snapH - 18, (by + badge - snapY) + 3);
+    }
+
+    const mobileAvoidCost = IS_MOBILE_CANVAS && cost && snapW <= 86 && snapH <= 72;
+    const titleMaxW = Math.max(12, snapW - pad * (mobileAvoidCost ? 2.2 : 3.2));
+    let titleMaxLines = tiny ? 2 : (snapH > 92 ? 4 : 3);
+    const startSize = (IS_MOBILE_CANVAS ? 12.6 : 19.4) * scale;
+    const minSize = tiny ? 5.8 : (IS_MOBILE_CANVAS ? 7.0 : 10.4);
+    if (mobileAvoidCost) {
+      const availableH = Math.max(10, snapH - mobileTitleTopReserve - Math.max(3, pad));
+      titleMaxLines = clampValue(Math.floor(availableH / Math.max(5, startSize * 0.98)), 1, titleMaxLines);
+    }
+    const fitted = fitWrappedCardTitle(card?.name || "", titleMaxW, titleMaxLines, startSize, minSize);
+    ctx.font = cardFont(fitted.size, "bold");
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#111827";
+    const lineH = fitted.size * 1.04;
+    const blockH = fitted.lines.length * lineH;
+    const titleTop = mobileAvoidCost ? snapY + mobileTitleTopReserve : snapY;
+    const titleBottom = snapY + snapH - Math.max(3, pad);
+    const availableTitleH = Math.max(8, titleBottom - titleTop);
+    let textY = mobileAvoidCost
+      ? titleTop + Math.max(0, (availableTitleH - blockH) / 2) + fitted.size * 0.82
+      : snapY + snapH / 2 - blockH / 2 + fitted.size * 0.82;
+    fitted.lines.forEach(line => {
+      ctx.fillText(line, snapX + snapW / 2, textY);
+      textY += lineH;
+    });
+
+    if (card?.ready && card.type === "piece" && snapW > 32 && snapH > 38) {
+      const dot = Math.max(6, Math.round(8 * scale));
+      drawPixelPanel(snapX + snapW - pad - dot, snapY + snapH - pad - dot, dot, dot, "#22c55e", "#111827", 1);
+    }
+
+    ctx.restore();
+  }
+
+  function cardWindowStart(items, selected, visible) {
+    if (items.length <= visible) return 0;
+    return clampValue(selected - Math.floor(visible / 2), 0, items.length - visible);
+  }
+
+  function drawSelectedInfo(x, y, w, h, compact = false) {
+    const card = selectedCardForDisplay();
+    const text = card ? cardInfoText(card) : (lastLog || "");
+    const fill = card ? "#f8fbff" : "rgba(248,251,255,0.12)";
+    drawPixelPanel(x, y, w, h, fill, card ? "#ffe08a" : "#334155", card ? 2 : 1);
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = card ? "#111827" : "#e2e8f0";
+    ctx.font = cardFont(compact ? 7.5 : 13.5, "bold");
+    ctx.fillText(shortText(text, compact ? 42 : 82), x + w / 2, y + h / 2 + (compact ? 3 : 5));
+  }
+
+  function drawCardsFitRow(cards, x, y, maxWidth, baseW, h, gap, minW, zoneName, owner = "player") {
+    if (!cards.length) return;
+    const count = cards.length;
+    let actualGap = count > 1 ? gap : 0;
+    let w = Math.min(baseW, (maxWidth - actualGap * (count - 1)) / count);
+    if (w < minW) {
+      actualGap = count > 1 ? 2 : 0;
+      w = (maxWidth - actualGap * (count - 1)) / count;
+    }
+    w = Math.max(18, w);
+    const totalW = count * w + (count - 1) * actualGap;
+    const startX = x + Math.max(0, (maxWidth - totalW) / 2);
+
+    cards.forEach((card, actualIndex) => {
+      const cx = startX + actualIndex * (w + actualGap);
+      const selected = selectedZone === zoneName && actualIndex === selectedIndex && state.turn === "player";
+      drawCardFace(card, cx, y, w, h, selected, owner);
+      lastHitboxes.push({ type: zoneName, index: actualIndex, x: cx, y, w, h });
+    });
+  }
+
+  function drawCardsRow(cards, x, y, w, h, gap, visible, zoneName, owner = "player") {
+    drawCardsFitRow(cards, x, y, visible * w + Math.max(0, visible - 1) * gap, w, h, gap, Math.max(24, w * 0.45), zoneName, owner);
+  }
+
+  function drawActionButton(action, label, x, y, w, h, index) {
+    const selected = selectedZone === "action" && selectedIndex === index && state.turn === "player";
+    drawRoundedRect(x, y, w, h, IS_MOBILE_CANVAS ? 6 : 12, selected ? "#fff7d6" : "#f8fbff", selected ? "#ffe08a" : "#334155", selected ? (IS_MOBILE_CANVAS ? 3 : 4) : 2);
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "center";
+    ctx.font = IS_MOBILE_CANVAS ? "bold 8.5px Arial, sans-serif" : "bold 14px Arial, sans-serif";
+    ctx.fillText(label, x + w / 2, y + h / 2 + (IS_MOBILE_CANVAS ? 3 : 5));
+    lastHitboxes.push({ type: action === "end" ? "endTurn" : "discardTurn", action, index, x, y, w, h });
+  }
+
+  function drawBattle() {
+    if (!state) return;
+    normalizeSelection();
+    lastHitboxes = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawStageBackdrop();
+
+    const p = state.player;
+    const c = state.cpu;
+
+    if (IS_MOBILE_CANVAS) {
+      drawHealthBar(10, 17, 144, 9, p.hp, shortText(p.composer.name, 12), p.composer.color);
+      drawHealthBar(236, 17, 144, 9, c.hp, shortText(c.composer.name, 12), c.composer.color);
+      drawBattleStatusBadges(p, 10, 30);
+      drawBattleStatusBadges(c, 274, 30);
+
+      ctx.fillStyle = "#f8fbff";
+      ctx.textAlign = "center";
+      ctx.font = "bold 10px Arial, sans-serif";
+      ctx.fillText(`Staves ${p.energy}/${p.maxEnergy}`, 195, 25);
+
+      drawComposerFigure(p.composer, "player");
+      drawComposerFigure(c.composer, "cpu");
+      drawBattleEffects();
+
+      drawCardsFitRow(p.hand, 8, 154, 276, 60, 60, 5, 36, "hand", "player");
+
+      if (forcedDiscardCount > 0) {
+        ctx.fillStyle = "#fef3c7";
+        ctx.font = "bold 8.5px Arial, sans-serif";
+        ctx.fillText(`Discard ${forcedDiscardCount}`, 344, 210);
+      } else if (discardMode) {
+        drawActionButton("end", "Done", 304, 190, 78, 22, 0);
+      } else {
+        drawActionButton("discard", "Discard", 304, 162, 78, 22, 0);
+        drawActionButton("end", "End Turn", 304, 190, 78, 22, 1);
+      }
+    } else {
+      drawHealthBar(34, 40, 220, 16, p.hp, p.composer.name, p.composer.color);
+      drawHealthBar(canvas.width - 254, 40, 220, 16, c.hp, c.composer.name, c.composer.color);
+      drawBattleStatusBadges(p, 34, 62);
+      drawBattleStatusBadges(c, canvas.width - 210, 62);
+
+      ctx.fillStyle = "#f8fbff";
+      ctx.textAlign = "center";
+      ctx.font = "bold 18px Arial, sans-serif";
+      ctx.fillText(`Staves ${p.energy}/${p.maxEnergy}`, canvas.width / 2, 46);
+
+      drawComposerFigure(p.composer, "player");
+      drawComposerFigure(c.composer, "cpu");
+      drawBattleEffects();
+
+      drawCardsFitRow(p.hand, 34, 366, 500, 120, 100, 8, 60, "hand", "player");
+
+      if (forcedDiscardCount > 0) {
+        ctx.fillStyle = "#fef3c7";
+        ctx.font = "bold 16px Arial, sans-serif";
+        ctx.fillText(`Discard ${forcedDiscardCount} card${forcedDiscardCount === 1 ? "" : "s"}`, canvas.width - 98, 488);
+      } else if (discardMode) {
+        drawActionButton("end", "Done", canvas.width - 163, 426, 126, 44, 0);
+      } else {
+        drawActionButton("discard", "Discard", canvas.width - 163, 374, 126, 44, 0);
+        drawActionButton("end", "End Turn", canvas.width - 163, 426, 126, 44, 1);
+      }
+    }
+  }
+
+function gameDraw() {
+      if (phaseScreen === "composerSelect") drawComposerGrid();
+      else drawBattle();
+    }
+
+    
+function moveComposer(dx, dy) {
+    const cols = IS_MOBILE_CANVAS ? 3 : 5;
+    const maxRows = Math.ceil(COMPOSERS.length / cols) - 1;
+    const row = Math.floor(composerIndex / cols);
+    const col = composerIndex % cols;
+    const newRow = clampValue(row + dy, 0, maxRows);
+    const newCol = clampValue(col + dx, 0, cols - 1);
+    composerIndex = clampValue(newRow * cols + newCol, 0, COMPOSERS.length - 1);
+    selectedComposerCard = COMPOSERS[composerIndex];
+    setStatus(`Choose: ${selectedComposerCard.name}`);
+  }
+
+  function selectableHitboxes() {
+    if (phaseScreen === "composerSelect") return lastHitboxes.filter(hit => hit.type === "composer");
+    if (!state || state.turn !== "player") return [];
+
+    return lastHitboxes.filter(hit => {
+      if (forcedDiscardCount > 0) return hit.type === "hand";
+      if (discardMode) return hit.type === "hand" || hit.type === "endTurn";
+      return hit.type === "hand" || hit.type === "discardTurn" || hit.type === "endTurn";
+    });
+  }
+
+function hitMatchesSelection(hit) {
+    if (phaseScreen === "composerSelect") return hit.type === "composer" && hit.index === composerIndex;
+    if (hit.type === "discardTurn" || hit.type === "endTurn") return selectedZone === "action" && hit.index === selectedIndex;
+    return hit.type === selectedZone && hit.index === selectedIndex;
+  }
+
+  function selectHitbox(hit) {
+    if (!hit) return false;
+    if (phaseScreen === "composerSelect" && hit.type === "composer") {
+      composerIndex = hit.index;
+      selectedComposerCard = COMPOSERS[composerIndex];
+      setStatus(`Choose: ${selectedComposerCard.name}`);
+      return true;
+    }
+
+    if (hit.type === "discardTurn" || hit.type === "endTurn") {
+      selectedZone = "action";
+      selectedIndex = hit.index || 0;
+      setStatus(hit.type === "discardTurn" ? "Discard any cards, then choose Done." : discardMode ? "Done discarding and keep playing." : "End your turn.");
+      return true;
+    }
+
+    selectedZone = hit.type;
+    selectedIndex = hit.index || 0;
+    const card = getCardFromZone(selectedZone, selectedIndex);
+    if (card) {
+      const info = cardInfoText(card);
+      if (info) setStatus(info);
+    }
+    return true;
+  }
+
+  function moveSelectionByDirection(direction) {
+    const hits = selectableHitboxes();
+    if (!hits.length) return false;
+
+    let current = hits.find(hitMatchesSelection);
+    if (!current) {
+      selectHitbox(hits[0]);
+      return true;
+    }
+
+    const cx = current.x + current.w / 2;
+    const cy = current.y + current.h / 2;
+    const vector = {
+      left: [-1, 0],
+      right: [1, 0],
+      up: [0, -1],
+      down: [0, 1]
+    }[direction];
+    if (!vector) return false;
+
+    let best = null;
+    let bestScore = Infinity;
+
+    hits.forEach(hit => {
+      if (hit === current) return;
+      const hx = hit.x + hit.w / 2;
+      const hy = hit.y + hit.h / 2;
+      const dx = hx - cx;
+      const dy = hy - cy;
+      const forward = dx * vector[0] + dy * vector[1];
+      if (forward <= 4) return;
+      const perpendicular = Math.abs(vector[0] ? dy : dx);
+      const distance = Math.hypot(dx, dy);
+      const score = forward + perpendicular * 1.35 + distance * 0.05;
+      if (score < bestScore) {
+        bestScore = score;
+        best = hit;
+      }
+    });
+
+    if (best) return selectHitbox(best);
+    return false;
+  }
+
+  function cycleZone(direction) {
+    if (direction < 0) moveSelectionByDirection("up");
+    else moveSelectionByDirection("down");
+  }
+
+  
+function playCardFor(side, foe, handIndex, isCpu = false) {
+    const card = side.hand[handIndex];
+    if (!card) return false;
+
+    if (card.type === "energy") {
+      if (side.energyPlayed) {
+        if (!isCpu) setStatus("A Staff card has already been played this turn.");
+        return false;
+      }
+      side.hand.splice(handIndex, 1);
+      side.maxEnergy += 1;
+      side.energy = Math.min(side.maxEnergy, side.energy + 1);
+      side.energyPlayed = true;
+      side.discard.push(card);
+      queueBattleEffect("energy", isCpu ? "cpu" : "player", "Staff", 0);
+      if (!isCpu) {
+        state.cardsPlayed += 1;
+        state.energyPlayedCount += 1;
+        addScore(10);
+        scoreFactor("Staff card played", 10);
+        setStatus(`Staves increased to ${side.energy}/${side.maxEnergy}.`);
+      }
+      return true;
+    }
+
+    if (card.cost > side.energy) {
+      if (!isCpu) setStatus("Not enough staves.");
+      return false;
+    }
+
+    if (card.type === "piece") {
+      side.energy -= card.cost;
+      side.hand.splice(handIndex, 1);
+
+      const bonus = side.nextAttackBonus || 0;
+      const rawDamage = Math.max(0, card.atk + bonus);
+      const blocked = Math.min(rawDamage, foe.shield || 0);
+      const dealt = Math.max(0, rawDamage - blocked);
+
+      side.nextAttackBonus = 0;
+      foe.shield = 0;
+      foe.hp -= dealt;
+      side.discard.push(card);
+
+      queueBattleEffect("attack", isCpu ? "cpu" : "player", card.symbol || "♪", dealt);
+
+      if (!isCpu) {
+        state.cardsPlayed += 1;
+        state.damageDealt += dealt;
+        addScore(20 + dealt * 10);
+        scoreFactor("Attack card played", 20);
+        if (dealt > 0) scoreFactor("Damage dealt", dealt * 10);
+        setStatus(blocked > 0 ? `${card.name}: ${dealt} damage (${blocked} blocked).` : `${card.name}: ${dealt} damage.`);
+      }
+
+      checkGameOver();
+      return true;
+    }
+
+    if (card.type === "item") {
+      side.energy -= card.cost;
+      side.hand.splice(handIndex, 1);
+      applyItem(side, foe, card, isCpu);
+      side.discard.push(card);
+      if (!isCpu) {
+        state.cardsPlayed += 1;
+        addScore(20);
+        scoreFactor("Item card played", 20);
+      }
+      return true;
+    }
+
+    return false;
+  }
+
+  function applyItem(side, foe, card, isCpu = false) {
+    let message = `${card.name} resolved.`;
+
+    if (card.effect === "heal") {
+      side.hp = Math.min(STARTING_HP, side.hp + (card.amount || 2));
+      message = `${card.name}: HP restored.`;
+      queueBattleEffect("heal", isCpu ? "cpu" : "player", `+${card.amount || 2} HP`, card.amount || 2);
+    }
+
+    if (card.effect === "draw") {
+      drawCard(side, card.amount || 1);
+      message = `${card.name}: card drawn.`;
+      queueBattleEffect("draw", isCpu ? "cpu" : "player", card.amount && card.amount > 1 ? `Draw ${card.amount}` : "Draw", card.amount || 1);
+      enforceHandLimitAfterDraw(side, isCpu);
+    }
+
+    if (card.effect === "nextAttack") {
+      side.nextAttackBonus += card.amount || 1;
+      message = `${card.name}: next attack +${card.amount || 1}.`;
+      queueBattleEffect("boost", isCpu ? "cpu" : "player", `+${card.amount || 1}`, card.amount || 1);
+    }
+
+    if (card.effect === "shield") {
+      side.shield += card.amount || 1;
+      message = `${card.name}: next enemy attack -${card.amount || 1}.`;
+      queueBattleEffect("shield", isCpu ? "cpu" : "player", `-${card.amount || 1}`, card.amount || 1);
+    }
+
+    if (!isCpu && forcedDiscardCount <= 0) setStatus(message);
+    checkGameOver();
+  }
+
+  function attackWithPiece(index, isCpu = false, targetIndex = 0) {
+    return false;
+  }
+
+  
+function startPlayerTurn(skipDraw = false) {
+    if (state.battleOver) return;
+    state.turn = "player";
+    state.player.energyPlayed = false;
+    state.player.energy = state.player.maxEnergy;
+    discardMode = false;
+    forcedDiscardCount = 0;
+    attackTargetIndex = null;
+    if (!skipDraw) {
+      state.playerTurns += 1;
+      drawToHandSize(state.player, false);
+    }
+    selectedZone = state.player.hand.length ? "hand" : "action";
+    selectedIndex = 0;
+    normalizeSelection();
+    setStatus("Your turn. Draw to 5, play cards, or discard.");
+    checkGameOver();
+  }
+
+function endPlayerTurn() {
+    closeCardDetail();
+    if (!state || state.turn !== "player" || state.battleOver) return;
+    discardMode = false;
+    forcedDiscardCount = 0;
+    attackTargetIndex = null;
+    state.turn = "cpu";
+    setStatus(`${composerFirstName("cpu")}'s turn.`);
+    setTimeout(cpuTurn, Math.round(260 * ANIMATION_SLOWDOWN * CPU_ACTION_DELAY_MULTIPLIER));
+  }
+
+  function difficultySetting() {
+    return DIFFICULTY_SETTINGS[state?.difficulty || getSelectedDifficultyKey()] || DIFFICULTY_SETTINGS.normal;
+  }
+
+  function playableCpuCardScore(card, index) {
+    const cpu = state.cpu;
+    const player = state.player;
+    if (!card) return -9999;
+
+    if (card.type === "energy") {
+      if (cpu.energyPlayed) return -9999;
+      const canSpendCurrentEnergy = cpu.hand.some(other => {
+        if (other === card || other.type === "energy") return false;
+        return other.cost <= cpu.energy;
+      });
+      return canSpendCurrentEnergy ? 150 : 210;
+    }
+
+    if (card.cost > cpu.energy) return -9999;
+
+    if (card.type === "piece") {
+      const predicted = Math.max(0, card.atk + (cpu.nextAttackBonus || 0) - (player.shield || 0));
+      let score = 55 + predicted * 16 - card.cost * 3;
+      if (predicted >= player.hp) score += 300;
+      if (cpu.nextAttackBonus > 0) score += cpu.nextAttackBonus * 12;
+      return score;
+    }
+
+    if (card.type === "item") {
+      let score = 0;
+
+      if (card.effect === "heal") {
+        const missing = STARTING_HP - cpu.hp;
+        if (missing <= 1) return -9999;
+        score = 18 + Math.min(missing, card.amount || 2) * 18;
+        if (cpu.hp <= 12) score += 55;
+      }
+
+      if (card.effect === "draw") {
+        score = cpu.hand.length <= 3 ? 72 : 28;
+        score += (card.amount || 1) * 12;
+      }
+
+      if (card.effect === "nextAttack") {
+        const hasPiece = cpu.hand.some(other => other.type === "piece" && other.cost <= cpu.energy);
+        score = (hasPiece ? 62 : 34) + (card.amount || 1) * 16;
+      }
+
+      if (card.effect === "shield") {
+        score = 16 + (card.amount || 1) * 14;
+        if (cpu.hp <= 12) score += 40;
+      }
+
+      return score - card.cost * 4;
+    }
+
+    return -9999;
+  }
+
+  function chooseCpuCard() {
+    const cpu = state.cpu;
+    const playable = [];
+    let bestIndex = -1;
+    let bestScore = -9999;
+
+    cpu.hand.forEach((card, i) => {
+      const score = playableCpuCardScore(card, i);
+      if (score > -9999) playable.push({ index: i, score });
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    });
+
+    const difficulty = difficultySetting();
+    if (playable.length && Math.random() < difficulty.randomPlayChance) {
+      return playable[Math.floor(Math.random() * playable.length)].index;
+    }
+
+    return bestScore > -9999 ? bestIndex : -1;
+  }
+
+  function chooseCpuStuckDiscardIndex() {
+    const cpu = state?.cpu;
+    if (!cpu || cpu.hand.length < HAND_SIZE) return -1;
+
+    let bestIndex = -1;
+    let bestScore = -9999;
+
+    cpu.hand.forEach((card, i) => {
+      if (!card) return;
+      if (playableCpuCardScore(card, i) > -9999) return;
+
+      let score = 0;
+      if (card.type === "energy") {
+        score = cpu.energyPlayed ? 20 : -9999;
+      } else if (typeof card.cost === "number" && card.cost > cpu.energy) {
+        score = 40 + card.cost * 8;
+      } else if (card.type === "item" && card.effect === "heal" && cpu.hp >= STARTING_HP - 1) {
+        score = 36 + (card.cost || 0);
+      } else if (card.type === "item") {
+        score = 26 + (card.cost || 0);
+      }
+
+      if (score > bestScore) {
+        bestScore = score;
+        bestIndex = i;
+      }
+    });
+
+    return bestScore > -9999 ? bestIndex : -1;
+  }
+
+  function chooseCpuAttackTarget(attacker) {
+    return 0;
+  }
+
+  function cpuTurn() {
+    if (!running || !state || state.battleOver) return;
+    state.turn = "cpu";
+    const cpu = state.cpu;
+    const player = state.player;
+    const difficulty = difficultySetting();
+
+    cpu.energyPlayed = false;
+    cpu.energy = cpu.maxEnergy;
+    drawToHandSize(cpu, true);
+    setStatus(`${composerFirstName("cpu")} draws to 5.`);
+
+    let plays = 0;
+
+    function finishCpuTurn() {
+      if (!running || !state || state.battleOver) return;
+      setStatus("Back to your turn.");
+      setTimeout(() => {
+        if (running && state && !state.battleOver) startPlayerTurn(false);
+      }, Math.round(360 * ANIMATION_SLOWDOWN * CPU_ACTION_DELAY_MULTIPLIER));
+    }
+
+    function runPlays() {
+      if (!running || !state || state.battleOver) return;
+      if (plays >= difficulty.maxCpuPlays) {
+        finishCpuTurn();
+        return;
+      }
+
+      const index = chooseCpuCard();
+      if (index < 0) {
+        const discardIndex = chooseCpuStuckDiscardIndex();
+        if (discardIndex >= 0) {
+          const discarded = cpu.hand[discardIndex];
+          discardCardFromHand(cpu, discardIndex, true);
+          setStatus(`${composerFirstName("cpu")} discards ${shortText(discarded?.name || "a card", 18)}.`);
+        }
+        finishCpuTurn();
+        return;
+      }
+
+      const card = cpu.hand[index];
+      const played = playCardFor(cpu, player, index, true);
+      if (!played) {
+        finishCpuTurn();
+        return;
+      }
+
+      plays += 1;
+      setStatus(`${composerFirstName("cpu")} played ${shortText(card.name, 18)}.`);
+      if (checkGameOver()) return;
+      setTimeout(runPlays, Math.round(430 * ANIMATION_SLOWDOWN * CPU_ACTION_DELAY_MULTIPLIER));
+    }
+
+    setTimeout(runPlays, Math.round(340 * ANIMATION_SLOWDOWN * CPU_ACTION_DELAY_MULTIPLIER));
+  }
+
+function calculateFinalScore(won) {
+    const rows = scoreFactorRows();
+    let trackedBattlePoints = rows.reduce((sum, row) => sum + row.points, 0);
+    if (trackedBattlePoints !== score) {
+      rows.unshift({ label: "Other battle points", points: score - trackedBattlePoints });
+      trackedBattlePoints = score;
+    }
+
+    let bonusTotal = 0;
+
+    if (won) {
+      rows.push({ label: "Victory bonus", points: 1000 });
+      bonusTotal += 1000;
+
+      const hpBonus = Math.max(0, state.player.hp) * 10;
+      rows.push({ label: "HP bonus", points: hpBonus });
+      bonusTotal += hpBonus;
+
+      const speedBonus = Math.max(0, 16 - state.playerTurns) * 25;
+      rows.push({ label: "Speed bonus", points: speedBonus });
+      bonusTotal += speedBonus;
+    }
+
+    finalScoreDetails = {
+      won,
+      rows,
+      turns: state.playerTurns,
+      piecesDefeated: state.defeatedPieces,
+      cardsPlayed: state.cardsPlayed,
+      damageDealt: state.damageDealt
+    };
+
+    return bonusTotal;
+  }
+
+  function finishBattle(won) {
+    closeCardDetail();
+      if (!state || state.battleOver) return;
+      state.battleOver = true;
+      if (won) {
+        addScore(calculateFinalScore(true));
+        queueBattleEffect("summon", "player", "Victory!", 0);
+        setStatus("Victory!");
+        setTimeout(() => endGame("Victory!"), Math.round(900 * ANIMATION_SLOWDOWN));
+      } else {
+        calculateFinalScore(false);
+        queueBattleEffect("defeat", "cpu", "Defeat", 0);
+        setStatus("Defeat.");
+        setTimeout(() => endGame("Defeat."), Math.round(900 * ANIMATION_SLOWDOWN));
+      }
+    }
+
+    function checkGameOver() {
+      if (!state || state.battleOver) return false;
+      if (state.cpu.hp <= 0) {
+        finishBattle(true);
+        return true;
+      }
+      if (state.player.hp <= 0) {
+        finishBattle(false);
+        return true;
+      }
+      return false;
+    }
+
+    
+function playerAction() {
+    if (!state || state.turn !== "player" || state.battleOver) return;
+    normalizeSelection();
+
+    if (forcedDiscardCount > 0) {
+      if (selectedZone === "hand") discardCardFromHand(state.player, selectedIndex, false);
+      normalizeSelection();
+      return;
+    }
+
+    if (discardMode) {
+      if (selectedZone === "hand") {
+        discardCardFromHand(state.player, selectedIndex, false);
+        normalizeSelection();
+        return;
+      }
+      if (selectedZone === "action") {
+        discardMode = false;
+        selectedZone = state.player.hand.length ? "hand" : "action";
+        selectedIndex = 0;
+        normalizeSelection();
+        setStatus("Done discarding. Keep playing.");
+      }
+      return;
+    }
+
+    if (selectedZone === "hand") {
+      playCardFor(state.player, state.cpu, selectedIndex, false);
+      normalizeSelection();
+      return;
+    }
+
+    if (selectedZone === "action") {
+      if (selectedIndex === 0) {
+        discardMode = true;
+        selectedZone = state.player.hand.length ? "hand" : "action";
+        selectedIndex = 0;
+        setStatus("Discard any cards you wish, then choose Done.");
+      } else {
+        endPlayerTurn();
+      }
+    }
+  }
+
+function gameInput(action) {
+    if (isCardDetailOpen()) {
+      if (action === "left" || action === "right" || action === "up" || action === "down") moveCardDetailButton(action);
+      if (action === "a") activateSelectedCardDetailButton();
+      if (action === "b" || action === "select") closeCardDetail();
+      return;
+    }
+
+    if (phaseScreen === "composerSelect") {
+      if (action === "left" || action === "right" || action === "up" || action === "down") {
+        if (!moveSelectionByDirection(action)) {
+          if (action === "left") moveComposer(-1, 0);
+          if (action === "right") moveComposer(1, 0);
+          if (action === "up") moveComposer(0, -1);
+          if (action === "down") moveComposer(0, 1);
+        }
+      }
+      if (action === "a") startBattle();
+      if (action === "select") setStatus(`${selectedComposerCard.name}: ${selectedComposerCard.style}`);
+      return;
+    }
+
+    if (!state || state.turn !== "player") return;
+
+    if (action === "left" || action === "right" || action === "up" || action === "down") {
+      moveSelectionByDirection(action);
+    }
+
+    if (action === "a") {
+      if (selectedZone === "hand" || selectedZone === "board" || selectedZone === "cpuBoard") openSelectedDetail();
+      else playerAction();
+    }
+
+    if (action === "b") {
+      if (attackTargetIndex !== null) {
+        attackTargetIndex = null;
+        selectedZone = "board";
+        setStatus("Attack canceled.");
+      } else if (forcedDiscardCount > 0) {
+        setStatus(`Discard ${forcedDiscardCount} card${forcedDiscardCount === 1 ? "" : "s"} first.`);
+      } else if (discardMode) {
+        discardMode = false;
+        selectedZone = state.player.hand.length ? "hand" : "action";
+        selectedIndex = 0;
+        normalizeSelection();
+        setStatus("Done discarding. Keep playing.");
+      } else {
+        endPlayerTurn();
+      }
+    }
+
+    if (action === "x" || action === "y") cycleZone(1);
+    if (action === "select") openSelectedDetail();
+  }
+
+  function gamePointer(point) {
+    if (!running) return;
+
+    for (const hit of lastHitboxes) {
+      if (point.x < hit.x || point.x > hit.x + hit.w || point.y < hit.y || point.y > hit.y + hit.h) continue;
+
+      if (phaseScreen === "composerSelect" && hit.type === "composer") {
+        composerIndex = hit.index;
+        selectedComposerCard = COMPOSERS[composerIndex];
+        startBattle();
+        return;
+      }
+
+      if (phaseScreen === "battle" && state) {
+        if (state.turn === "player") {
+          if (hit.type === "cpuBoard") {
+            selectedZone = "cpuBoard";
+            selectedIndex = hit.index;
+            openCardDetail("cpuBoard", hit.index);
+            return;
+          }
+
+          if (hit.type === "hand") {
+            selectedZone = "hand";
+            selectedIndex = hit.index;
+            openCardDetail("hand", hit.index);
+            return;
+          }
+          if (hit.type === "board") {
+            selectedZone = "board";
+            selectedIndex = hit.index;
+            openCardDetail("board", hit.index);
+            return;
+          }
+          if (hit.type === "discardTurn") {
+            selectedZone = "action";
+            selectedIndex = hit.index || 0;
+            discardMode = true;
+            selectedZone = state.player.hand.length ? "hand" : "action";
+            selectedIndex = 0;
+            setStatus("Discard any cards you wish, then choose Done.");
+            return;
+          }
+          if (hit.type === "endTurn") {
+            selectedZone = "action";
+            selectedIndex = hit.index || 0;
+            if (discardMode) {
+              discardMode = false;
+              selectedZone = state.player.hand.length ? "hand" : "action";
+              selectedIndex = 0;
+              normalizeSelection();
+              setStatus("Done discarding. Keep playing.");
+            } else {
+              endPlayerTurn();
+            }
+            return;
+          }
+        } else if (hit.type === "cpuBoard") {
+          openCardDetail("cpuBoard", hit.index);
+          return;
+        }
+      }
+    }
+  }
+
+  function gameStop() {
+      if (typeof sticks !== "undefined") {
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+
+
+  function cloneComposerForExport(composer) {
+    return {
+      name: composer.name,
+      style: composer.style,
+      color: composer.color,
+      focus: composer.focus,
+      pieces: (composer.pieces || []).slice(),
+      items: (composer.items || []).map(item => ({ ...item }))
+    };
+  }
+
+  function validateComposerConfig(config) {
+    const errors = [];
+    const candidate = config || {};
+
+    if (!candidate.name || !String(candidate.name).trim()) errors.push("Composer needs a name.");
+    if (!candidate.style || !String(candidate.style).trim()) errors.push("Composer needs a short style label.");
+    if (!candidate.color || !/^#[0-9a-f]{6}$/i.test(String(candidate.color))) errors.push("Composer color should be a hex color like #2563eb.");
+    if (!candidate.focus || !String(candidate.focus).trim()) errors.push("Composer needs a focus keyword.");
+    if (!Array.isArray(candidate.pieces) || candidate.pieces.length < PIECE_COSTS.length) errors.push(`Composer needs at least ${PIECE_COSTS.length} piece names.`);
+    if (!Array.isArray(candidate.items) || candidate.items.length < 6) errors.push("Composer needs at least 6 item cards.");
+
+    (candidate.items || []).forEach((item, index) => {
+      if (!item.name) errors.push(`Item ${index + 1} needs a name.`);
+      if (typeof item.cost !== "number") errors.push(`Item ${index + 1} needs a numeric cost.`);
+      if (!item.effect) errors.push(`Item ${index + 1} needs an effect.`);
+      if (!item.text) errors.push(`Item ${index + 1} needs player-facing text.`);
+    });
+
+    return { ok: errors.length === 0, errors };
+  }
+
+  function normalizeComposerConfig(config) {
+    return {
+      name: String(config.name).trim(),
+      style: String(config.style).trim(),
+      color: String(config.color).trim(),
+      focus: String(config.focus).trim(),
+      pieces: config.pieces.map(piece => String(piece).trim()).filter(Boolean),
+      items: config.items.map(item => ({ ...item }))
+    };
+  }
+
+  function addComposerConfig(config) {
+    const validation = validateComposerConfig(config);
+    if (!validation.ok) throw new Error(validation.errors.join(" "));
+
+    const normalized = normalizeComposerConfig(config);
+    const existingIndex = COMPOSERS.findIndex(composer => composer.name.toLowerCase() === normalized.name.toLowerCase());
+    if (existingIndex >= 0) COMPOSERS[existingIndex] = normalized;
+    else COMPOSERS.push(normalized);
+
+    return cloneComposerForExport(normalized);
+  }
+
+  function deckShapeForComposer(name) {
+    const composer = COMPOSERS.find(item => item.name.toLowerCase() === String(name || "").toLowerCase());
+    if (!composer) return null;
+    return {
+      composer: composer.name,
+      energyCards: ENERGY_CARDS,
+      pieceCards: PIECE_COSTS.length,
+      itemCards: (composer.items || []).length,
+      maxBoard: "Unlimited",
+      startingHp: STARTING_HP
+    };
+  }
+
+  const composerClashExpansionApi = {
+    getComposers: () => COMPOSERS.map(cloneComposerForExport),
+    getComposerNames: () => COMPOSERS.map(composer => composer.name),
+    validateComposer: validateComposerConfig,
+    addComposer: addComposerConfig,
+    getDeckShape: deckShapeForComposer
+  };
+
+  window.ComposerClashExpansion = composerClashExpansionApi;
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
