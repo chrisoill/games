@@ -1,0 +1,2565 @@
+<!-- Piano Arcade Desktop / Original House Style Template v2.1 -->
+<!-- Use this for the arcade grid / desktop Wix HTML embed. -->
+<!-- Desktop: preview card -> fullscreen game. -->
+<!-- Mobile: Play redirects to MOBILE_GAME_URL if you set it. -->
+<!-- Replace GAME_TITLE, GAME_DESCRIPTION, STORAGE_KEY, MOBILE_GAME_URL, default menu text, and the GAME MODULE section. -->
+
+<div id="arcade-desktop-widget">
+  <div class="arcade-preview">
+    <div class="arcade-previewArt">
+      <span></span><span></span><span></span>
+    </div>
+
+    <h2 class="arcade-gameTitle">Piano Survivor</h2>
+    <p class="arcade-gameDescription">A retro music-symbol survival shooter.</p>
+    <button class="arcade-openBtn">Play</button>
+  </div>
+
+  <div class="arcade-gameWrap">
+    <div class="arcade-menuScreen">
+      <h1>Choose Player</h1>
+
+      <div class="arcade-leaderboardBox">
+        <h2>Leaderboard</h2>
+        <ol class="arcade-leaderboardList"></ol>
+      </div>
+
+      <div class="arcade-playerPickerBox">
+        <input class="arcade-playerSearchInput" placeholder="Search players..." autocomplete="off" />
+        <select class="arcade-playerSelect" size="7" aria-label="Choose player"></select>
+
+        <div class="arcade-selectedPlayerActions">
+          <button class="arcade-resetSelectedPlayerBtn">Reset Selected</button>
+          <button class="arcade-removeSelectedPlayerBtn">Remove Selected</button>
+        </div>
+      </div>
+
+      <div class="arcade-addPlayerRow">
+        <input class="arcade-newPlayerName" placeholder="New player name" />
+        <button class="arcade-addPlayerBtn">Add Player</button>
+      </div>
+
+      <p class="arcade-selectedPlayerText">No player selected</p>
+      <button class="arcade-startGameBtn">Start Game</button>
+      <button class="arcade-closeBtn">Exit</button>
+    </div>
+
+    <div class="arcade-gameScreen">
+      <div class="arcade-topBar">
+        <div>
+          Player: <span class="arcade-playerName"></span>
+          | <span class="arcade-scoreLabel">Score</span>: <span class="arcade-score">0</span>
+          | Best: <span class="arcade-bestScore">0</span>
+        </div>
+        <div class="arcade-topBarActions">
+          <button class="arcade-openShellMenuBtn" type="button">Help</button>
+          <button class="arcade-exitGameBtn">Exit</button>
+        </div>
+      </div>
+
+      <div class="arcade-questionBox"></div>
+
+      <div class="arcade-stageShell">
+        <canvas class="arcade-gameCanvas" width="720" height="520"></canvas>
+
+        <div class="arcade-gameOverBox">
+          <h1>Game Over</h1>
+          <p class="arcade-gameOverScore"></p>
+          <button class="arcade-playAgainBtn">Play Again</button>
+          <button class="arcade-backToMenuBtn">Player Menu</button>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="arcade-shellMenu" aria-hidden="true">
+      <div class="arcade-shellMenuBackdrop" data-shell-menu-close></div>
+      <div class="arcade-shellMenuPanel" role="dialog" aria-modal="true" aria-label="Help">
+        <div class="arcade-shellMenuHeader">
+          <h2>Help</h2>
+          <button class="arcade-shellMenuCloseBtn" type="button" aria-label="Close help">×</button>
+        </div>
+        <div class="arcade-shellMenuTabs" role="tablist" aria-label="Help tabs"></div>
+        <div class="arcade-shellMenuBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; }
+
+  #arcade-desktop-widget {
+    --arcade-dark: #101827;
+    --arcade-ink: #111827;
+    --arcade-blue: #2563eb;
+    --arcade-light: #f7fbff;
+    --arcade-gold: #ffe08a;
+    --arcade-panel: rgba(255,255,255,0.1);
+    font-family: Arial, sans-serif;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 230px;
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  #arcade-desktop-widget * { box-sizing: border-box; }
+
+  #arcade-desktop-widget .arcade-preview {
+    width: 100%;
+    height: 100%;
+    min-height: 230px;
+    border: 3px solid #222;
+    border-radius: 20px;
+    background: linear-gradient(#e8f1ff, #f8fbff);
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: clamp(14px, 4vw, 28px);
+    overflow: hidden;
+    position: relative;
+  }
+
+  #arcade-desktop-widget .arcade-previewArt {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    opacity: 0.28;
+  }
+
+  #arcade-desktop-widget .arcade-previewArt::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 23%;
+    width: clamp(150px, 36vw, 230px);
+    height: clamp(76px, 18vw, 118px);
+    transform: translateX(-50%) rotate(-6deg);
+    border-radius: 24px 34px 18px 18px;
+    background:
+      linear-gradient(90deg, rgba(37,99,235,0.95) 0 100%),
+      #2563eb;
+    box-shadow:
+      -38px 16px 0 -12px rgba(37,99,235,0.7),
+      38px 16px 0 -12px rgba(37,99,235,0.7),
+      0 18px 36px rgba(37,99,235,0.22);
+  }
+
+  #arcade-desktop-widget .arcade-previewArt::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 35%;
+    width: clamp(120px, 30vw, 190px);
+    height: clamp(34px, 9vw, 54px);
+    transform: translateX(-50%) rotate(-6deg);
+    background:
+      linear-gradient(90deg,
+        rgba(255,255,255,0.96) 0 30%, rgba(17,24,39,0.9) 30% 39%,
+        rgba(255,255,255,0.96) 39% 60%, rgba(17,24,39,0.9) 60% 69%,
+        rgba(255,255,255,0.96) 69% 100%);
+    border: 4px solid rgba(17,24,39,0.9);
+    border-radius: 8px;
+    box-shadow: 54px -20px 0 -18px rgba(37,99,235,0.72);
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span {
+    position: absolute;
+    display: block;
+    color: rgba(37,99,235,0.74);
+    font-weight: 900;
+    font-family: Arial, sans-serif;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span:nth-child(1) {
+    left: 14%;
+    top: 65%;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span:nth-child(1)::before {
+    content: "𝄞";
+    font-size: clamp(58px, 15vw, 96px);
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span:nth-child(2) {
+    left: 72%;
+    top: 22%;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    transform: rotate(10deg);
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span:nth-child(2)::before {
+    content: "♪";
+    font-size: clamp(46px, 12vw, 76px);
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span:nth-child(3) {
+    left: 71%;
+    top: 67%;
+    width: auto;
+    height: auto;
+    border-radius: 0;
+    transform: rotate(-9deg);
+  }
+
+  #arcade-desktop-widget .arcade-previewArt span:nth-child(3)::before {
+    content: "X¹³";
+    font-size: clamp(30px, 8vw, 54px);
+  }
+
+  #arcade-desktop-widget .arcade-preview h2,
+  #arcade-desktop-widget .arcade-preview p,
+  #arcade-desktop-widget .arcade-preview button { position: relative; z-index: 2; }
+
+  #arcade-desktop-widget .arcade-preview h2 {
+    font-size: clamp(28px, 8vw, 44px);
+    margin: 0 0 8px;
+  }
+
+  #arcade-desktop-widget .arcade-preview p {
+    font-size: clamp(15px, 4vw, 19px);
+    max-width: 460px;
+    margin: 0 0 16px;
+  }
+
+  #arcade-desktop-widget button {
+    font-size: 18px;
+    padding: 10px 18px;
+    margin: 6px;
+    border-radius: 12px;
+    border: 2px solid #222;
+    cursor: pointer;
+    background: white;
+    color: #111827;
+  }
+
+  #arcade-desktop-widget button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #arcade-desktop-widget input,
+  #arcade-desktop-widget select {
+    font-size: 18px;
+    padding: 10px;
+    border-radius: 10px;
+    border: 2px solid #222;
+  }
+
+  #arcade-desktop-widget .arcade-gameWrap {
+    display: none;
+    width: 100vw;
+    height: 100vh;
+    background: var(--arcade-dark);
+    color: white;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  #arcade-desktop-widget .arcade-menuScreen,
+  #arcade-desktop-widget .arcade-gameScreen {
+    width: 100%;
+    height: 100%;
+    padding: 22px;
+  }
+
+  #arcade-desktop-widget .arcade-menuScreen { overflow-y: auto; }
+
+  #arcade-desktop-widget .arcade-leaderboardBox {
+    max-width: 420px;
+    margin: 0 auto 16px;
+    padding: 12px;
+    background: var(--arcade-panel);
+    border-radius: 14px;
+  }
+
+  #arcade-desktop-widget .arcade-leaderboardList {
+    text-align: left;
+    margin: 0 auto;
+    max-width: 260px;
+  }
+
+  #arcade-desktop-widget .arcade-playerPickerBox {
+    max-width: 560px;
+    margin: 12px auto 16px;
+    padding: 12px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 14px;
+  }
+
+  #arcade-desktop-widget .arcade-playerSearchInput { width: 100%; margin-bottom: 8px; }
+
+  #arcade-desktop-widget .arcade-playerSelect {
+    width: 100%;
+    height: 184px;
+    background: #f8fbff;
+    color: var(--arcade-ink);
+  }
+
+  #arcade-desktop-widget .arcade-playerSelect option { padding: 8px; }
+
+  #arcade-desktop-widget .arcade-selectedPlayerActions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  #arcade-desktop-widget .arcade-resetSelectedPlayerBtn { background: #fff3bf; }
+  #arcade-desktop-widget .arcade-removeSelectedPlayerBtn { background: #ffd6d6; }
+
+  #arcade-desktop-widget .arcade-addPlayerRow {
+    max-width: 560px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #arcade-desktop-widget .arcade-newPlayerName { width: 100%; }
+
+  #arcade-desktop-widget .arcade-gameScreen {
+    display: none;
+    grid-template-rows: 44px 68px 1fr;
+    gap: 8px;
+    align-items: center;
+    justify-items: center;
+  }
+
+  #arcade-desktop-widget .arcade-topBar {
+    width: min(900px, 94vw);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 18px;
+  }
+
+  #arcade-desktop-widget .arcade-questionBox {
+    height: 62px;
+    line-height: 62px;
+    font-size: 34px;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  #arcade-desktop-widget .arcade-stageShell {
+    width: min(820px, 94vw);
+    height: min(650px, calc(100vh - 150px));
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  #arcade-desktop-widget .arcade-gameCanvas {
+    width: min(720px, 92vw);
+    height: min(560px, calc(100vh - 165px));
+    background: var(--arcade-light);
+    border: 12px solid #fff;
+    border-radius: 16px;
+    display: block;
+    image-rendering: pixelated;
+  }
+
+  #arcade-desktop-widget .arcade-gameOverBox {
+    display: none;
+    position: absolute;
+    background: rgba(16, 24, 39, 0.92);
+    color: white;
+    border: 3px solid white;
+    border-radius: 18px;
+    padding: 24px;
+    min-width: 260px;
+    z-index: 5;
+  }
+
+  #arcade-desktop-widget .arcade-controlDeck {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  #arcade-desktop-widget .arcade-controlDeck button {
+    width: 58px;
+    height: 48px;
+    padding: 0;
+    margin: 0;
+    font-size: 22px;
+  }
+
+
+  #arcade-desktop-widget .arcade-topBarActions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  #arcade-desktop-widget .arcade-openShellMenuBtn {
+    background: #dff3ff;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenu {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    color: white;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenu.is-open {
+    display: flex;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuBackdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.62);
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuPanel {
+    position: relative;
+    width: min(720px, 94vw);
+    max-height: min(620px, 88vh);
+    overflow: hidden;
+    background: #101827;
+    border: 3px solid white;
+    border-radius: 18px;
+    box-shadow: 0 18px 50px rgba(0,0,0,0.38);
+    display: grid;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px 8px;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuHeader h2 {
+    margin: 0;
+    font-size: 24px;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuCloseBtn {
+    width: 42px;
+    height: 38px;
+    padding: 0;
+    margin: 0;
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuTabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px 12px;
+    overflow-x: auto;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuTab {
+    margin: 0;
+    padding: 9px 14px;
+    white-space: nowrap;
+    font-size: 16px;
+    background: rgba(255,255,255,0.9);
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuTab.is-active {
+    background: var(--arcade-gold);
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuBody {
+    overflow-y: auto;
+    text-align: left;
+    padding: 0 18px 18px;
+    font-size: 17px;
+    line-height: 1.45;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuBody h3 {
+    margin: 6px 0 10px;
+    font-size: 22px;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuBody ul {
+    margin-top: 8px;
+    padding-left: 24px;
+  }
+
+  #arcade-desktop-widget .arcade-shellMenuBody code {
+    background: rgba(255,255,255,0.12);
+    padding: 2px 5px;
+    border-radius: 6px;
+  }
+
+  #arcade-desktop-widget .arcade-controlDeck {
+    display: none !important;
+  }
+
+  @media (max-width: 700px) {
+    #arcade-desktop-widget .arcade-menuScreen,
+    #arcade-desktop-widget .arcade-gameScreen { padding: 12px; }
+
+    #arcade-desktop-widget .arcade-topBar {
+      font-size: 14px;
+      gap: 8px;
+    }
+
+    #arcade-desktop-widget .arcade-topBarActions button {
+      font-size: 14px;
+      padding: 8px 10px;
+      margin: 0 0 0 4px;
+    }
+
+    #arcade-desktop-widget .arcade-questionBox {
+      height: 52px;
+      line-height: 52px;
+      font-size: 24px;
+    }
+
+    #arcade-desktop-widget .arcade-playerSelect { height: 140px; }
+    #arcade-desktop-widget .arcade-addPlayerRow { grid-template-columns: 1fr; }
+
+    #arcade-desktop-widget .arcade-selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr;
+    }
+  }
+
+  #arcade-desktop-widget .arcade-preview {
+    background: linear-gradient(#e8f1ff, #f8fbff);
+    color: #111827;
+    text-shadow: none;
+  }
+
+  #arcade-desktop-widget .arcade-preview h2 {
+    font-family: Arial, sans-serif;
+    letter-spacing: 0;
+  }
+
+  #arcade-desktop-widget .arcade-openBtn {
+    background: white;
+    font-weight: bold;
+  }
+
+  #arcade-desktop-widget .arcade-startGameBtn {
+    background: var(--arcade-gold);
+    font-weight: bold;
+  }
+
+  #arcade-desktop-widget .arcade-gameCanvas {
+    background: #0b1420;
+    border-color: #e5e7eb;
+    box-shadow: 0 0 0 4px #111827, 0 14px 34px rgba(0,0,0,0.35);
+  }
+
+</style>
+
+<script>
+(() => {
+  const root = document.getElementById("arcade-desktop-widget");
+  if (!root) return;
+
+  const GAME_TITLE = "Piano Survivor";
+  const GAME_DESCRIPTION = "Use your notation-powered ship to destroy enemy instrument forces.";
+  const STORAGE_KEY = "pianoSurvivorDesktopPlayers_v1";
+  const SCORE_LABEL = "Score";
+
+  // HOUSE RULE:
+  // On mobile, Play redirects here. Leave blank only while testing.
+  // Example: const MOBILE_GAME_URL = "https://www.oillpianouniverse.com/template”;
+  const MOBILE_GAME_URL = "https://www.oillpianouniverse.com/piano-survivor";
+
+  const $ = selector => root.querySelector(selector);
+  const $$ = selector => Array.from(root.querySelectorAll(selector));
+
+  const preview = $(".arcade-preview");
+  const gameTitleEl = $(".arcade-gameTitle");
+  const gameDescriptionEl = $(".arcade-gameDescription");
+  const openBtn = $(".arcade-openBtn");
+  const gameWrap = $(".arcade-gameWrap");
+  const menuScreen = $(".arcade-menuScreen");
+  const gameScreen = $(".arcade-gameScreen");
+  const closeBtn = $(".arcade-closeBtn");
+  const exitGameBtn = $(".arcade-exitGameBtn");
+  const playAgainBtn = $(".arcade-playAgainBtn");
+  const backToMenuBtn = $(".arcade-backToMenuBtn");
+  const leaderboardList = $(".arcade-leaderboardList");
+  const playerSearchInput = $(".arcade-playerSearchInput");
+  const playerSelect = $(".arcade-playerSelect");
+  const resetSelectedPlayerBtn = $(".arcade-resetSelectedPlayerBtn");
+  const removeSelectedPlayerBtn = $(".arcade-removeSelectedPlayerBtn");
+  const newPlayerName = $(".arcade-newPlayerName");
+  const addPlayerBtn = $(".arcade-addPlayerBtn");
+  const startGameBtn = $(".arcade-startGameBtn");
+  const selectedPlayerText = $(".arcade-selectedPlayerText");
+  const playerNameEl = $(".arcade-playerName");
+  const scoreLabelEl = $(".arcade-scoreLabel");
+  const scoreEl = $(".arcade-score");
+  const bestScoreEl = $(".arcade-bestScore");
+  const questionBox = $(".arcade-questionBox");
+  const gameOverBox = $(".arcade-gameOverBox");
+  const gameOverScore = $(".arcade-gameOverScore");
+  const shellMenu = $(".arcade-shellMenu");
+  const shellMenuTabsEl = $(".arcade-shellMenuTabs");
+  const shellMenuBody = $(".arcade-shellMenuBody");
+  const shellMenuCloseBtn = $(".arcade-shellMenuCloseBtn");
+  const canvas = $(".arcade-gameCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let players = {};
+  let selectedPlayer = null;
+  let score = 0;
+  let gameLoop = null;
+  let running = false;
+  let audioCtx = null;
+  let shellMenuWasRunning = false;
+
+  gameTitleEl.textContent = GAME_TITLE;
+  gameDescriptionEl.textContent = GAME_DESCRIPTION;
+  scoreLabelEl.textContent = SCORE_LABEL;
+
+  function isMobileDevice() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  }
+
+  function openApp() {
+    if (isMobileDevice() && MOBILE_GAME_URL) {
+      window.top.location.href = MOBILE_GAME_URL;
+      return;
+    }
+
+    preview.style.display = "none";
+    gameWrap.style.display = "block";
+    menuScreen.style.display = "block";
+    gameScreen.style.display = "none";
+    gameOverBox.style.display = "none";
+    loadPlayers();
+
+    try {
+      if (gameWrap.requestFullscreen && !document.fullscreenElement) {
+        gameWrap.requestFullscreen().catch(() => {});
+      }
+    } catch (err) {}
+  }
+
+  function closeApp() {
+    closeShellMenu({ resume: false });
+    stopGame();
+    preview.style.display = "flex";
+    gameWrap.style.display = "none";
+    menuScreen.style.display = "block";
+    gameScreen.style.display = "none";
+    gameOverBox.style.display = "none";
+
+    try {
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    } catch (err) {}
+  }
+
+  openBtn.addEventListener("click", openApp);
+  openBtn.addEventListener("touchend", e => {
+    e.preventDefault();
+    openApp();
+  }, { passive: false });
+
+  closeBtn.onclick = closeApp;
+  exitGameBtn.onclick = closeApp;
+
+
+  /*
+    EXPANDABLE SHELL MENU
+    Add game-specific tabs with:
+    ArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+    Update default tabs with:
+    window.ArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+  */
+  const shellMenuTabs = [
+    {
+      id: "controls",
+      label: "Controls",
+      html: `
+        <h3>Controls</h3>
+        <ul>
+          <li><strong>Move:</strong> Arrow keys or WASD</li>
+          <li><strong>Action A:</strong> Space or Enter</li>
+          <li><strong>Pointer:</strong> Click or tap the game canvas when the game supports pointer input</li>
+          <li><strong>Help:</strong> Click Help or press M</li>
+        </ul>
+        <p>The desktop shell intentionally does not show on-screen controls. Keyboard and pointer input stay active for gameplay.</p>
+      `
+    },
+    {
+      id: "instructions",
+      label: "How to Play",
+      html: `
+        <h3>How to Play</h3>
+        <p>Replace this placeholder with the rules for the current game.</p>
+        <p>Game modules can update this tab or add new tabs for things like item storage, map, upgrades, settings, or pause options.</p>
+      `
+    }
+  ];
+
+  let activeShellMenuTab = "controls";
+
+  function renderShellMenuTabs(activeId = activeShellMenuTab) {
+    if (!shellMenuTabsEl || !shellMenuBody) return;
+
+    const fallbackTab = shellMenuTabs[0]?.id || "";
+    activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+    shellMenuTabsEl.innerHTML = "";
+    shellMenuBody.innerHTML = "";
+
+    shellMenuTabs.forEach(tab => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "arcade-shellMenuTab" + (tab.id === activeShellMenuTab ? " is-active" : "");
+      btn.textContent = tab.label;
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+      btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+      shellMenuTabsEl.appendChild(btn);
+    });
+
+    const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+    if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+  }
+
+  function registerShellMenuTab(id, label, htmlContent) {
+    const tabId = String(id || "").trim();
+    if (!tabId) return;
+
+    const existing = shellMenuTabs.find(tab => tab.id === tabId);
+    const tabData = {
+      id: tabId,
+      label: String(label || tabId),
+      html: String(htmlContent || "")
+    };
+
+    if (existing) {
+      existing.label = tabData.label;
+      existing.html = tabData.html;
+    } else {
+      shellMenuTabs.push(tabData);
+    }
+
+    renderShellMenuTabs(activeShellMenuTab);
+  }
+
+  function updateShellMenuTab(id, htmlContent) {
+    const existing = shellMenuTabs.find(tab => tab.id === id);
+    if (!existing) return;
+    existing.html = String(htmlContent || "");
+    renderShellMenuTabs(activeShellMenuTab);
+  }
+
+  function openShellMenu(tabId = "controls") {
+    if (!shellMenu) return;
+
+    shellMenuWasRunning = running;
+    if (running) running = false;
+
+    renderShellMenuTabs(tabId);
+    shellMenu.classList.add("is-open");
+    shellMenu.setAttribute("aria-hidden", "false");
+  }
+
+  function closeShellMenu(options = {}) {
+    if (!shellMenu) return;
+
+    const shouldResume = options.resume !== false;
+    shellMenu.classList.remove("is-open");
+    shellMenu.setAttribute("aria-hidden", "true");
+
+    if (
+      shouldResume &&
+      shellMenuWasRunning &&
+      gameScreen.style.display === "grid" &&
+      gameOverBox.style.display !== "block"
+    ) {
+      running = true;
+    }
+
+    shellMenuWasRunning = false;
+  }
+
+  $$(".arcade-openShellMenuBtn").forEach(btn => {
+    btn.addEventListener("click", () => openShellMenu("controls"));
+  });
+
+  if (shellMenuCloseBtn) {
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+  }
+
+  if (shellMenu) {
+    shellMenu.addEventListener("click", e => {
+      if (e.target && e.target.matches("[data-shell-menu-close]")) closeShellMenu();
+    });
+  }
+
+  document.addEventListener("keydown", e => {
+    if (shellMenu && shellMenu.classList.contains("is-open")) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeShellMenu();
+      }
+      return;
+    }
+
+    if (gameScreen.style.display === "grid" && e.key.toLowerCase() === "m") {
+      e.preventDefault();
+      openShellMenu("controls");
+    }
+  });
+
+
+
+  function loadPlayers() {
+    try { players = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch (err) { players = {}; }
+
+    if (selectedPlayer && !players[selectedPlayer]) selectedPlayer = null;
+    renderPlayers();
+    renderLeaderboard();
+  }
+
+  function savePlayers() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(players)); }
+    catch (err) {}
+  }
+
+  function renderLeaderboard() {
+    leaderboardList.innerHTML = "";
+    const ranked = Object.entries(players).sort((a, b) => (b[1].best || 0) - (a[1].best || 0)).slice(0, 5);
+
+    if (ranked.length === 0) {
+      leaderboardList.innerHTML = "<li>No scores yet</li>";
+      return;
+    }
+
+    ranked.forEach(([name, data]) => {
+      const li = document.createElement("li");
+      li.textContent = `${name}: ${data.best || 0}`;
+      leaderboardList.appendChild(li);
+    });
+  }
+
+  function resetRemoveConfirmButton() {
+    removeSelectedPlayerBtn.dataset.confirming = "no";
+    removeSelectedPlayerBtn.textContent = "Remove Selected";
+    removeSelectedPlayerBtn.style.background = "";
+  }
+
+  function updateSelectedPlayerUI() {
+    const hasSelection = selectedPlayer && players[selectedPlayer];
+    selectedPlayerText.textContent = hasSelection ? `Selected: ${selectedPlayer}` : "No player selected";
+    resetSelectedPlayerBtn.disabled = !hasSelection;
+    removeSelectedPlayerBtn.disabled = !hasSelection;
+  }
+
+  function renderPlayers() {
+    playerSelect.innerHTML = "";
+    const filter = playerSearchInput.value.trim().toLowerCase();
+    const names = Object.keys(players).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+    if (filteredNames.length === 0) {
+      const option = document.createElement("option");
+      option.disabled = true;
+      option.value = "";
+      option.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+      playerSelect.appendChild(option);
+    } else {
+      filteredNames.forEach(name => {
+        const option = document.createElement("option");
+        option.value = name;
+        option.textContent = `${name} — Best: ${players[name].best || 0}`;
+        if (name === selectedPlayer) option.selected = true;
+        playerSelect.appendChild(option);
+      });
+    }
+
+    updateSelectedPlayerUI();
+  }
+
+  playerSearchInput.addEventListener("input", () => {
+    resetRemoveConfirmButton();
+    renderPlayers();
+  });
+
+  playerSelect.addEventListener("change", () => {
+    if (!playerSelect.value || !players[playerSelect.value]) return;
+    selectedPlayer = playerSelect.value;
+    resetRemoveConfirmButton();
+    updateSelectedPlayerUI();
+  });
+
+  resetSelectedPlayerBtn.onclick = () => {
+    if (!selectedPlayer || !players[selectedPlayer]) return;
+    players[selectedPlayer].best = 0;
+    players[selectedPlayer].lastScore = 0;
+    savePlayers();
+    resetRemoveConfirmButton();
+    renderPlayers();
+    renderLeaderboard();
+  };
+
+  removeSelectedPlayerBtn.onclick = () => {
+    if (!selectedPlayer || !players[selectedPlayer]) return;
+    const nameToRemove = selectedPlayer;
+
+    if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+      removeSelectedPlayerBtn.dataset.confirming = "yes";
+      removeSelectedPlayerBtn.textContent = "Confirm Remove";
+      removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+      setTimeout(() => {
+        if (removeSelectedPlayerBtn.dataset.confirming === "yes" && selectedPlayer === nameToRemove) {
+          resetRemoveConfirmButton();
+        }
+      }, 2500);
+
+      return;
+    }
+
+    delete players[nameToRemove];
+    selectedPlayer = null;
+    savePlayers();
+    resetRemoveConfirmButton();
+    renderPlayers();
+    renderLeaderboard();
+  };
+
+  addPlayerBtn.onclick = () => {
+    const name = newPlayerName.value.trim();
+    if (!name) return;
+
+    if (!players[name]) {
+      players[name] = { best: 0, lastScore: 0 };
+      savePlayers();
+    }
+
+    selectedPlayer = name;
+    newPlayerName.value = "";
+    playerSearchInput.value = "";
+    resetRemoveConfirmButton();
+    renderPlayers();
+    renderLeaderboard();
+    soundWin();
+  };
+
+  newPlayerName.addEventListener("keydown", e => {
+    if (e.key === "Enter") addPlayerBtn.click();
+  });
+
+  startGameBtn.onclick = () => {
+    closeShellMenu({ resume: false });
+
+    if (!selectedPlayer) {
+      selectedPlayer = "Guest";
+      if (!players.Guest) players.Guest = { best: 0, lastScore: 0 };
+      savePlayers();
+    }
+
+    resetRemoveConfirmButton();
+    menuScreen.style.display = "none";
+    gameScreen.style.display = "grid";
+    startGame();
+  };
+
+  playAgainBtn.onclick = () => startGame();
+
+  backToMenuBtn.onclick = () => {
+    closeShellMenu({ resume: false });
+    stopGame();
+    gameOverBox.style.display = "none";
+    gameScreen.style.display = "none";
+    menuScreen.style.display = "block";
+    resetRemoveConfirmButton();
+    renderPlayers();
+    renderLeaderboard();
+  };
+
+  function startGame() {
+    stopGame();
+    score = 0;
+    running = true;
+    playerNameEl.textContent = selectedPlayer;
+    scoreEl.textContent = score;
+    bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+    questionBox.textContent = "";
+    gameOverBox.style.display = "none";
+    gameInit();
+
+    gameLoop = setInterval(() => {
+      if (!running) return;
+      gameUpdate();
+      gameDraw();
+    }, 1000 / 60);
+  }
+
+  function stopGame() {
+    running = false;
+    if (gameLoop) {
+      clearInterval(gameLoop);
+      gameLoop = null;
+    }
+    gameStop();
+  }
+
+  function setScore(newScore) {
+    score = Math.max(0, Math.floor(newScore));
+    scoreEl.textContent = score;
+  }
+
+  function addScore(amount) {
+    setScore(score + amount);
+  }
+
+  function endGame(reason = "Game Over") {
+    if (!running) return;
+    stopGame();
+    soundLose();
+    players[selectedPlayer].lastScore = score;
+    if (score > (players[selectedPlayer].best || 0)) players[selectedPlayer].best = score;
+    savePlayers();
+    renderLeaderboard();
+    gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+    gameOverBox.style.display = "block";
+  }
+
+  document.addEventListener("keydown", e => {
+    if (shellMenu && shellMenu.classList.contains("is-open")) return;
+    if (gameScreen.style.display !== "grid") return;
+    const key = e.key.toLowerCase();
+
+    if (e.key === "ArrowUp" || key === "w") { e.preventDefault(); gameInput("up"); }
+    if (e.key === "ArrowDown" || key === "s") { e.preventDefault(); gameInput("down"); }
+    if (e.key === "ArrowLeft" || key === "a") { e.preventDefault(); gameInput("left"); }
+    if (e.key === "ArrowRight" || key === "d") { e.preventDefault(); gameInput("right"); }
+    if (key === " " || key === "enter") { e.preventDefault(); gameInput("a"); }
+  });
+
+  $$(".arcade-controlDeck button").forEach(btn => {
+    btn.onclick = () => gameInput(btn.dataset.action);
+  });
+
+  canvas.addEventListener("click", e => {
+    if (!running) return;
+    const rect = canvas.getBoundingClientRect();
+    gamePointer({
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+      originalEvent: e
+    });
+  });
+
+  canvas.addEventListener("touchstart", e => {
+    if (!running) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    gamePointer({
+      x: (touch.clientX - rect.left) * (canvas.width / rect.width),
+      y: (touch.clientY - rect.top) * (canvas.height / rect.height),
+      originalEvent: e
+    });
+  }, { passive: false });
+
+  function getAudio() {
+    if (!audioCtx) {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return null;
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    return audioCtx;
+  }
+
+  function beep(freq, duration, type = "sine", volume = 0.08) {
+    const ac = getAudio();
+    if (!ac) return;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + duration);
+  }
+
+  function soundCorrect() {
+    beep(660, 0.08, "square", 0.06);
+    setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+  }
+
+
+  function soundWin() {
+    [523, 659, 784, 1046].forEach((n, i) => {
+      setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+    });
+  }
+
+  function soundLose() {
+    [300, 220, 160, 100].forEach((n, i) => {
+      setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+    });
+  }
+
+
+  /* =========================
+     GAME MODULE: PIANO SURVIVOR MVP
+     ========================= */
+
+  const PS_DYNAMICS = [
+    { label: "pp", damage: 1.0, size: 3.6 },
+    { label: "p", damage: 1.25, size: 4.9 },
+    { label: "mp", damage: 1.6, size: 6.4 },
+    { label: "mf", damage: 1.95, size: 8.2 },
+    { label: "f", damage: 2.35, size: 10.8 },
+    { label: "ff", damage: 2.9, size: 13.8 }
+  ];
+
+  const PS_TEMPOS = [
+    { label: "Largo", short: "Lar", speed: 1.7 },
+    { label: "Adagio", short: "Adg", speed: 2.15 },
+    { label: "Andante", short: "And", speed: 2.65 },
+    { label: "Moderato", short: "Mod", speed: 3.25 },
+    { label: "Allegro", short: "All", speed: 3.9 },
+    { label: "Presto", short: "Pre", speed: 4.65 },
+    { label: "Prestissimo", short: "Prs", speed: 5.35 }
+  ];
+
+  const PS_RHYTHMS = [
+    { label: "Whole", symbol: "𝅝", cooldown: 46 },
+    { label: "Dotted Half", symbol: "𝅗𝅥.", cooldown: 40 },
+    { label: "Half", symbol: "𝅗𝅥", cooldown: 34 },
+    { label: "Dotted Quarter", symbol: "♩.", cooldown: 28 },
+    { label: "Quarter", symbol: "♩", cooldown: 22 },
+    { label: "Eighth", symbol: "♪", cooldown: 15 },
+    { label: "16th", symbol: "♬", cooldown: 10 }
+  ];
+
+  const PS_HARMONIES = [
+    { label: "Single Note", short: "X", count: 1, spread: 0 },
+    { label: "Add Third", short: "X³", count: 2, spread: 0.261799 },
+    { label: "Add Fifth", short: "X⁵", count: 3, spread: 0.261799 },
+    { label: "7th Chord", short: "X⁷", count: 4, spread: 0.261799 },
+    { label: "9th Chord", short: "X⁹", count: 5, spread: 0.261799 },
+    { label: "11th Chord", short: "X¹¹", count: 6, spread: 0.261799 },
+    { label: "13th Chord", short: "X¹³", count: 7, spread: 0.261799 }
+  ];
+
+  const PS_ARTICULATIONS = [
+    { id: "staccato", label: "Staccato", symbol: "•", message: "STACCATO: shots bounce" },
+    { id: "legato", label: "Legato", symbol: "⌒", message: "LEGATO: shots chain" },
+    { id: "accent", label: "Accent", symbol: ">", message: "ACCENT: shots pierce" },
+    { id: "tenuto", label: "Tenuto", symbol: "–", message: "TENUTO: heavy shots" },
+    { id: "trill", label: "Trill", symbol: "tr", message: "TRILL: shots wiggle" },
+    { id: "marcato", label: "Marcato", symbol: "^", message: "MARCATO: shots explode" }
+  ];
+
+  const PS_WORLD = { width: 2400, height: 1800 };
+  const PS_DROP_TARGETS = { D: 1, T: 1, R: 1, H: 1, articulation: 2, rest: 1 };
+  const PS_SPECIAL_KINDS = ["fermata", "treble", "bass"];
+  const PS_SPECIAL_FIRST_TIME = 2600;
+  const PS_SPECIAL_COOLDOWN = 3000;
+  const PS_REPEAT_FIRST_TIME = 9000;
+  const PS_REPEAT_COOLDOWN = 12000;
+  // Enemy target count intentionally has no hard cap; it rises over time.
+  const PS_ENEMY_TOO_FAR = 980;
+  const PS_ENEMY_RESPAWN_MIN = 430;
+  const PS_ENEMY_RESPAWN_MAX = 660;
+
+  let ps = null;
+
+  function psClamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function psRand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function psWrapValue(value, max) {
+    value = value % max;
+    return value < 0 ? value + max : value;
+  }
+
+  function psWrapEntity(obj) {
+    obj.x = psWrapValue(obj.x, PS_WORLD.width);
+    obj.y = psWrapValue(obj.y, PS_WORLD.height);
+  }
+
+  function psWrappedDelta(from, to, size) {
+    let delta = to - from;
+    if (delta > size / 2) delta -= size;
+    if (delta < -size / 2) delta += size;
+    return delta;
+  }
+
+  function psDist(a, b) {
+    const dx = psWrappedDelta(a.x, b.x, PS_WORLD.width);
+    const dy = psWrappedDelta(a.y, b.y, PS_WORLD.height);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function psSetMessage(text, frames = 150) {
+    if (!ps) return;
+    ps.message = text;
+    ps.messageTimer = frames;
+  }
+
+  function psStatsLine() {
+    const d = PS_DYNAMICS[ps.dyn].label;
+    const t = PS_TEMPOS[ps.tempo].label;
+    const r = PS_RHYTHMS[ps.rhythm].label;
+    const h = PS_HARMONIES[ps.harmony].short;
+    const art = ps.articulation ? ps.articulation.label : "None";
+    const special = ps.fermataTimer > 0 ? ` | Fermata ${Math.ceil(ps.fermataTimer / 60)}s` : ps.trebleTimer > 0 ? ` | Treble ${Math.ceil(ps.trebleTimer / 60)}s` : ps.bassTimer > 0 ? ` | Bass ${Math.ceil(ps.bassTimer / 60)}s` : "";
+    return `${d} | ${t} | ${r} | ${h} | ${art}${special}`;
+  }
+
+  function psCompactStatsLine() {
+    const art = ps.articulation ? ps.articulation.symbol : "-";
+    return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].symbol} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
+  }
+
+  function psUpdateHud() {
+    if (!ps) return;
+    if (ps.messageTimer > 0) {
+      questionBox.textContent = ps.message;
+    } else {
+      questionBox.textContent = psStatsLine();
+    }
+  }
+
+  function psUpdateCamera() {
+    ps.camera.x = ps.player.x - canvas.width / 2;
+    ps.camera.y = ps.player.y - canvas.height / 2;
+  }
+
+  function psWorldToScreen(x, y) {
+    let sx = x - ps.camera.x;
+    let sy = y - ps.camera.y;
+
+    if (sx < -PS_WORLD.width / 2) sx += PS_WORLD.width;
+    if (sx > PS_WORLD.width / 2) sx -= PS_WORLD.width;
+    if (sy < -PS_WORLD.height / 2) sy += PS_WORLD.height;
+    if (sy > PS_WORLD.height / 2) sy -= PS_WORLD.height;
+
+    return { x: sx, y: sy };
+  }
+
+  function psPointOnScreen(obj, pad = 60) {
+    const s = psWorldToScreen(obj.x, obj.y);
+    return s.x > -pad && s.x < canvas.width + pad && s.y > -pad && s.y < canvas.height + pad;
+  }
+
+  function psGetUpgradePickupLabel(track) {
+    if (track === "D") return PS_DYNAMICS[Math.min(ps.dyn + 1, PS_DYNAMICS.length - 1)].label;
+    if (track === "T") return PS_TEMPOS[Math.min(ps.tempo + 1, PS_TEMPOS.length - 1)].short;
+    if (track === "R") return PS_RHYTHMS[Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1)].symbol;
+    if (track === "H") return PS_HARMONIES[Math.min(ps.harmony + 1, PS_HARMONIES.length - 1)].short;
+    return "?";
+  }
+
+  function psRefreshDropLabels(track = null) {
+    ps.drops.forEach(drop => {
+      if (drop.kind !== "upgrade") return;
+      if (track && drop.track !== track) return;
+      drop.label = psGetUpgradePickupLabel(drop.track);
+      drop.fontSize = drop.label.length > 2 ? 20 : 26;
+    });
+  }
+
+  function psFindDropPosition(preferFar = false) {
+    let x = psRand(70, PS_WORLD.width - 70);
+    let y = psRand(70, PS_WORLD.height - 70);
+    if (!preferFar) return { x, y };
+
+    for (let i = 0; i < 80; i++) {
+      x = psRand(70, PS_WORLD.width - 70);
+      y = psRand(70, PS_WORLD.height - 70);
+      const candidate = { x, y };
+      const farFromPlayer = psDist(candidate, ps.player) > 560;
+      const farFromDrops = ps.drops.every(drop => psDist(candidate, drop) > 230);
+      if (farFromPlayer && farFromDrops) break;
+    }
+    return { x, y };
+  }
+
+  function psSpawnDrop(forceType = null, nearPlayer = false, forcedTrack = null) {
+    const kind = forceType || "upgrade";
+    let x, y;
+
+    if (nearPlayer) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = psRand(130, 260);
+      x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
+      y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
+    } else {
+      ({ x, y } = psFindDropPosition(true));
+    }
+
+    const drop = {
+      kind,
+      x,
+      y,
+      r: 14,
+      pulse: Math.random() * 100,
+      label: "?",
+      color: "#ffe08a",
+      fontSize: 24
+    };
+
+    if (kind === "upgrade") {
+      const availableTracks = ["D", "T", "R", "H"].filter(track => !psIsTrackMaxed(track));
+      if (availableTracks.length === 0) return;
+      drop.track = forcedTrack || availableTracks[Math.floor(Math.random() * availableTracks.length)];
+      if (psIsTrackMaxed(drop.track)) return;
+      drop.label = psGetUpgradePickupLabel(drop.track);
+      drop.color = { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[drop.track];
+      drop.fontSize = drop.label.length > 2 ? 20 : 26;
+    } else if (kind === "rest") {
+      const rests = [
+        { label: "𝄻", heal: 3, name: "Whole Rest" },
+        { label: "𝄼", heal: 2, name: "Half Rest" },
+        { label: "𝄽", heal: 1, name: "Quarter Rest" }
+      ];
+      const rest = rests[Math.floor(Math.random() * rests.length)];
+      Object.assign(drop, { label: rest.label, heal: rest.heal, name: rest.name, color: "#f8fafc", fontSize: 26 });
+    } else if (kind === "articulation") {
+      const art = psChooseArticulationDrop();
+      if (!art) return;
+      Object.assign(drop, { articulation: art, label: art.symbol, color: "#c084fc", fontSize: 30 });
+    } else if (kind === "bonus") {
+      const track = forcedTrack || "D";
+      Object.assign(drop, { track, label: "✦", color: psBonusColor(track), r: 16, fontSize: 30 });
+    } else if (kind === "repeat") {
+      Object.assign(drop, { label: ":||", color: "#fb7185", r: 16, fontSize: 24 });
+    } else if (kind === "fermata") {
+      Object.assign(drop, { label: "𝄐", color: "#22d3ee", r: 16, fontSize: 32 });
+    } else if (kind === "treble") {
+      Object.assign(drop, { label: "𝄞", color: "#60a5fa", r: 16, fontSize: 34 });
+    } else if (kind === "bass") {
+      Object.assign(drop, { label: "𝄢", color: "#a78bfa", r: 16, fontSize: 34 });
+    }
+
+    ps.drops.push(drop);
+  }
+
+  function psIsTrackMaxed(track) {
+    if (track === "D") return ps.dyn >= PS_DYNAMICS.length - 1;
+    if (track === "T") return ps.tempo >= PS_TEMPOS.length - 1;
+    if (track === "R") return ps.rhythm >= PS_RHYTHMS.length - 1;
+    if (track === "H") return ps.harmony >= PS_HARMONIES.length - 1;
+    return false;
+  }
+
+  function psDropCount(kind, track = null) {
+    return ps.drops.filter(drop => {
+      if (drop.kind !== kind) return false;
+      if (track && drop.track !== track) return false;
+      return true;
+    }).length;
+  }
+
+  function psSpecialDropCount() {
+    return ps.drops.filter(drop => PS_SPECIAL_KINDS.includes(drop.kind)).length;
+  }
+
+  function psSpawnSpecialDrop() {
+    const kind = PS_SPECIAL_KINDS[Math.floor(Math.random() * PS_SPECIAL_KINDS.length)];
+    psSpawnDrop(kind);
+  }
+
+  function psChooseArticulationDrop() {
+    const currentId = ps.articulation?.id;
+    const alreadyOnMap = ps.drops
+      .filter(drop => drop.kind === "articulation" && drop.articulation)
+      .map(drop => drop.articulation.id);
+
+    let choices = PS_ARTICULATIONS.filter(art => art.id !== currentId);
+    const uniqueChoices = choices.filter(art => !alreadyOnMap.includes(art.id));
+    if (uniqueChoices.length > 0) choices = uniqueChoices;
+    return choices[Math.floor(Math.random() * choices.length)] || null;
+  }
+
+  function psBonusColor(track) {
+    return { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[track] || "#fef3c7";
+  }
+
+  function psMaintainDrops() {
+    ps.drops = ps.drops.filter(drop => {
+      if (drop.kind === "upgrade" && psIsTrackMaxed(drop.track)) return false;
+      if (drop.kind === "bonus" && !psIsTrackMaxed(drop.track)) return false;
+      if (drop.kind === "articulation" && ps.articulation && drop.articulation?.id === ps.articulation.id) return false;
+      return true;
+    });
+
+    ["D", "T", "R", "H"].forEach(track => {
+      if (psIsTrackMaxed(track)) {
+        while (psDropCount("bonus", track) < PS_DROP_TARGETS[track]) {
+          psSpawnDrop("bonus", false, track);
+        }
+        return;
+      }
+      while (psDropCount("upgrade", track) < PS_DROP_TARGETS[track]) {
+        psSpawnDrop("upgrade", false, track);
+      }
+    });
+
+    while (psDropCount("articulation") < PS_DROP_TARGETS.articulation) psSpawnDrop("articulation");
+
+    const needsRest = ps.hp <= ps.maxHp - 2;
+    while (needsRest && psDropCount("rest") < PS_DROP_TARGETS.rest) psSpawnDrop("rest");
+    if (!needsRest) ps.drops = ps.drops.filter(drop => drop.kind !== "rest");
+
+    if (ps.specialCooldown > 0) ps.specialCooldown--;
+    const allowSpecial = ps.time > PS_SPECIAL_FIRST_TIME && ps.specialCooldown <= 0;
+    if (allowSpecial && psSpecialDropCount() < 1) psSpawnSpecialDrop();
+    if (!allowSpecial) ps.drops = ps.drops.filter(drop => !PS_SPECIAL_KINDS.includes(drop.kind));
+
+    if (ps.repeatCooldown > 0) ps.repeatCooldown--;
+    const allowRepeat = ps.time > PS_REPEAT_FIRST_TIME && ps.repeats < 2 && ps.repeatCooldown <= 0;
+    if (allowRepeat && psDropCount("repeat") < 1) psSpawnDrop("repeat");
+    if (!allowRepeat) ps.drops = ps.drops.filter(drop => drop.kind !== "repeat");
+  }
+
+
+  function psCreateEnemyType() {
+    const t = ps.time;
+    const enemyPool = [
+      { name: "Violin", kind: "violin", unlock: 0, hp: 1.75, speed: 0.7, r: 18, score: 8, weight: 34 },
+      { name: "Flute", kind: "flute", unlock: 1800, hp: 2.25, speed: 0.84, r: 17, score: 11, weight: 22 },
+      { name: "Trumpet", kind: "trumpet", unlock: 3300, hp: 3.2, speed: 0.62, r: 20, score: 14, weight: 18 },
+      { name: "Cello", kind: "cello", unlock: 5700, hp: 5.0, speed: 0.5, r: 23, score: 22, weight: 13 },
+      { name: "Tuba", kind: "tuba", unlock: 7800, hp: 7.4, speed: 0.43, r: 25, score: 30, weight: 10 },
+      { name: "Drum", kind: "drum", unlock: 10500, hp: 10.2, speed: 0.38, r: 27, score: 42, weight: 7 }
+    ];
+
+    const available = enemyPool.filter(type => t >= type.unlock);
+    const totalWeight = available.reduce((sum, type) => sum + type.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let type = available[0];
+    for (const candidate of available) {
+      roll -= candidate.weight;
+      if (roll <= 0) {
+        type = candidate;
+        break;
+      }
+    }
+
+    const bossChance = t > 3600 ? Math.min(0.28, 0.018 + (t - 3600) / 90000) : 0;
+    const boss = Math.random() < bossChance;
+    const scaling = 1 + Math.min(3.2, ps.time / 12000);
+    const bossScale = boss ? 6.4 + Math.min(3.6, ps.time / 24000) : 1;
+
+    return {
+      x: ps.player.x,
+      y: ps.player.y,
+      hp: type.hp * scaling * bossScale,
+      maxHp: type.hp * scaling * bossScale,
+      speed: type.speed * Math.min(1.9, 1 + ps.time / 16000) * (boss ? 1.12 : 1),
+      r: type.r * (boss ? 1.5 : 1),
+      kind: type.kind,
+      name: boss ? `${type.name} Boss` : type.name,
+      score: type.score * (boss ? 7 : 1),
+      boss,
+      hitFlash: 0
+    };
+  }
+
+  function psSpawnEnemy() {
+    const enemy = psCreateEnemyType();
+    psPlaceEnemyNearPlayer(enemy);
+    ps.enemies.push(enemy);
+  }
+
+  function psEnemyTargetCount() {
+    return 2 + Math.floor(ps.time / 760) + Math.floor(ps.time / 3600);
+  }
+
+  function psPlaceEnemyNearPlayer(enemy) {
+    const baseAngle = Math.atan2(ps.heading.y, ps.heading.x);
+    const arc = Math.PI * 2 / 3; // 120 degrees total, centered on current movement heading.
+    const angle = baseAngle + psRand(-arc / 2, arc / 2);
+    const distance = psRand(PS_ENEMY_RESPAWN_MIN, PS_ENEMY_RESPAWN_MAX);
+    enemy.x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
+    enemy.y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
+    enemy.hp = enemy.maxHp;
+    enemy.hitFlash = 0;
+  }
+
+  function psMaintainEnemies() {
+    const target = psEnemyTargetCount();
+    while (ps.enemies.length < target) psSpawnEnemy();
+
+    ps.enemies.forEach(enemy => {
+      if (psDist(enemy, ps.player) > PS_ENEMY_TOO_FAR) {
+        const replacement = psCreateEnemyType();
+        Object.assign(enemy, replacement);
+        psPlaceEnemyNearPlayer(enemy);
+      }
+    });
+  }
+
+  function psApplyUpgrade(track) {
+    if (track === "D" && ps.dyn < PS_DYNAMICS.length - 1) {
+      ps.dyn++;
+      psRefreshDropLabels("D");
+      psSetMessage(`DYNAMIC UP: ${PS_DYNAMICS[ps.dyn].label}`);
+      soundCorrect();
+      return;
+    }
+    if (track === "T" && ps.tempo < PS_TEMPOS.length - 1) {
+      ps.tempo++;
+      psRefreshDropLabels("T");
+      psSetMessage(`TEMPO UP: ${PS_TEMPOS[ps.tempo].label}`);
+      soundCorrect();
+      return;
+    }
+    if (track === "R" && ps.rhythm < PS_RHYTHMS.length - 1) {
+      ps.rhythm++;
+      psRefreshDropLabels("R");
+      psSetMessage(`RHYTHM UP: ${PS_RHYTHMS[ps.rhythm].label}`);
+      soundCorrect();
+      return;
+    }
+    if (track === "H" && ps.harmony < PS_HARMONIES.length - 1) {
+      ps.harmony++;
+      psRefreshDropLabels("H");
+      psSetMessage(`HARMONY UP: ${PS_HARMONIES[ps.harmony].short}`);
+      soundCorrect();
+      return;
+    }
+    addScore(15);
+    psSetMessage("MAXED: bonus points");
+    soundCorrect();
+  }
+
+  function psCollectDrop(drop) {
+    if (drop.kind === "upgrade") {
+      psApplyUpgrade(drop.track);
+    } else if (drop.kind === "rest") {
+      ps.hp = Math.min(ps.maxHp, ps.hp + drop.heal);
+      psSetMessage(`${drop.name}: +${drop.heal} health`);
+      soundCorrect();
+    } else if (drop.kind === "articulation") {
+      ps.articulation = drop.articulation;
+      ps.drops = ps.drops.filter(item => item.kind !== "articulation" || item.articulation?.id !== ps.articulation.id);
+      psSetMessage(drop.articulation.message);
+      soundWin();
+    } else if (drop.kind === "bonus") {
+      addScore(50);
+      psSetMessage("BONUS POINTS +50");
+      soundCorrect();
+    } else if (drop.kind === "repeat") {
+      ps.repeats = Math.min(3, ps.repeats + 1);
+      ps.repeatCooldown = PS_REPEAT_COOLDOWN;
+      psSetMessage(`REPEAT: extra life x${ps.repeats}`);
+      soundWin();
+    } else if (drop.kind === "fermata") {
+      ps.fermataTimer = 320;
+      ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+      psSetMessage("FERMATA: note rays!", 220);
+      soundWin();
+    } else if (drop.kind === "treble") {
+      ps.trebleTimer = 360;
+      ps.trebleCooldown = 0;
+      ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+      psSetMessage("TREBLE CLEF: piercing lines!", 220);
+      soundWin();
+    } else if (drop.kind === "bass") {
+      ps.bassTimer = 360;
+      ps.bassPulseCooldown = 0;
+      ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+      psSetMessage("BASS CLEF: earthquake pulses!", 220);
+      soundWin();
+    }
+  }
+
+  function psFire() {
+    const rhythm = PS_RHYTHMS[ps.rhythm];
+    if (ps.fireCooldown > 0) return;
+
+    const ax = ps.aim.x;
+    const ay = ps.aim.y;
+    const mag = Math.sqrt(ax * ax + ay * ay);
+    if (mag < 0.12) return;
+
+    const nx = ax / mag;
+    const ny = ay / mag;
+    const baseAngle = Math.atan2(ny, nx);
+    const harmony = PS_HARMONIES[ps.harmony];
+    const dyn = PS_DYNAMICS[ps.dyn];
+    const count = harmony.count;
+    const spread = harmony.spread;
+    const speed = ps.articulation?.id === "tenuto" ? 4.2 : 6.0;
+    const size = dyn.size + (ps.articulation?.id === "tenuto" ? 4 : 0);
+
+    if (ps.fermataTimer > 0) {
+      for (let i = 0; i < count; i++) {
+        const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
+        const angle = baseAngle + offset;
+        ps.rays.push({
+          x: ps.player.x,
+          y: ps.player.y,
+          angle,
+          life: 8,
+          damage: dyn.damage * 1.15,
+          width: 8 + dyn.size,
+          length: Math.max(canvas.width, canvas.height) * 1.35,
+          color: "fermata"
+        });
+      }
+      psSoundFire();
+      ps.fireCooldown = Math.max(4, Math.floor(rhythm.cooldown * 0.72));
+      return;
+    }
+
+    for (let i = 0; i < count; i++) {
+      const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
+      const angle = baseAngle + offset;
+      ps.bullets.push({
+        x: ps.player.x + Math.cos(angle) * 18,
+        y: ps.player.y + Math.sin(angle) * 18,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: size,
+        damage: dyn.damage,
+        life: ps.articulation?.id === "tenuto" ? 95 : 74,
+        pierce: ps.articulation?.id === "accent" ? 3 : 0,
+        bounces: ps.articulation?.id === "staccato" ? 3 : 0,
+        chain: ps.articulation?.id === "legato" ? 2 : 0,
+        wiggle: ps.articulation?.id === "trill" ? { phase: Math.random() * Math.PI * 2, amp: 8.5, freq: 0.72 } : null,
+        hitRadius: ps.articulation?.id === "trill" ? size + 8 : size,
+        explode: ps.articulation?.id === "marcato",
+        hitIds: new Set()
+      });
+    }
+
+    psSoundFire();
+    ps.fireCooldown = rhythm.cooldown;
+  }
+
+
+  function psSoundFire() {
+    if (!ps || ps.time < ps.nextFireSound) return;
+    const rhythmGap = PS_RHYTHMS[ps.rhythm]?.cooldown || 10;
+    ps.nextFireSound = ps.time + Math.max(1, Math.floor(rhythmGap * 0.45));
+    const freq = 300 + ps.rhythm * 32 + ps.harmony * 22;
+    beep(freq, 0.024, "square", 0.014);
+  }
+
+  function psSoundEnemyDie(enemy) {
+    const base = enemy.kind === "drum" ? 95 : enemy.kind === "tuba" ? 125 : enemy.kind === "cello" ? 155 : enemy.kind === "trumpet" ? 230 : enemy.kind === "flute" ? 420 : 330;
+    beep(base, enemy.boss ? 0.14 : 0.08, "sawtooth", enemy.boss ? 0.055 : 0.035);
+    setTimeout(() => beep(base * 1.5, 0.05, "square", 0.025), 45);
+    if (enemy.boss) setTimeout(() => beep(base * 0.75, 0.18, "triangle", 0.04), 95);
+  }
+
+  function psSpawnShockwave() {
+    ps.shockwaves.push({
+      x: ps.player.x,
+      y: ps.player.y,
+      r: 14,
+      maxR: 245,
+      damage: PS_DYNAMICS[ps.dyn].damage * 1.65,
+      life: 38,
+      hitIds: new Set()
+    });
+    beep(92, 0.09, "sawtooth", 0.045);
+  }
+
+  function psSpawnTrebleBolts() {
+    const dyn = PS_DYNAMICS[ps.dyn];
+    const burstCount = 4 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < burstCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      ps.rays.push({
+        x: ps.player.x,
+        y: ps.player.y,
+        angle,
+        life: 5 + Math.floor(Math.random() * 5),
+        damage: dyn.damage * 0.78,
+        width: 4 + dyn.size * 0.5,
+        length: Math.max(canvas.width, canvas.height) * psRand(0.95, 1.8),
+        color: "treble",
+        jagged: true
+      });
+    }
+    beep(760 + Math.random() * 360, 0.035, "sawtooth", 0.028);
+  }
+
+  function psExplodeAt(x, y, damage) {
+    const radius = 92;
+    ps.explosions.push({ x, y, r: 10, maxR: radius, life: 18 });
+    ps.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const d = psDist({ x, y }, enemy);
+      if (d < radius + enemy.r) psDamageEnemy(enemy, damage * 0.78);
+    });
+    beep(170, 0.05, "sawtooth", 0.03);
+  }
+
+  function psDamageEnemy(enemy, amount) {
+    enemy.hp -= amount;
+    enemy.hitFlash = 5;
+    ps.particles.push({ x: enemy.x, y: enemy.y, text: "♪", life: 22, vy: -0.45 });
+  }
+
+  function psKillEnemy(enemy) {
+    addScore(enemy.score);
+    ps.kills++;
+    psSoundEnemyDie(enemy);
+    ps.particles.push({ x: enemy.x, y: enemy.y, text: "✦", life: 28, vy: -0.35 });
+  }
+
+  function psChainFrom(enemy, damage, depth) {
+    if (depth <= 0) return;
+    let best = null;
+    let bestDist = 9999;
+    ps.enemies.forEach(other => {
+      if (other === enemy || other.hp <= 0) return;
+      const d = psDist(enemy, other);
+      if (d < 180 && d < bestDist) {
+        best = other;
+        bestDist = d;
+      }
+    });
+    if (!best) return;
+    ps.lines.push({ x1: enemy.x, y1: enemy.y, x2: best.x, y2: best.y, life: 12 });
+    psDamageEnemy(best, damage * 0.9);
+    psChainFrom(best, damage * 0.7, depth - 1);
+  }
+
+  function psTryRevive() {
+    if (ps.hp > 0) return true;
+    if (ps.repeats > 0) {
+      ps.repeats--;
+      ps.hp = ps.maxHp;
+      ps.invuln = 120;
+      psSetMessage(`REPEAT USED: ${ps.repeats} left`, 180);
+      soundWin();
+      return true;
+    }
+    return false;
+  }
+
+  function psDrawPixelPiano(x, y, scale = 1) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#2563eb";
+    ctx.fillRect(-18, -15, 36, 30);
+    ctx.fillStyle = "#60a5fa";
+    ctx.fillRect(-16, -13, 32, 8);
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(-18, -15, 36, 3);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(-14, -1, 9, 14);
+    ctx.fillRect(-4, -1, 9, 14);
+    ctx.fillRect(6, -1, 9, 14);
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-14, -1, 9, 14);
+    ctx.strokeRect(-4, -1, 9, 14);
+    ctx.strokeRect(6, -1, 9, 14);
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(-8, -1, 5, 8);
+    ctx.fillRect(2, -1, 5, 8);
+    ctx.fillStyle = "#fde68a";
+    ctx.fillRect(-3, -19, 6, 4);
+    ctx.restore();
+  }
+
+  function psDrawViolin(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.15, 1.15);
+
+    const body = flash ? "#fef3c7" : "#b45309";
+    const bodyDark = flash ? "#fde68a" : "#78350f";
+    const wood = flash ? "#fff7ed" : "#d97706";
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.bezierCurveTo(-12, -17, -21, -5, -12, 3);
+    ctx.bezierCurveTo(-24, 16, -4, 23, 0, 10);
+    ctx.bezierCurveTo(5, 23, 24, 16, 12, 3);
+    ctx.bezierCurveTo(21, -5, 12, -17, 0, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = bodyDark;
+    ctx.beginPath();
+    ctx.ellipse(-7, 2, 3, 7, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(7, 2, 3, 7, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = wood;
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(-3, -28, 6, 20);
+    ctx.strokeRect(-3, -28, 6, 20);
+    ctx.fillRect(-8, -32, 16, 5);
+    ctx.strokeRect(-8, -32, 16, 5);
+
+    ctx.strokeStyle = "#fef3c7";
+    ctx.lineWidth = 1;
+    [-3, -1, 1, 3].forEach(offset => {
+      ctx.beginPath();
+      ctx.moveTo(offset, -29);
+      ctx.lineTo(offset * 0.4, 16);
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-21, -18);
+    ctx.lineTo(22, 16);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function psDrawTrumpet(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.15, 1.15);
+    const brass = flash ? "#fef3c7" : "#fbbf24";
+    const brassDark = flash ? "#fde68a" : "#b45309";
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = brass;
+
+    ctx.fillRect(-25, -5, 30, 10);
+    ctx.strokeRect(-25, -5, 30, 10);
+    ctx.fillRect(-32, -3, 7, 6);
+    ctx.strokeRect(-32, -3, 7, 6);
+
+    ctx.beginPath();
+    ctx.moveTo(5, -8);
+    ctx.lineTo(27, -17);
+    ctx.lineTo(31, -15);
+    ctx.lineTo(31, 15);
+    ctx.lineTo(27, 17);
+    ctx.lineTo(5, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = brassDark;
+    ctx.fillRect(-13, -15, 4, 10);
+    ctx.fillRect(-6, -17, 4, 12);
+    ctx.fillRect(1, -15, 4, 10);
+    ctx.fillRect(-17, 5, 24, 8);
+    ctx.strokeRect(-17, 5, 24, 8);
+
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.fillRect(-21, -3, 18, 2);
+    ctx.fillRect(13, -9, 11, 3);
+    ctx.restore();
+  }
+
+  function psDrawTuba(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.08, 1.08);
+    const brass = flash ? "#fef3c7" : "#f59e0b";
+    const bright = flash ? "#fde68a" : "#fbbf24";
+    const dark = flash ? "#111827" : "#92400e";
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = brass;
+
+    ctx.beginPath();
+    ctx.ellipse(-5, 5, 18, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#0b1420";
+    ctx.beginPath();
+    ctx.ellipse(-5, 5, 9, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = bright;
+    ctx.beginPath();
+    ctx.moveTo(10, -20);
+    ctx.lineTo(33, -29);
+    ctx.lineTo(36, -26);
+    ctx.lineTo(36, -4);
+    ctx.lineTo(33, -1);
+    ctx.lineTo(10, -9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = brass;
+    ctx.fillRect(4, -19, 8, 25);
+    ctx.strokeRect(4, -19, 8, 25);
+    ctx.fillRect(-19, -15, 7, 26);
+    ctx.strokeRect(-19, -15, 7, 26);
+
+    ctx.fillStyle = dark;
+    ctx.fillRect(-27, -18, 7, 5);
+    ctx.fillRect(-8, -22, 4, 9);
+    ctx.fillRect(-2, -22, 4, 9);
+    ctx.fillRect(4, -22, 4, 9);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-8, 3, 13, Math.PI * 0.25, Math.PI * 1.25);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function psDrawFlute(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.rotate(-0.22);
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = flash ? "#fef3c7" : "#dbeafe";
+    ctx.fillRect(-29, -4, 58, 8);
+    ctx.strokeRect(-29, -4, 58, 8);
+    ctx.fillStyle = flash ? "#111827" : "#2563eb";
+    for (let i = -16; i <= 18; i += 8) ctx.fillRect(i, -2, 3, 4);
+    ctx.fillStyle = flash ? "#fef3c7" : "#93c5fd";
+    ctx.fillRect(-34, -5, 7, 10);
+    ctx.fillRect(28, -5, 5, 10);
+    ctx.strokeRect(-34, -5, 7, 10);
+    ctx.strokeRect(28, -5, 5, 10);
+    ctx.restore();
+  }
+
+  function psDrawCello(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.06, 1.06);
+    const body = flash ? "#fef3c7" : "#9a3412";
+    const dark = flash ? "#fde68a" : "#431407";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.2;
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.bezierCurveTo(-17, -25, -25, -5, -13, 6);
+    ctx.bezierCurveTo(-28, 22, -6, 37, 0, 20);
+    ctx.bezierCurveTo(6, 37, 28, 22, 13, 6);
+    ctx.bezierCurveTo(25, -5, 17, -25, 0, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = dark;
+    ctx.fillRect(-4, -42, 8, 30);
+    ctx.strokeRect(-4, -42, 8, 30);
+    ctx.fillRect(-10, -47, 20, 6);
+    ctx.strokeRect(-10, -47, 20, 6);
+    ctx.strokeStyle = "#fef3c7";
+    ctx.lineWidth = 1.1;
+    [-4, -1, 1, 4].forEach(offset => {
+      ctx.beginPath();
+      ctx.moveTo(offset, -44);
+      ctx.lineTo(offset * 0.35, 27);
+      ctx.stroke();
+    });
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 28);
+    ctx.lineTo(0, 42);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function psDrawDrum(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    const shell = flash ? "#fef3c7" : "#dc2626";
+    const rim = flash ? "#fde68a" : "#f8fafc";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = shell;
+    ctx.fillRect(-25, -16, 50, 32);
+    ctx.strokeRect(-25, -16, 50, 32);
+    ctx.fillStyle = rim;
+    ctx.beginPath();
+    ctx.ellipse(0, -16, 25, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, 16, 25, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#fef3c7";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-30, -30);
+    ctx.lineTo(4, 0);
+    ctx.moveTo(30, -30);
+    ctx.lineTo(-4, 0);
+    ctx.stroke();
+    ctx.fillStyle = "#fef3c7";
+    ctx.beginPath();
+    ctx.arc(-32, -32, 4, 0, Math.PI * 2);
+    ctx.arc(32, -32, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function psDrawEnemy(enemy) {
+    const p = psWorldToScreen(enemy.x, enemy.y);
+    if (!psPointOnScreen(enemy, 64)) return;
+    const flash = enemy.hitFlash > 0;
+
+    if (enemy.boss) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.strokeStyle = "rgba(251,191,36,0.75)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, enemy.r + 9 + Math.sin(ps.time / 8) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.scale(1.35, 1.35);
+      if (enemy.kind === "violin") psDrawViolin(0, 0, flash);
+      else if (enemy.kind === "flute") psDrawFlute(0, 0, flash);
+      else if (enemy.kind === "trumpet") psDrawTrumpet(0, 0, flash);
+      else if (enemy.kind === "cello") psDrawCello(0, 0, flash);
+      else if (enemy.kind === "drum") psDrawDrum(0, 0, flash);
+      else psDrawTuba(0, 0, flash);
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(3,7,18,0.82)";
+      ctx.fillRect(p.x - 28, p.y - enemy.r - 24, 56, 7);
+      ctx.fillStyle = "#fbbf24";
+      ctx.fillRect(p.x - 27, p.y - enemy.r - 23, 54 * Math.max(0, enemy.hp / enemy.maxHp), 5);
+      return;
+    }
+
+    if (enemy.kind === "violin") psDrawViolin(p.x, p.y, flash);
+    else if (enemy.kind === "flute") psDrawFlute(p.x, p.y, flash);
+    else if (enemy.kind === "trumpet") psDrawTrumpet(p.x, p.y, flash);
+    else if (enemy.kind === "cello") psDrawCello(p.x, p.y, flash);
+    else if (enemy.kind === "drum") psDrawDrum(p.x, p.y, flash);
+    else psDrawTuba(p.x, p.y, flash);
+  }
+
+  function psDrawDrop(drop) {
+    if (!psPointOnScreen(drop, 44)) return;
+    const p = psWorldToScreen(drop.x, drop.y);
+    const pulse = Math.sin((ps.time + drop.pulse) / 16) * 0.12;
+    ctx.save();
+    ctx.translate(Math.round(p.x), Math.round(p.y));
+    ctx.scale(1 + pulse, 1 + pulse);
+
+    if (drop.kind === "rest" && drop.heal > 1) {
+      ctx.shadowColor = drop.color;
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = drop.color;
+      ctx.strokeStyle = drop.color;
+      ctx.lineWidth = 3;
+      const w = 22;
+      const h = 9;
+      const rectY = drop.heal === 2 ? -h : 0;
+      const lineY = drop.heal === 2 ? 0 : 0;
+      ctx.fillRect(-w / 2, rectY, w, h);
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 - 4, lineY);
+      ctx.lineTo(w / 2 + 4, lineY);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    ctx.font = `bold ${drop.fontSize || 24}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "rgba(3,7,18,0.92)";
+    ctx.strokeText(drop.label, 0, 1);
+    ctx.fillStyle = drop.color;
+    ctx.shadowColor = drop.color;
+    ctx.shadowBlur = 12;
+    ctx.fillText(drop.label, 0, 1);
+    ctx.restore();
+  }
+
+  function gameInit() {
+    ps = {
+      player: { x: PS_WORLD.width / 2, y: PS_WORLD.height / 2, r: 16 },
+      camera: { x: 0, y: 0 },
+      keys: {},
+      aim: { x: 1, y: 0 },
+      mouseDown: false,
+      bullets: [],
+      rays: [],
+      shockwaves: [],
+      explosions: [],
+      enemies: [],
+      drops: [],
+      particles: [],
+      lines: [],
+      dyn: 0,
+      tempo: 0,
+      rhythm: 0,
+      harmony: 0,
+      articulation: null,
+      hp: 6,
+      maxHp: 6,
+      repeats: 0,
+      invuln: 0,
+      fireCooldown: 0,
+      repeatCooldown: 0,
+      specialCooldown: PS_SPECIAL_FIRST_TIME,
+      bassPulseCooldown: 0,
+      trebleCooldown: 0,
+      nextFireSound: 0,
+      heading: { x: 1, y: 0 },
+      time: 0,
+      kills: 0,
+      message: "Explore the map. Collect symbols. Avoid the instruments.",
+      messageTimer: 280,
+      fermataTimer: 0,
+      trebleTimer: 0,
+      bassTimer: 0
+    };
+
+    setScore(0);
+    psUpdateCamera();
+    psMaintainDrops();
+    psMaintainEnemies();
+    psUpdateHud();
+
+    window.ArcadeShell.updateMenuTab("controls", `
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>Move:</strong> WASD or arrow keys</li>
+        <li><strong>Aim/fire:</strong> Move the mouse over the play area</li>
+        <li><strong>Help/Pause:</strong> M or Help</li>
+      </ul>
+    `);
+
+    window.ArcadeShell.updateMenuTab("instructions", `
+      <h3>Piano Survivor</h3>
+      <p>You are the tiny piano. The camera follows you through a much larger map. Explore to find upgrades before the instruments overwhelm you.</p>
+      <ul>
+        <li><strong>Dynamics</strong> change note size and damage.</li>
+        <li><strong>Tempo</strong> changes movement speed.</li>
+        <li><strong>Rhythm</strong> changes fire rate.</li>
+        <li><strong>Harmony</strong> changes how many notes fire at once.</li>
+        <li><strong>Rests</strong> heal. <strong>:||</strong> gives an extra life. Specials: <strong>𝄐</strong> rays, <strong>𝄞</strong> piercing lines, <strong>𝄢</strong> earthquake pulses.</li>
+        <li><strong>Articulations</strong> replace your current shot behavior.</li>
+      </ul>
+    `);
+  }
+
+  function gameUpdate() {
+    if (!ps) return;
+    ps.time++;
+    if (ps.messageTimer > 0) ps.messageTimer--;
+    if (ps.invuln > 0) ps.invuln--;
+    if (ps.fermataTimer > 0) ps.fermataTimer--;
+    if (ps.trebleTimer > 0) ps.trebleTimer--;
+    if (ps.bassTimer > 0) ps.bassTimer--;
+    if (ps.trebleCooldown > 0) ps.trebleCooldown--;
+    if (ps.bassPulseCooldown > 0) ps.bassPulseCooldown--;
+    if (ps.fireCooldown > 0) ps.fireCooldown--;
+
+    let mx = 0;
+    let my = 0;
+    if (ps.keys["arrowup"] || ps.keys["w"]) my -= 1;
+    if (ps.keys["arrowdown"] || ps.keys["s"]) my += 1;
+    if (ps.keys["arrowleft"] || ps.keys["a"]) mx -= 1;
+    if (ps.keys["arrowright"] || ps.keys["d"]) mx += 1;
+    const mm = Math.sqrt(mx * mx + my * my) || 1;
+    const speed = PS_TEMPOS[ps.tempo].speed;
+    if (Math.abs(mx) > 0.05 || Math.abs(my) > 0.05) {
+      ps.heading.x = mx / mm;
+      ps.heading.y = my / mm;
+    }
+    ps.player.x = psWrapValue(ps.player.x + (mx / mm) * speed, PS_WORLD.width);
+    ps.player.y = psWrapValue(ps.player.y + (my / mm) * speed, PS_WORLD.height);
+
+    psUpdateCamera();
+    psMaintainDrops();
+    psMaintainEnemies();
+    psFire();
+
+    if (ps.bassTimer > 0 && ps.bassPulseCooldown <= 0) {
+      psSpawnShockwave();
+      ps.bassPulseCooldown = 23;
+    }
+
+    if (ps.trebleTimer > 0 && ps.trebleCooldown <= 0) {
+      psSpawnTrebleBolts();
+      ps.trebleCooldown = 8 + Math.floor(Math.random() * 11);
+    }
+
+    ps.enemies.forEach(enemy => {
+      const dx = psWrappedDelta(enemy.x, ps.player.x, PS_WORLD.width);
+      const dy = psWrappedDelta(enemy.y, ps.player.y, PS_WORLD.height);
+      const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+      enemy.x += (dx / mag) * enemy.speed;
+      enemy.y += (dy / mag) * enemy.speed;
+      psWrapEntity(enemy);
+      if (enemy.hitFlash > 0) enemy.hitFlash--;
+
+      if (psDist(enemy, ps.player) < enemy.r + ps.player.r && ps.invuln <= 0) {
+        ps.hp--;
+        ps.invuln = 80;
+        psSetMessage(`Ouch! HP ${ps.hp}/${ps.maxHp}`, 90);
+        soundLose();
+        if (!psTryRevive()) endGame("Out of rests.");
+      }
+    });
+
+    ps.bullets.forEach(bullet => {
+      bullet.x += bullet.vx;
+      bullet.y += bullet.vy;
+      if (bullet.wiggle) {
+        bullet.wiggle.phase += bullet.wiggle.freq;
+        const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 1;
+        const wobble = Math.sin(bullet.wiggle.phase) * bullet.wiggle.amp;
+        bullet.x += (-bullet.vy / spd) * wobble;
+        bullet.y += (bullet.vx / spd) * wobble;
+      }
+      psWrapEntity(bullet);
+      bullet.life--;
+
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0 || bullet.hitIds.has(enemy)) return;
+        if (psDist(bullet, enemy) < (bullet.hitRadius || bullet.r) + enemy.r) {
+          bullet.hitIds.add(enemy);
+          psDamageEnemy(enemy, bullet.damage);
+          if (bullet.explode) psExplodeAt(enemy.x, enemy.y, bullet.damage);
+          if (bullet.chain > 0) psChainFrom(enemy, bullet.damage, bullet.chain);
+
+          if (bullet.bounces > 0) {
+            bullet.bounces--;
+            let target = null;
+            let bestD = 9999;
+            ps.enemies.forEach(other => {
+              if (other === enemy || other.hp <= 0 || bullet.hitIds.has(other)) return;
+              const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
+              if (d < bestD) { bestD = d; target = other; }
+            });
+            if (target) {
+              const dx = psWrappedDelta(bullet.x, target.x, PS_WORLD.width);
+              const dy = psWrappedDelta(bullet.y, target.y, PS_WORLD.height);
+              const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+              const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 4;
+              bullet.vx = (dx / mag) * spd;
+              bullet.vy = (dy / mag) * spd;
+            } else {
+              bullet.life = 0;
+            }
+          } else if (bullet.pierce > 0) {
+            bullet.pierce--;
+          } else {
+            bullet.life = 0;
+          }
+        }
+      });
+    });
+
+    ps.rays.forEach(ray => {
+      ray.life--;
+      const dx = Math.cos(ray.angle);
+      const dy = Math.sin(ray.angle);
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = psWrappedDelta(ray.x, enemy.x, PS_WORLD.width);
+        const ey = psWrappedDelta(ray.y, enemy.y, PS_WORLD.height);
+        const forward = ex * dx + ey * dy;
+        if (forward < 0 || forward > ray.length) return;
+        const perp = Math.abs(ex * dy - ey * dx);
+        if (perp < enemy.r + ray.width * 0.36) psDamageEnemy(enemy, ray.damage);
+      });
+    });
+
+    ps.shockwaves.forEach(wave => {
+      wave.r += (wave.maxR - wave.r) * 0.16;
+      wave.life--;
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0 || wave.hitIds.has(enemy)) return;
+        const d = psDist(wave, enemy);
+        if (Math.abs(d - wave.r) < enemy.r + 30) {
+          wave.hitIds.add(enemy);
+          psDamageEnemy(enemy, wave.damage);
+        }
+      });
+    });
+
+    ps.explosions.forEach(explosion => {
+      explosion.r += (explosion.maxR - explosion.r) * 0.35;
+      explosion.life--;
+    });
+
+    ps.enemies = ps.enemies.filter(enemy => {
+      if (enemy.hp > 0) return true;
+      psKillEnemy(enemy);
+      return false;
+    });
+
+    ps.bullets = ps.bullets.filter(b => b.life > 0);
+    ps.rays = ps.rays.filter(r => r.life > 0);
+    ps.shockwaves = ps.shockwaves.filter(w => w.life > 0);
+    ps.explosions = ps.explosions.filter(e => e.life > 0);
+
+    ps.drops.forEach(drop => {
+      if (psDist(drop, ps.player) < drop.r + ps.player.r) {
+        drop.collected = true;
+        psCollectDrop(drop);
+      }
+    });
+    ps.drops = ps.drops.filter(d => !d.collected);
+
+    ps.particles.forEach(p => { p.y += p.vy; p.life--; });
+    ps.particles = ps.particles.filter(p => p.life > 0);
+    ps.lines.forEach(l => l.life--);
+    ps.lines = ps.lines.filter(l => l.life > 0);
+
+    if (ps.time % 60 === 0) addScore(1);
+    psUpdateHud();
+  }
+
+  function gameDraw() {
+    if (!ps) return;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#0b1420";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = "rgba(96,165,250,0.1)";
+    const grid = 48;
+    const gx = - (ps.camera.x % grid);
+    const gy = - (ps.camera.y % grid);
+    for (let x = gx; x < canvas.width; x += grid) ctx.fillRect(Math.floor(x), 0, 1, canvas.height);
+    for (let y = gy; y < canvas.height; y += grid) ctx.fillRect(0, Math.floor(y), canvas.width, 1);
+
+    ps.drops.forEach(psDrawDrop);
+
+    ps.lines.forEach(line => {
+      const a = psWorldToScreen(line.x1, line.y1);
+      const b = psWorldToScreen(line.x2, line.y2);
+      ctx.strokeStyle = `rgba(147,197,253,${line.life / 10})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    });
+
+    ps.rays.forEach(ray => {
+      const p = psWorldToScreen(ray.x, ray.y);
+      const dx = Math.cos(ray.angle);
+      const dy = Math.sin(ray.angle);
+      const drawBolt = (lineWidth, strokeStyle) => {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        if (ray.jagged) {
+          const steps = 9;
+          const perpX = -dy;
+          const perpY = dx;
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const jitter = (Math.random() - 0.5) * 34 * (1 - t * 0.35);
+            ctx.lineTo(p.x + dx * ray.length * t + perpX * jitter, p.y + dy * ray.length * t + perpY * jitter);
+          }
+        } else {
+          ctx.lineTo(p.x + dx * ray.length, p.y + dy * ray.length);
+        }
+        ctx.stroke();
+      };
+      drawBolt(ray.width, ray.color === "treble" ? `rgba(96,165,250,${0.24 + ray.life / 10})` : `rgba(147,197,253,${0.2 + ray.life / 10})`);
+      drawBolt(Math.max(1.5, ray.width * 0.22), "rgba(255,255,255,0.78)");
+    });
+
+    ps.shockwaves.forEach(wave => {
+      const p = psWorldToScreen(wave.x, wave.y);
+      ctx.strokeStyle = `rgba(167,139,250,${Math.max(0, wave.life / 28)})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, wave.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, wave.life / 42)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, wave.r * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    ps.explosions.forEach(explosion => {
+      const p = psWorldToScreen(explosion.x, explosion.y);
+      ctx.strokeStyle = `rgba(251,191,36,${Math.max(0, explosion.life / 15)})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, explosion.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(251,113,133,${Math.max(0, explosion.life / 42)})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, explosion.r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ps.bullets.forEach(b => {
+      if (!psPointOnScreen(b, 30)) return;
+      const p = psWorldToScreen(b.x, b.y);
+      ctx.fillStyle = ps.articulation?.id === "legato" ? "#93c5fd" : "#ffe08a";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#111827";
+      ctx.font = `bold ${Math.max(8, b.r + 3)}px Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("♪", p.x, p.y + 0.5);
+    });
+
+    ps.enemies.forEach(psDrawEnemy);
+
+    const playerPos = psWorldToScreen(ps.player.x, ps.player.y);
+    if (ps.invuln % 12 < 6) psDrawPixelPiano(playerPos.x, playerPos.y);
+
+    ctx.fillStyle = "rgba(3,7,18,0.85)";
+    ctx.fillRect(0, 0, canvas.width, 20);
+    ctx.fillStyle = "#b7ff9e";
+    ctx.font = "bold 11px Courier New, monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(psCompactStatsLine(), 6, 10);
+    ctx.textAlign = "right";
+    ctx.fillText(`K ${ps.kills}`, canvas.width - 8, 10);
+
+    ps.particles.forEach(p => {
+      if (!psPointOnScreen(p, 26)) return;
+      const sp = psWorldToScreen(p.x, p.y);
+      ctx.globalAlpha = Math.max(0, p.life / 22);
+      ctx.fillStyle = "#fef3c7";
+      ctx.font = "bold 14px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(p.text, sp.x, sp.y);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  document.addEventListener("keydown", e => {
+    if (!ps) return;
+    const tag = document.activeElement?.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    ps.keys[e.key.toLowerCase()] = true;
+  });
+
+  document.addEventListener("keyup", e => {
+    if (!ps) return;
+    ps.keys[e.key.toLowerCase()] = false;
+  });
+
+  canvas.addEventListener("mousemove", e => {
+    if (!ps) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const worldX = mx + ps.camera.x;
+    const worldY = my + ps.camera.y;
+    ps.aim.x = worldX - ps.player.x;
+    ps.aim.y = worldY - ps.player.y;
+  });
+
+  canvas.addEventListener("mousedown", e => {
+    if (!ps) return;
+    ps.mouseDown = true;
+    const rect = canvas.getBoundingClientRect();
+    gamePointer({
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+      originalEvent: e
+    });
+  });
+
+  document.addEventListener("mouseup", () => {
+    if (!ps) return;
+    ps.mouseDown = false;
+  });
+
+  function gameInput(action) {
+    if (!ps) return;
+    if (action === "up") ps.keys.arrowup = true;
+    if (action === "down") ps.keys.arrowdown = true;
+    if (action === "left") ps.keys.arrowleft = true;
+    if (action === "right") ps.keys.arrowright = true;
+    if (action === "a") psSetMessage("Explore and collect the symbols.", 110);
+  }
+
+  function gamePointer(point) {
+    if (!ps) return;
+    ps.aim.x = point.x + ps.camera.x - ps.player.x;
+    ps.aim.y = point.y + ps.camera.y - ps.player.y;
+    ps.fireCooldown = 0;
+    psFire();
+  }
+
+  function gameStop() {
+    if (!ps) return;
+    ps.keys = {};
+    ps.bullets = [];
+    ps.rays = [];
+    ps.shockwaves = [];
+  }
+
+  window.ArcadeShell = {
+    root,
+    canvas,
+    ctx,
+    setScore,
+    addScore,
+    endGame,
+    soundCorrect,
+    soundWin,
+    soundLose,
+    getAudio,
+    openMenu: openShellMenu,
+    closeMenu: closeShellMenu,
+    registerMenuTab: registerShellMenuTab,
+    updateMenuTab: updateShellMenuTab
+  };
+})();
+</script>
