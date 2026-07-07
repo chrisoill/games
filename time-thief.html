@@ -1,0 +1,2824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Time Thief Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: pixelated;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 35px;
+      padding: 18px 12px;
+      background: rgba(16, 24, 39, 0.93);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 8px 12px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+  
+
+    /* Time Thief Step 1: one-button layout */
+    #dpad, #leftJoystickPad, #rightJoystickPad, #buttonB, #buttonX, #buttonY { display: none !important; }
+    #faceButtons { left: 50%; right: auto; top: 54px; width: 170px; height: 170px; transform: translateX(-50%); }
+    #buttonA {
+      left: 50%; top: 50%; transform: translate(-50%, -50%);
+      width: 128px; height: 128px; font-size: 26px;
+      background: radial-gradient(circle at 30% 30%, #ffe08a, #c27803);
+      color: #111827;
+    }
+    #buttonA::after { content: "TAP"; }
+    #buttonA { font-size: 0; }
+    #buttonA::after { font-size: 28px; font-weight: 900; }
+    #systemButtons { top: 312px; }
+
+    /* Time Thief uses one gameplay button plus MENU. */
+    #selectButton { display: none !important; }
+    #systemButtons { width: 92px; }
+    #startButton { width: 92px; }
+</style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">A</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
+    const STORAGE_KEY = "timeThiefMobilePlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Watches";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let wixStorageAnswered = false;
+    let firstTimeHelpVersion = "howToPlay_v1";
+    let pendingFirstTimeHelpStart = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+          </div>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>TAP:</strong> Take one step forward.</li>
+            <li><strong>MENU:</strong> Pause, read the help, or leave the run.</li>
+          </ul>
+          <p>Try to tap in a steady quarter-note beat. If you stop, the moving floor pulls you backward.</p>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <ul>
+            <li>You are the Time Thief running through a laser corridor.</li>
+            <li>Each TAP is one step forward, like playing steady quarter notes.</li>
+            <li>Keep a steady beat so you stay near the safe opening between the red lasers.</li>
+            <li>Grab watches when they appear to score points.</li>
+            <li>The tempo changes in smooth waves, so feel when the corridor speeds up or slows down.</li>
+            <li>If the lasers catch you, the run ends.</li>
+          </ul>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "pause";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (!shouldResume) {
+        pendingFirstTimeHelpStart = false;
+      }
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+
+      if (
+        shouldResume &&
+        pendingFirstTimeHelpStart &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        pendingFirstTimeHelpStart = false;
+        startGame();
+      }
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function setScore(value) {
+      score = Math.max(0, Math.floor(value));
+      scoreEl.textContent = score;
+    }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const isObjectData = data && typeof data === "object" && !Array.isArray(data);
+        const best = isObjectData
+          ? Number(data.best || 0)
+          : Number(data || 0);
+
+        cleaned[cleanName] = {
+          ...(isObjectData ? data : {}),
+          best: Math.max(0, Math.floor(best || 0))
+        };
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this template stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .sort((a, b) => (b[1].best || 0) - (a[1].best || 0))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${data.best || 0}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${players[name].best || 0}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0 };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function isGuestPlayerName(name) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function shouldShowFirstTimeHelp() {
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      if (isGuestPlayerName(selectedPlayer)) return true;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData || isGuestPlayerName(selectedPlayer)) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function beginRunWithFirstTimeHelp() {
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      gameOverBox.style.display = "none";
+
+      if (shouldShowFirstTimeHelp()) {
+        markFirstTimeHelpSeen();
+        pendingFirstTimeHelpStart = true;
+        openShellMenu("instructions");
+        return;
+      }
+
+      startGame();
+    }
+
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0 };
+      }
+
+      savePlayers();
+      beginRunWithFirstTimeHelp();
+    };
+
+    playAgainBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      beginRunWithFirstTimeHelp();
+    };
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+      gameOverBox.style.display = "none";
+
+      setMessage("READY");
+      gameInit();
+
+      loop();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      soundLose();
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverBox.style.display = "block";
+    }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCorrect() {
+      beep(660, 0.08, "square", 0.06);
+      setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+      });
+    }
+
+    function soundLose() {
+      [300, 220, 160, 100].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+      });
+    }
+
+
+  /* =========================
+     GAME MODULE — TIME THIEF TEMPO WAVES
+     Lasers stay fixed on screen; corridor speed performs smooth tempo waves.
+     ========================= */
+
+  const TT_BG = "#07111f";
+  const TT_INK = "#f8fafc";
+  const TT_GOLD = "#facc15";
+  const TT_RED = "#ef4444";
+  const TT_BLUE = "#38bdf8";
+  const TT_FLOOR = "#1f2937";
+  const TT_BASE_TEMPO_BPM = 120;
+  const TT_MIN_TEMPO_BPM = 60;
+  const TT_MAX_TEMPO_BPM = 240;
+
+  let tt = null;
+  let ttHelpRegistered = false;
+
+  function ttClamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+  function ttLerp(a, b, t) { return a + (b - a) * t; }
+
+  function ttRoundRect(x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.lineTo(x + w - rr, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+    ctx.lineTo(x + w, y + h - rr);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+    ctx.lineTo(x + rr, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+    ctx.lineTo(x, y + rr);
+    ctx.quadraticCurveTo(x, y, x + rr, y);
+    ctx.closePath();
+  }
+
+  function ttText(text, x, y, size, fill = TT_INK, align = "center", weight = "bold") {
+    ctx.fillStyle = fill;
+    ctx.textAlign = align;
+    ctx.textBaseline = "middle";
+    ctx.font = `${weight} ${size}px Arial, sans-serif`;
+    ctx.fillText(text, x, y);
+  }
+
+  function ttRegisterHelp() {
+    if (ttHelpRegistered) return;
+    ttHelpRegistered = true;
+
+    const controlsHtml = `
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>TAP:</strong> Take one step forward.</li>
+        <li><strong>MENU:</strong> Pause, read the help, or leave the run.</li>
+      </ul>
+      <p>Try to tap in a steady quarter-note beat. If you stop, the moving floor pulls you backward.</p>
+    `;
+
+    const instructionsHtml = `
+      <h3>How to Play</h3>
+      <ul>
+        <li>You are the Time Thief running through a laser corridor.</li>
+        <li>Each TAP is one step forward, like playing steady quarter notes.</li>
+        <li>Keep a steady beat so you stay near the safe opening between the red lasers.</li>
+        <li>Grab watches when they appear to score points.</li>
+        <li>The tempo changes in smooth waves, so feel when the corridor speeds up or slows down.</li>
+        <li>If the lasers catch you, the run ends.</li>
+      </ul>
+    `;
+
+    if (typeof updateShellMenuTab === "function") {
+      updateShellMenuTab("controls", controlsHtml);
+      updateShellMenuTab("instructions", instructionsHtml);
+    }
+
+    const aBtn = typeof document !== "undefined" ? document.getElementById("buttonA") : null;
+    if (aBtn) aBtn.textContent = "TAP";
+  }
+
+  function ttFreshState() {
+    const now = performance.now();
+    return {
+      now,
+      lastMs: now,
+      floor: 1,
+      watches: 0,
+      worldX: 0,
+      nextWatchGap: 1550,
+      watchX: 1550,
+      runLevel: 1,
+      scrollSpeed: 100,
+      baselineSpeed: 100,
+      scrollTargetSpeed: 100,
+      scrollAccel: 0,
+      scrollMode: "steady",
+      tempoEvent: null,
+      nextTempoEventAt: now + 900,
+      playerOffset: 0,
+      playerRadius: 16,
+      stepSize: 50,
+      stepDuration: 0.15,
+      activeSteps: [],
+      lastTapAt: 0,
+      tapInterval: 0.46,
+      runIntensity: 0,
+      centerDrift: 0,
+      laserGap: 999,
+      laserGapTarget: 999,
+      laserGapStart: 999,
+      laserGapMin: 96,
+      laserTightness: 0,
+      laserOffset: 0,
+      laserTargetOffset: 0,
+      nextLaserTargetAt: now + 1800,
+      rubatoPhase: 0,
+      rubatoAmp: 0,
+      rubatoTargetAmp: 34,
+      rubatoSpeed: 0.9,
+      rubatoTargetSpeed: 0.9,
+      rubatoEase: 0.018,
+      nextRubatoChangeAt: now + 1900,
+      rubatoLabel: "Steady",
+      rubatoMode: "steady",
+      lastLaserOffset: 0,
+      laserVelocity: 0,
+      laserVelocityTarget: 0,
+      nextLaserNudgeAt: now + 260,
+      laserAcceleration: 0,
+      safeMs: 0,
+      caught: false,
+      footPulse: 0,
+      stepPhase: 0,
+      tapFlash: 0,
+      watchTaken: false,
+      stairsReached: false,
+      transitionMs: 0,
+      message: "",
+      baselineTempoBpm: 120,
+      tapTempoBpm: 120,
+      displayTempoBpm: 120,
+      messageMs: 0,
+      particles: [],
+      popups: [],
+      doorGlow: 0,
+      chimeCooldown: 0,
+      difficultyPressure: 0,
+      targetTempoBpm: 120,
+      previousTargetTempoBpm: 120,
+      lastTempoDirection: 0,
+      laserDanger: 0,
+      deathFlash: 0,
+      deathShakeMs: 0,
+      pickupFlash: 0
+    };
+  }
+
+  function ttSetStatus(text) {
+    if (typeof questionBox !== "undefined" && questionBox) questionBox.textContent = text;
+    if (typeof setMessage === "function") setMessage(text || "READY");
+  }
+
+  function ttLayout() {
+    const w = canvas.width;
+    const h = canvas.height;
+    const mobile = w <= 420;
+    const groundY = h * (mobile ? 0.77 : 0.78);
+    return {
+      w,
+      h,
+      mobile,
+      playerX: w * 0.5,
+      groundY,
+      hudH: mobile ? 34 : 54,
+      worldScale: mobile ? 0.78 : 1.0
+    };
+  }
+
+  function ttTap() {
+    if (!tt || tt.transitionMs > 0) return;
+    const now = performance.now();
+    const layout = ttLayout();
+    if (tt.lastTapAt > 0) {
+      tt.tapInterval = ttClamp((now - tt.lastTapAt) / 1000, 0.13, 1.4);
+      tt.tapTempoBpm = ttClamp(60 / tt.tapInterval, 20, 260);
+    }
+    tt.lastTapAt = now;
+    tt.footPulse = 1;
+    tt.tapFlash = 1;
+    tt.stepPhase += Math.PI;
+    tt.message = "";
+    tt.messageMs = 0;
+
+    const fastBonus = ttClamp((tt.scrollSpeed - tt.baselineSpeed) / Math.max(1, tt.baselineSpeed * 0.55), 0, 1);
+    const distance = tt.stepSize * (1 + fastBonus * 0.12);
+    const duration = tt.stepDuration * (1 - fastBonus * 0.26);
+    const leg = tt.stepPhase;
+    tt.activeSteps.push({ elapsed: 0, duration, distance, progress: 0, leg });
+    if (tt.activeSteps.length > 5) tt.activeSteps.shift();
+
+    const footX = layout.playerX + tt.playerOffset - 12 + Math.random() * 20;
+    const footY = layout.groundY + 4;
+    tt.particles.push({
+      kind: "foot",
+      x: footX,
+      y: footY,
+      vx: -42 - Math.random() * 42,
+      vy: -8 - Math.random() * 10,
+      life: 0.24,
+      maxLife: 0.24,
+      size: 7 + Math.random() * 5
+    });
+    tt.particles.push({
+      kind: "stepRing",
+      x: footX + 4,
+      y: footY - 1,
+      vx: -18,
+      vy: 0,
+      life: 0.18,
+      maxLife: 0.18,
+      size: 8
+    });
+    if (typeof beep === "function") beep(120 + fastBonus * 70 + Math.random() * 18, 0.032, "triangle", 0.021);
+  }
+
+  function ttUpdateLaserGap(layout, dt) {
+    // Difficulty curve step: lasers begin near the frame edges and glide inward
+    // continuously. The closing rate gets slightly more demanding with survival
+    // time and watch count, but the pressure itself eases in so there are no
+    // visible step-jumps.
+    const margin = layout.mobile ? 18 : 28;
+    const startGap = Math.max(140, layout.w - margin * 2);
+    const minGap = Math.max(
+      layout.mobile ? 72 : 104,
+      tt.playerRadius * (layout.mobile ? 5.6 : 6.3)
+    );
+    tt.laserGapStart = startGap;
+    tt.laserGapMin = minGap;
+
+    const survivalPressure = ttClamp(tt.worldX / (layout.mobile ? 26000 : 31000), 0, 0.24);
+    const watchPressure = ttClamp(tt.watches * 0.004, 0, 0.22);
+    const targetPressure = ttClamp(survivalPressure + watchPressure, 0, 0.40);
+    const ease = 1 - Math.pow(0.94, dt * 60);
+    tt.difficultyPressure = ttLerp(tt.difficultyPressure || 0, targetPressure, ease);
+
+    const baseDistanceConstant = layout.mobile ? 5200 : 6200;
+    const distanceConstant = baseDistanceConstant * (1 - tt.difficultyPressure * 0.45);
+    const distance = Math.max(0, tt.worldX);
+    const target = minGap + (startGap - minGap) * Math.exp(-distance / distanceConstant);
+
+    tt.laserGapTarget = target;
+    tt.laserGap = target;
+    tt.laserTightness = ttClamp(1 - ((target - minGap) / Math.max(1, startGap - minGap)), 0, 1);
+  }
+
+  function ttScheduleNextWatch() {
+    // One-active-watch loop: as soon as a watch is collected, the next one
+    // spawns just off the right edge so it visibly enters the corridor next.
+    const layout = ttLayout();
+    const offscreenMargin = layout.mobile ? 50 : 72;
+    const spawnScreenX = layout.w + offscreenMargin;
+    tt.nextWatchGap = (spawnScreenX - layout.playerX) / layout.worldScale;
+    tt.watchX = tt.worldX + tt.nextWatchGap;
+    tt.watchTaken = false;
+  }
+
+  function ttTakeWatch() {
+    tt.watchTaken = true;
+    tt.watches += 1;
+    tt.runLevel = tt.watches + 1;
+    tt.pickupFlash = 1;
+    setScore(tt.watches);
+    tt.message = "";
+    tt.messageMs = 0;
+    const pickupLayout = ttLayout();
+    const burstX = pickupLayout.playerX + 24;
+    const burstY = pickupLayout.groundY - 66 * pickupLayout.worldScale;
+    for (let i = 0; i < 28; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 45 + Math.random() * 135;
+      tt.particles.push({
+        kind: "spark",
+        x: burstX + Math.random() * 22,
+        y: burstY + Math.random() * 18,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 32,
+        life: 0.55 + Math.random() * 0.28,
+        maxLife: 0.83,
+        gold: true,
+        size: 2.5 + Math.random() * 2.5
+      });
+    }
+    tt.particles.push({
+      kind: "pickupRing",
+      x: burstX + 4,
+      y: burstY + 2,
+      vx: 0,
+      vy: 0,
+      life: 0.38,
+      maxLife: 0.38,
+      size: 18
+    });
+    tt.popups.push({
+      text: "+1",
+      x: pickupLayout.playerX + 20,
+      y: pickupLayout.groundY - 98 * pickupLayout.worldScale,
+      vy: -22,
+      life: 0.58,
+      maxLife: 0.58
+    });
+    if (tt.popups.length > 4) tt.popups.shift();
+    if (typeof soundCorrect === "function") soundCorrect();
+    ttScheduleNextWatch();
+  }
+
+  function ttReachStairs() {
+    // Stairs removed: this is now one continuous museum run.
+  }
+
+  function ttSmoothTempoBell(t) {
+    // Default symmetric raised-cosine bell. Used as a safe fallback.
+    const x = ttClamp(t, 0, 1);
+    return 0.5 - 0.5 * Math.cos(2 * Math.PI * x);
+  }
+
+  function ttEaseTempoSide(t, power) {
+    // Smoothstep gives musical endpoints; the power lets some waves feel broad
+    // and others feel more sudden without creating hard corners.
+    const x = ttClamp(t, 0, 1);
+    const smooth = x * x * (3 - 2 * x);
+    return Math.pow(smooth, Math.max(0.58, power || 1));
+  }
+
+  function ttTempoEventShape(t, event) {
+    const x = ttClamp(t, 0, 1);
+    const peakAt = ttClamp(event?.peakAt ?? 0.5, 0.22, 0.78);
+    if (x <= peakAt) {
+      return ttEaseTempoSide(x / peakAt, event?.attackPower ?? 1);
+    }
+    return ttEaseTempoSide(1 - ((x - peakAt) / Math.max(0.001, 1 - peakAt)), event?.releasePower ?? 1);
+  }
+
+  function ttStartTempoEvent() {
+    const difficulty = ttClamp(
+      (tt.laserTightness || 0) * 0.50 +
+      Math.min(0.34, tt.watches * 0.006) +
+      Math.min(0.22, tt.worldX / 54000),
+      0,
+      1
+    );
+
+    // Ratio-based tempo waves: 120 is the multiplicative center between
+    // 60 and 240. The possible maximum ratio grows over time, but each
+    // actual wave randomly chooses its own peak below that ceiling.
+    const baseTempo = tt.baselineTempoBpm || TT_BASE_TEMPO_BPM;
+    const absoluteMaxRatio = Math.min(
+      TT_MAX_TEMPO_BPM / baseTempo,
+      baseTempo / TT_MIN_TEMPO_BPM
+    );
+    const maxPossibleRatio = ttClamp(1.22 + difficulty * 0.78, 1.22, absoluteMaxRatio);
+    const minPeakRatio = ttClamp(1.08 + difficulty * 0.04, 1.06, maxPossibleRatio);
+    const weightedRandom = Math.pow(Math.random(), 0.72); // variety without living at the max.
+    const peakRatio = ttClamp(
+      minPeakRatio + (maxPossibleRatio - minPeakRatio) * weightedRandom,
+      minPeakRatio,
+      maxPossibleRatio
+    );
+
+    let direction = Math.random() < 0.5 ? 1 : -1;
+    if (tt.lastTempoDirection && Math.random() < 0.54) direction = -tt.lastTempoDirection;
+    tt.lastTempoDirection = direction;
+
+    const peakTempo = direction > 0
+      ? ttClamp(baseTempo * peakRatio, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM)
+      : ttClamp(baseTempo / peakRatio, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM);
+    const signedLogRatio = Math.log(peakTempo / baseTempo);
+
+    // The maximum permitted steepness increases with difficulty, but the actual
+    // event still randomizes. Early game mostly breathes; later game sometimes
+    // snaps into a more urgent wave.
+    const slowestDuration = ttLerp(7.8, 5.3, difficulty);
+    const fastestDuration = ttLerp(5.6, 2.75, difficulty);
+    const duration = ttLerp(slowestDuration, fastestDuration, Math.pow(Math.random(), 0.9));
+
+    // peakAt controls whether the climb or release is longer. Power below 1
+    // creates a more sudden move; power above 1 creates a more gradual one.
+    const suddenChance = ttLerp(0.12, 0.44, difficulty);
+    const attackPower = Math.random() < suddenChance
+      ? ttLerp(0.58, 0.88, Math.random())
+      : ttLerp(1.06, 1.82, Math.random());
+    const releasePower = Math.random() < suddenChance
+      ? ttLerp(0.58, 0.92, Math.random())
+      : ttLerp(1.04, 1.95, Math.random());
+    const peakAt = ttClamp(0.50 + (Math.random() - 0.5) * ttLerp(0.18, 0.36, difficulty), 0.28, 0.72);
+
+    tt.tempoEvent = {
+      startMs: tt.now,
+      durationMs: duration * 1000,
+      signedLogRatio,
+      peakRatio,
+      peakTempo,
+      peakAt,
+      attackPower,
+      releasePower,
+      maxPossibleRatio
+    };
+  }
+
+  function ttUpdateTempoWave(dt) {
+    const baseTempo = tt.baselineTempoBpm || TT_BASE_TEMPO_BPM;
+    let targetTempo = baseTempo;
+
+    if (!tt.tempoEvent && tt.now >= tt.nextTempoEventAt) {
+      ttStartTempoEvent();
+    }
+
+    if (tt.tempoEvent) {
+      const t = (tt.now - tt.tempoEvent.startMs) / Math.max(1, tt.tempoEvent.durationMs);
+      if (t >= 1) {
+        tt.tempoEvent = null;
+        targetTempo = baseTempo;
+        const pressure = ttClamp((tt.laserTightness || 0) + tt.watches * 0.006, 0, 1);
+        const restMs = (1050 + Math.random() * 2100) * (1 - pressure * 0.42);
+        tt.nextTempoEventAt = tt.now + Math.max(520, restMs);
+      } else {
+        targetTempo = baseTempo * Math.exp(tt.tempoEvent.signedLogRatio * ttTempoEventShape(t, tt.tempoEvent));
+      }
+    }
+
+    targetTempo = ttClamp(targetTempo, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM);
+    const tempoChange = targetTempo - (tt.previousTargetTempoBpm || baseTempo);
+    if (Math.abs(tempoChange) < 0.08 && !tt.tempoEvent) {
+      tt.rubatoLabel = "Steady";
+      tt.scrollMode = "steady";
+    } else if (tempoChange > 0.08) {
+      tt.rubatoLabel = "Accelerando";
+      tt.scrollMode = "accelerando";
+    } else if (tempoChange < -0.08) {
+      tt.rubatoLabel = "Ritardando";
+      tt.scrollMode = "ritardando";
+    } else {
+      tt.rubatoLabel = "Steady";
+      tt.scrollMode = "steady";
+    }
+
+    tt.previousTargetTempoBpm = targetTempo;
+    tt.targetTempoBpm = targetTempo;
+    tt.displayTempoBpm = targetTempo;
+    tt.scrollTargetSpeed = (tt.stepSize * (targetTempo / 60)) / Math.max(0.001, ttLayout().worldScale);
+    tt.scrollAccel = (tt.scrollTargetSpeed - tt.scrollSpeed) / Math.max(dt, 1 / 60);
+    tt.scrollSpeed = tt.scrollTargetSpeed;
+  }
+
+  function gameInit() {
+    ttRegisterHelp();
+    tt = ttFreshState();
+    const layout = ttLayout();
+    tt.laserGapStart = Math.max(140, layout.w - (layout.mobile ? 36 : 56));
+    tt.laserGap = tt.laserGapStart;
+    tt.laserGapTarget = tt.laserGapStart;
+    // Base calibration: each tap is one quarter note, and the floor moves at quarter = 120.
+    tt.baselineTempoBpm = TT_BASE_TEMPO_BPM;
+    tt.stepSize = layout.mobile ? 33 : 50;
+    tt.stepDuration = layout.mobile ? 0.13 : 0.145;
+    tt.baselineSpeed = (tt.stepSize * (tt.baselineTempoBpm / 60)) / layout.worldScale;
+    tt.tapTempoBpm = tt.baselineTempoBpm;
+    tt.displayTempoBpm = tt.baselineTempoBpm;
+    tt.targetTempoBpm = tt.baselineTempoBpm;
+    tt.previousTargetTempoBpm = tt.baselineTempoBpm;
+    tt.nextTempoEventAt = performance.now() + 1400;
+    tt.scrollSpeed = tt.baselineSpeed;
+    tt.scrollTargetSpeed = tt.baselineSpeed;
+    tt.centerDrift = 0;
+    tt.lastLaserOffset = 0;
+    tt.laserVelocity = 0;
+    tt.laserVelocityTarget = 0;
+    tt.nextLaserNudgeAt = performance.now() + 260;
+    tt.laserAcceleration = 0;
+    tt.playerRadius = layout.mobile ? 12 : 16;
+    setScore(0);
+    ttScheduleNextWatch();
+    ttSetStatus("");
+    gameDraw();
+  }
+
+  function gameUpdate() {
+    if (!tt) return;
+    const now = performance.now();
+    const dt = Math.min(0.05, Math.max(0, (now - tt.lastMs) / 1000));
+    tt.lastMs = now;
+    tt.now = now;
+    const layout = ttLayout();
+
+    ttUpdateTempoWave(dt);
+    tt.worldX += tt.scrollSpeed * dt;
+    ttUpdateLaserGap(layout, dt);
+
+    tt.safeMs = Math.max(0, tt.safeMs - dt * 1000);
+
+    // The thief stands still by default while the moving floor carries him backward.
+    // Button taps create short, smooth step impulses forward instead of teleport jumps.
+    // When the stairs sequence starts, freeze this drift so the thief does not slide away.
+    {
+      const backwardDrift = tt.scrollSpeed * layout.worldScale;
+      tt.playerOffset -= backwardDrift * dt;
+      let stepMotionThisFrame = 0;
+      tt.activeSteps.forEach(step => {
+        step.elapsed += dt;
+        const t = ttClamp(step.elapsed / step.duration, 0, 1);
+        const eased = 0.5 - Math.cos(t * Math.PI) * 0.5;
+        const delta = (eased - step.progress) * step.distance;
+        step.progress = eased;
+        stepMotionThisFrame += delta;
+      });
+      tt.activeSteps = tt.activeSteps.filter(step => step.elapsed < step.duration);
+      tt.playerOffset += stepMotionThisFrame;
+    }
+    const recentTap = tt.lastTapAt > 0 && now - tt.lastTapAt < 260;
+    const speedRun = ttClamp((tt.scrollSpeed - tt.baselineSpeed * 1.10) / Math.max(1, tt.baselineSpeed * 0.42), 0, 1);
+    tt.runIntensity = ttLerp(tt.runIntensity, recentTap ? Math.max(0.25, speedRun) : 0, 0.12);
+
+    // Tempo waves now control the floor speed. The lasers stay fixed on screen.
+    tt.centerDrift = 0;
+    tt.laserOffset = 0;
+    const laserCenterX = layout.playerX + tt.laserOffset;
+    const playerScreenX = layout.playerX + tt.playerOffset;
+    const laserLeft = laserCenterX - tt.laserGap / 2;
+    const laserRight = laserCenterX + tt.laserGap / 2;
+    const hitHalfWidth = tt.playerRadius * (layout.mobile ? 1.05 : 1.15);
+    const leftClearance = playerScreenX - hitHalfWidth - laserLeft;
+    const rightClearance = laserRight - (playerScreenX + hitHalfWidth);
+    const clearance = Math.min(leftClearance, rightClearance);
+    const dangerWindow = Math.max(18, tt.laserGap * 0.16);
+    const targetDanger = ttClamp(1 - clearance / dangerWindow, 0, 1);
+    tt.laserDanger = ttLerp(tt.laserDanger || 0, targetDanger, 0.22);
+    if (tt.safeMs <= 0 && !tt.caught) {
+      if (leftClearance <= 0 || rightClearance <= 0) {
+        tt.caught = true;
+        tt.deathFlash = 1;
+        tt.deathShakeMs = 360;
+        const sideX = leftClearance <= 0 ? laserLeft : laserRight;
+        for (let i = 0; i < 18; i++) {
+          tt.particles.push({
+            kind: "spark",
+            x: sideX + (Math.random() - 0.5) * 16,
+            y: layout.groundY - 55 + Math.random() * 40,
+            vx: (Math.random() - 0.5) * 160,
+            vy: -80 + Math.random() * 130,
+            life: 0.42 + Math.random() * 0.22,
+            maxLife: 0.64,
+            gold: false,
+            size: 2 + Math.random() * 2.5
+          });
+        }
+        gameDraw();
+        endGame("Caught by laser!");
+        return;
+      }
+    }
+
+    tt.footPulse = ttLerp(tt.footPulse, 0, 0.16);
+    tt.tapFlash = ttLerp(tt.tapFlash, 0, 0.10);
+    tt.pickupFlash = ttLerp(tt.pickupFlash || 0, 0, 0.10);
+    tt.deathFlash = ttLerp(tt.deathFlash || 0, 0, 0.08);
+    tt.deathShakeMs = Math.max(0, (tt.deathShakeMs || 0) - dt * 1000);
+    tt.doorGlow += dt * 2.2;
+    tt.messageMs = Math.max(0, tt.messageMs - dt * 1000);
+    tt.chimeCooldown = Math.max(0, tt.chimeCooldown - dt);
+
+    tt.particles.forEach(p => {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 120 * dt;
+      p.life -= dt;
+    });
+    tt.particles = tt.particles.filter(p => p.life > 0 && p.y < layout.h + 30);
+
+    tt.popups.forEach(p => {
+      p.y += p.vy * dt;
+      p.life -= dt;
+    });
+    tt.popups = tt.popups.filter(p => p.life > 0);
+
+    const playerWorldX = tt.worldX + tt.playerOffset / layout.worldScale;
+    const playerFrontWorldX = tt.worldX + (tt.playerOffset + (layout.mobile ? 24 : 34)) / layout.worldScale;
+    const watchLeftWorldX = tt.watchX - (layout.mobile ? 28 : 38) / layout.worldScale;
+    if (!tt.watchTaken && playerFrontWorldX >= watchLeftWorldX) ttTakeWatch();
+
+    ttSetStatus("");
+  }
+
+  function ttWorldToScreen(worldX, layout) {
+    return layout.playerX + (worldX - tt.worldX) * layout.worldScale;
+  }
+
+  function ttDrawBackground(layout) {
+    const { w, h, groundY } = layout;
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, "#020617");
+    g.addColorStop(0.55, "#0b1220");
+    g.addColorStop(1, "#111827");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+
+    // Back wall.
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, layout.hudH, w, groundY - layout.hudH);
+
+    // Marble floor.
+    const floorG = ctx.createLinearGradient(0, groundY, 0, h);
+    floorG.addColorStop(0, "#374151");
+    floorG.addColorStop(1, "#111827");
+    ctx.fillStyle = floorG;
+    ctx.fillRect(0, groundY, w, h - groundY);
+
+    // Scrolling floor tiles.
+    const tileW = 74 * layout.worldScale;
+    const tileOffset = -((tt.worldX * layout.worldScale) % tileW);
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.lineWidth = 1;
+    for (let x = tileOffset - tileW; x < w + tileW; x += tileW) {
+      ctx.beginPath();
+      ctx.moveTo(x, groundY);
+      ctx.lineTo(x - 24, h);
+      ctx.stroke();
+    }
+    for (let y = groundY + 24; y < h; y += 34) {
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+
+
+    // Wall display cases and clocks scrolling left.
+    const spacing = 360;
+    const start = Math.floor((tt.worldX - 400) / spacing) * spacing;
+    for (let wx = start; wx < tt.worldX + w / layout.worldScale + 700; wx += spacing) {
+      const x = ttWorldToScreen(wx, layout);
+      const y = layout.hudH + 42 + ((Math.floor(wx / spacing) % 2) * 18);
+      ttDrawDisplayCase(x, y, 96 * layout.worldScale, 64 * layout.worldScale, Math.floor(wx / spacing));
+    }
+
+  }
+
+  function ttDrawDisplayCase(x, y, ww, hh, index) {
+    if (x < -ww - 30 || x > canvas.width + ww + 30) return;
+    ctx.fillStyle = "rgba(2,6,23,0.62)";
+    ttRoundRect(x - ww / 2, y - hh / 2, ww, hh, 8);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(250,204,21,0.42)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.fillStyle = "rgba(56,189,248,0.10)";
+    ttRoundRect(x - ww / 2 + 5, y - hh / 2 + 5, ww - 10, hh - 10, 6);
+    ctx.fill();
+
+    const r = Math.min(15, ww * 0.18);
+    ctx.fillStyle = index % 3 === 0 ? "#e5e7eb" : "#fef3c7";
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#020617";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x, y - r * 0.65);
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + r * 0.55, y + r * 0.35);
+    ctx.stroke();
+  }
+
+  function ttDrawWatch(layout) {
+    if (tt.watchTaken) return;
+    const x = ttWorldToScreen(tt.watchX, layout);
+    const y = layout.groundY - 63 * layout.worldScale;
+    if (x < -80 || x > layout.w + 90) return;
+    const pulse = 0.55 + Math.sin(tt.now / 180) * 0.18;
+    const spin = tt.now / 520;
+    const tilt = Math.sin(spin) * 0.13;
+    const scale = 1 + Math.sin(tt.now / 230) * 0.035;
+
+    ctx.save();
+    ctx.globalAlpha = 0.86;
+    const rg = ctx.createRadialGradient(x, y, 4, x, y, 62);
+    rg.addColorStop(0, `rgba(250,204,21,${0.42 + pulse * 0.15})`);
+    rg.addColorStop(1, "rgba(250,204,21,0)");
+    ctx.fillStyle = rg;
+    ctx.fillRect(x - 80, y - 80, 160, 160);
+    ctx.restore();
+
+    // Pedestal.
+    ctx.fillStyle = "#4b2e12";
+    ttRoundRect(x - 26, layout.groundY - 34, 52, 34, 5);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(250,204,21,0.7)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Watch with a tiny spin/shine so pickups feel alive.
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(tilt);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = TT_GOLD;
+    ctx.beginPath();
+    ctx.arc(0, 0, 18, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff7ed";
+    ctx.beginPath();
+    ctx.arc(0, 0, 12, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(0, -8);
+    ctx.moveTo(0, 0);
+    ctx.lineTo(7, 4);
+    ctx.stroke();
+    ctx.fillStyle = TT_GOLD;
+    ttRoundRect(-8, -34, 16, 15, 4);
+    ctx.fill();
+    ttRoundRect(-8, 19, 16, 15, 4);
+    ctx.fill();
+    ctx.strokeStyle = `rgba(255,255,255,${0.42 + pulse * 0.22})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-7, -8);
+    ctx.lineTo(5, -16);
+    ctx.stroke();
+    ctx.restore();
+
+  }
+
+  function ttDrawStairs(layout) {
+    const x = ttWorldToScreen(tt.stairsX, layout);
+    const baseY = layout.groundY;
+    if (x < -120 || x > layout.w + 160) return;
+    const stepW = 34 * layout.worldScale;
+    const stepH = 14 * layout.worldScale;
+    ctx.fillStyle = "#334155";
+    ctx.strokeStyle = "rgba(255,255,255,0.22)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const sx = x + i * stepW * 0.72;
+      const sy = baseY - i * stepH;
+      ttRoundRect(sx, sy - stepH, stepW, stepH, 3);
+      ctx.fill();
+      ctx.stroke();
+    }
+    const doorX = x + stepW * 4.7;
+    const doorY = baseY - stepH * 6 - 54;
+    const glow = 0.55 + Math.sin(tt.doorGlow) * 0.18;
+    ctx.fillStyle = `rgba(56,189,248,${0.18 + glow * 0.16})`;
+    ttRoundRect(doorX - 33, doorY - 48, 66, 96, 10);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(186,230,253,0.78)";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ttText("STAIRS", doorX, doorY - 63, 12, "#bae6fd");
+  }
+
+  function ttDrawLasers(layout) {
+    const centerX = layout.playerX + tt.laserOffset;
+    const leftX = centerX - tt.laserGap / 2;
+    const rightX = centerX + tt.laserGap / 2;
+    const top = layout.hudH + 4;
+    const bottom = layout.groundY + 12;
+    const danger = ttClamp(tt.laserDanger || 0, 0, 1);
+    const pulse = 0.55 + 0.45 * Math.sin(tt.now / 80);
+    const glowAlpha = 0.28 + danger * (0.36 + pulse * 0.16);
+    const coreW = (layout.mobile ? 3 : 5) + danger * (layout.mobile ? 1.2 : 2);
+    const outerW = (layout.mobile ? 8 : 12) + danger * (layout.mobile ? 4 : 6);
+
+    ctx.save();
+    [leftX, rightX].forEach(x => {
+      const glow = ctx.createLinearGradient(x - 24, 0, x + 24, 0);
+      glow.addColorStop(0, "rgba(239,68,68,0)");
+      glow.addColorStop(0.5, `rgba(239,68,68,${glowAlpha})`);
+      glow.addColorStop(1, "rgba(239,68,68,0)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(x - 24, top, 48, bottom - top);
+
+      ctx.strokeStyle = `rgba(254,202,202,${0.92 + danger * 0.08})`;
+      ctx.lineWidth = coreW;
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+      ctx.stroke();
+
+      ctx.strokeStyle = `rgba(239,68,68,${0.78 + danger * 0.20})`;
+      ctx.lineWidth = outerW;
+      ctx.beginPath();
+      ctx.moveTo(x, top);
+      ctx.lineTo(x, bottom);
+      ctx.stroke();
+    });
+
+    if (danger > 0.35) {
+      const playerX = layout.playerX + tt.playerOffset;
+      const edge = playerX < centerX ? leftX : rightX;
+      ctx.strokeStyle = `rgba(248,113,113,${(danger - 0.35) * 0.65})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(edge, top + 10);
+      ctx.lineTo(edge + (playerX < centerX ? 12 : -12), top + 28);
+      ctx.stroke();
+    }
+
+    ctx.restore();
+  }
+
+  function ttDrawThief(layout) {
+    const x = layout.playerX + tt.playerOffset;
+    const y = layout.groundY;
+    const s = layout.mobile ? 0.56 : 0.76;
+    const stepping = tt.activeSteps.length > 0 || tt.footPulse > 0.08;
+    const highTempo = ttClamp(((tt.displayTempoBpm || 120) - 120) / 80, 0, 1);
+    const sneakTempo = ttClamp((120 - (tt.displayTempoBpm || 120)) / 80, 0, 1);
+    const cycleSpeed = highTempo > 0.35 ? 55 : (sneakTempo > 0.35 ? 145 : 92);
+    const phase = tt.now / cycleSpeed + tt.stepPhase;
+    const stride = stepping ? Math.sin(phase) : 0;
+    const stride2 = stepping ? Math.sin(phase + Math.PI) : 0;
+    const bob = stepping ? (2.0 + highTempo * 5.0) * s * Math.abs(Math.sin(phase)) : sneakTempo * 0.7 * s;
+    const lean = stepping ? (0.05 + highTempo * 0.12 - sneakTempo * 0.035) : -0.015 * sneakTempo;
+    const armSwing = stepping ? Math.sin(phase + Math.PI) * (0.55 + highTempo * 0.65) : 0;
+    const legSwing = stepping ? (0.58 + highTempo * 0.82 - sneakTempo * 0.20) : 0;
+
+    ctx.save();
+    ctx.translate(x, y - bob);
+    ctx.rotate(lean);
+
+    // Shadow.
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath();
+    ctx.ellipse(0, 8, (30 + highTempo * 5) * s, 7 * s, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Feet.
+    ctx.strokeStyle = "#020617";
+    ctx.lineCap = "round";
+    ctx.lineWidth = 8 * s;
+    ctx.beginPath();
+    ctx.moveTo(-7 * s, -34 * s);
+    ctx.lineTo((-12 - stride * 13 * legSwing) * s, -13 * s);
+    ctx.lineTo((-18 - stride * 18 * legSwing) * s, -6 * s);
+    ctx.moveTo(7 * s, -34 * s);
+    ctx.lineTo((12 - stride2 * 13 * legSwing) * s, -13 * s);
+    ctx.lineTo((18 - stride2 * 18 * legSwing) * s, -6 * s);
+    ctx.stroke();
+
+    // Body.
+    ctx.fillStyle = "#111827";
+    ttRoundRect(-17 * s, -78 * s, 34 * s, 45 * s, 10 * s);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 2 * s;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-14 * s, (-69 + i * 9) * s);
+      ctx.lineTo(14 * s, (-69 + i * 9) * s);
+      ctx.stroke();
+    }
+
+    // Arms.
+    ctx.strokeStyle = "#020617";
+    ctx.lineWidth = 7 * s;
+    ctx.beginPath();
+    ctx.moveTo(-15 * s, -66 * s);
+    ctx.lineTo((-27 + armSwing * 12) * s, (-47 + highTempo * 3) * s);
+    ctx.moveTo(15 * s, -64 * s);
+    ctx.lineTo((28 - armSwing * 11) * s, (-47 - highTempo * 2) * s);
+    ctx.stroke();
+
+    // Tiny gold glint on the coat after pickups. Not a bag, just score flair.
+    if (tt.watches > 0) {
+      const glint = 0.45 + 0.35 * Math.sin(tt.now / 190);
+      ctx.fillStyle = `rgba(250,204,21,${glint})`;
+      ctx.beginPath();
+      ctx.arc(11 * s, -58 * s, Math.max(1.6, 2.4 * s), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Head + mask.
+    ctx.fillStyle = "#f2b38a";
+    ctx.beginPath();
+    ctx.arc(0, -94 * s, 17 * s, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#020617";
+    ctx.fillRect(-16 * s, -99 * s, 32 * s, 8 * s);
+    ctx.fillStyle = "white";
+    ctx.beginPath(); ctx.arc(-6 * s, -95 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(6 * s, -95 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#020617";
+    ctx.beginPath();
+    ctx.arc(0, -108 * s, 18 * s, Math.PI, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function ttDrawHud(layout) {
+    const { w } = layout;
+    const pad = layout.mobile ? 6 : 10;
+    const panelH = layout.hudH - pad;
+    ctx.fillStyle = "rgba(2,6,23,0.76)";
+    ttRoundRect(pad, pad, w - pad * 2, panelH, 12);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.16)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    const tempo = Math.round(tt.displayTempoBpm || tt.baselineTempoBpm || 120);
+    const centerY = pad + panelH * 0.52;
+    ttText("TIME THIEF", pad + 12, centerY, layout.mobile ? 13 : 22, "#fff", "left", "900");
+    ttText(`Quarter = ${tempo}`, w / 2, centerY, layout.mobile ? 14 : 24, "#fde68a", "center", "900");
+    ttText(`Watches ${tt.watches}`, w - pad - 12, centerY, layout.mobile ? 11 : 16, "#fff", "right");
+  }
+
+
+  function ttDrawTempoCalibration(layout) {
+    const { w, h } = layout;
+    const minTempo = TT_MIN_TEMPO_BPM;
+    const maxTempo = TT_MAX_TEMPO_BPM;
+    const currentTempo = ttClamp(tt.displayTempoBpm || tt.baselineTempoBpm || TT_BASE_TEMPO_BPM, minTempo, maxTempo);
+    const barW = Math.min(w * (layout.mobile ? 0.64 : 0.54), layout.mobile ? 250 : 430);
+    const barH = layout.mobile ? 8 : 12;
+    const x = (w - barW) / 2;
+    const y = layout.groundY + (h - layout.groundY) * 0.50;
+    const tempoToBarT = value => {
+      const safeValue = ttClamp(value, minTempo, maxTempo);
+      return ttClamp(
+        Math.log(safeValue / minTempo) / Math.max(0.001, Math.log(maxTempo / minTempo)),
+        0,
+        1
+      );
+    };
+    const markerX = x + barW * tempoToBarT(currentTempo);
+
+    ctx.save();
+    ctx.fillStyle = "rgba(2,6,23,0.70)";
+    ttRoundRect(x - (layout.mobile ? 30 : 52), y - (layout.mobile ? 13 : 18), barW + (layout.mobile ? 60 : 104), layout.mobile ? 26 : 36, 12);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.14)";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const g = ctx.createLinearGradient(x, 0, x + barW, 0);
+    g.addColorStop(0, "rgba(56,189,248,0.92)");
+    g.addColorStop(0.5, "rgba(250,204,21,0.95)");
+    g.addColorStop(1, "rgba(248,113,113,0.95)");
+    ctx.fillStyle = g;
+    ttRoundRect(x, y - barH / 2, barW, barH, barH / 2);
+    ctx.fill();
+
+    // Center-tempo tick.
+    const centerX = x + barW * tempoToBarT(TT_BASE_TEMPO_BPM);
+    ctx.strokeStyle = "rgba(255,255,255,0.78)";
+    ctx.lineWidth = layout.mobile ? 1.5 : 2;
+    ctx.beginPath();
+    ctx.moveTo(centerX, y - barH * 1.45);
+    ctx.lineTo(centerX, y + barH * 1.45);
+    ctx.stroke();
+
+    // Current tempo marker.
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "rgba(2,6,23,0.82)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(markerX, y, layout.mobile ? 6 : 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ttText(`${minTempo}`, x - (layout.mobile ? 16 : 26), y, layout.mobile ? 9 : 12, "#bfdbfe", "center", "800");
+    ttText(`${maxTempo}`, x + barW + (layout.mobile ? 16 : 26), y, layout.mobile ? 9 : 12, "#fecaca", "center", "800");
+    ctx.restore();
+  }
+
+
+  function ttDrawParticles() {
+    tt.particles.forEach(p => {
+      const a = ttClamp(p.life / p.maxLife, 0, 1);
+      ctx.save();
+      if (p.kind === "stepRing") {
+        ctx.globalAlpha = a * 0.50;
+        ctx.strokeStyle = "rgba(226,232,240,0.8)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.size * (1.0 + (1 - a) * 0.9), p.size * 0.32, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.kind === "foot") {
+        ctx.globalAlpha = a * 0.55;
+        ctx.fillStyle = "rgba(226,232,240,0.72)";
+        ctx.beginPath();
+        ctx.ellipse(p.x, p.y, p.size * (1.1 + (1 - a) * 0.7), p.size * 0.34, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (p.kind === "pickupRing") {
+        ctx.globalAlpha = a * 0.78;
+        ctx.strokeStyle = "rgba(250,204,21,0.95)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (1 + (1 - a) * 1.6), 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (p.kind === "spark") {
+        ctx.globalAlpha = a;
+        ctx.strokeStyle = p.gold ? "rgba(250,204,21,0.96)" : "rgba(248,113,113,0.9)";
+        ctx.lineWidth = 2;
+        const r = (p.size || 3) * (0.7 + (1 - a));
+        ctx.beginPath();
+        ctx.moveTo(p.x - r, p.y);
+        ctx.lineTo(p.x + r, p.y);
+        ctx.moveTo(p.x, p.y - r);
+        ctx.lineTo(p.x, p.y + r);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = p.gold ? `rgba(250,204,21,${a})` : `rgba(226,232,240,${a * 0.65})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, (p.gold ? 3 : 2) + 3 * a, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    });
+  }
+
+  function ttDrawPopups(layout) {
+    if (!tt.popups || !tt.popups.length) return;
+    tt.popups.forEach(p => {
+      const a = ttClamp(p.life / p.maxLife, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = a;
+      ttText(p.text, p.x, p.y, layout.mobile ? 11 : 16, "#fde68a", "center", "900");
+      ctx.restore();
+    });
+  }
+
+  function gameDraw() {
+    if (!tt) return;
+    const layout = ttLayout();
+    const shake = ttClamp((tt.deathShakeMs || 0) / 360, 0, 1);
+    const sx = shake ? (Math.random() - 0.5) * 8 * shake : 0;
+    const sy = shake ? (Math.random() - 0.5) * 5 * shake : 0;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ttDrawBackground(layout);
+    ttDrawWatch(layout);
+    ttDrawParticles();
+    ttDrawPopups(layout);
+    ttDrawLasers(layout);
+    ttDrawThief(layout);
+    if (tt.pickupFlash > 0.02) {
+      ctx.fillStyle = `rgba(250,204,21,${0.08 * tt.pickupFlash})`;
+      ctx.fillRect(0, layout.hudH, layout.w, layout.groundY - layout.hudH);
+    }
+    ctx.restore();
+
+    ttDrawHud(layout);
+    ttDrawTempoCalibration(layout);
+    if ((tt.deathFlash || 0) > 0.02) {
+      ctx.fillStyle = `rgba(239,68,68,${0.18 * tt.deathFlash})`;
+      ctx.fillRect(0, 0, layout.w, layout.h);
+    }
+    if (tt.transitionMs > 0) {
+      const a = ttClamp(tt.transitionMs / 1400, 0, 1);
+      ctx.fillStyle = `rgba(56,189,248,${0.10 * a})`;
+      ctx.fillRect(0, 0, layout.w, layout.h);
+    }
+  }
+
+  function gameInput(action) {
+    if (!tt) return;
+    if (["tap", "a", "b", "x", "y", "up", "down", "left", "right", "select"].includes(action)) ttTap();
+  }
+
+  function gamePointer(point) {
+    ttTap();
+  }
+
+  function gameStop() {
+    // Nothing to clean up yet.
+  }
+
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab,
+      setFirstTimeHelpVersion
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
