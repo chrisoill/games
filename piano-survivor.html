@@ -1,0 +1,3192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Piano Survivor Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: pixelated;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 35px;
+      padding: 18px 12px;
+      background: rgba(16, 24, 39, 0.93);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 8px 12px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+
+    #menuScreen,
+    #gameScreen {
+      background:
+        radial-gradient(circle at 25% 12%, rgba(255,224,138,0.12), transparent 22%),
+        linear-gradient(180deg, #252525, #141414);
+    }
+
+
+    #gameCanvas {
+      background: #0b1420;
+    }
+
+
+    /* Piano Survivor mobile: keep the movement/aim controls visible and remove optional reminder buttons. */
+    #faceButtons,
+    #selectButton {
+      display: none !important;
+    }
+
+  </style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">A</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">START</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+    const STORAGE_KEY = "pianoSurvivorMobilePlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Score";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+    const startButton = document.getElementById("startButton");
+    if (startButton) startButton.textContent = "MENU";
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let wixStorageAnswered = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      window.MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Pause the run, return to the player menu, or save your score before exiting.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+          </div>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <p>You are the tiny piano. Instrument enemies chase you through a large scrolling map.</p>
+          <ul>
+            <li>Use the left joystick to move away from danger.</li>
+            <li>Use the right joystick to aim and fire note shots.</li>
+            <li>Collect music symbols to upgrade your piano.</li>
+            <li><strong>Dynamics</strong> make your notes bigger and stronger.</li>
+            <li><strong>Tempo</strong> changes how fast you move.</li>
+            <li><strong>Rhythm</strong> changes how quickly you fire.</li>
+            <li><strong>Harmony</strong> adds more notes to your attack.</li>
+            <li><strong>Rests</strong> heal you. <strong>:||</strong> gives an extra life.</li>
+          </ul>
+          <p>Your score goes up as you survive.</p>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Left joystick:</strong> move the piano. Stay near the center to slow down or stop.</li>
+            <li><strong>D-pad:</strong> tap for quick movement in one direction.</li>
+            <li><strong>Right joystick:</strong> aim and fire. Push it toward the enemies.</li>
+            <li><strong>MENU:</strong> pause, resume, or return to the player menu.</li>
+          </ul>
+          <p>Move with your left hand and aim with your right hand.</p>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "instructions";
+    const FIRST_TIME_HELP_VERSION = "pianoSurvivor_howToPlay_v1";
+    let pendingStartAfterFirstTimeHelp = false;
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function ensureSelectedPlayerForStart() {
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+      }
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      savePlayers();
+    }
+
+    function shouldShowFirstTimeHelp() {
+      if (!selectedPlayer) return false;
+      if (isGuestPlayerName()) return true;
+      return players[selectedPlayer]?.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
+    }
+
+    function markFirstTimeHelpSeen() {
+      if (!selectedPlayer || isGuestPlayerName()) return;
+      if (!players[selectedPlayer]) players[selectedPlayer] = { best: 0 };
+      players[selectedPlayer].helpSeenVersion = FIRST_TIME_HELP_VERSION;
+      savePlayers();
+    }
+
+    function beginGameRunWithHelpCheck() {
+      closeShellMenu({ resume: false });
+      ensureSelectedPlayerForStart();
+      resetRemoveConfirmButton();
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      gameOverBox.style.display = "none";
+
+      if (shouldShowFirstTimeHelp()) {
+        markFirstTimeHelpSeen();
+        pendingStartAfterFirstTimeHelp = true;
+        openShellMenu("instructions");
+        return;
+      }
+
+      startGame();
+    }
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      if (!shouldResume) pendingStartAfterFirstTimeHelp = false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      const shouldStartPendingGame =
+        shouldResume &&
+        pendingStartAfterFirstTimeHelp &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block";
+
+      shellMenuWasRunning = false;
+
+      if (shouldStartPendingGame) {
+        pendingStartAfterFirstTimeHelp = false;
+        startGame();
+      }
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function setScore(value) {
+      score = Math.max(0, Math.floor(value));
+      scoreEl.textContent = score;
+    }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const best = data && typeof data === "object"
+          ? Number(data.best || 0)
+          : Number(data || 0);
+
+        const cleanedPlayer = {
+          best: Math.max(0, Math.floor(best || 0))
+        };
+
+        if (data && typeof data === "object" && typeof data.helpSeenVersion === "string") {
+          cleanedPlayer.helpSeenVersion = data.helpSeenVersion;
+        }
+
+        cleaned[cleanName] = cleanedPlayer;
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this game stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .sort((a, b) => (b[1].best || 0) - (a[1].best || 0))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${data.best || 0}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${players[name].best || 0}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0 };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    startGameBtn.onclick = () => beginGameRunWithHelpCheck();
+
+    playAgainBtn.onclick = () => beginGameRunWithHelpCheck();
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+      gameOverBox.style.display = "none";
+
+      setMessage("READY");
+      gameInit();
+
+      loop();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      soundLose();
+
+      saveCurrentScoreForSelectedPlayer();
+
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverBox.style.display = "block";
+    }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCorrect() {
+      beep(660, 0.08, "square", 0.06);
+      setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+      });
+    }
+
+    function soundLose() {
+      [300, 220, 160, 100].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+      });
+    }
+
+
+    /*
+      GAME MODULE: PIANO SURVIVOR MVP
+      Keep these function names.
+    */
+
+    const PS_DYNAMICS = [
+      { label: "pp", damage: 1.0, size: 2.3 },
+      { label: "p", damage: 1.25, size: 3.0 },
+      { label: "mp", damage: 1.6, size: 3.9 },
+      { label: "mf", damage: 1.95, size: 5.0 },
+      { label: "f", damage: 2.35, size: 6.4 },
+      { label: "ff", damage: 2.9, size: 7.9 }
+    ];
+
+    const PS_TEMPOS = [
+      { label: "Largo", short: "Lar", speed: 1.0 },
+      { label: "Adagio", short: "Adg", speed: 1.32 },
+      { label: "Andante", short: "And", speed: 1.72 },
+      { label: "Moderato", short: "Mod", speed: 2.18 },
+      { label: "Allegro", short: "All", speed: 2.72 },
+      { label: "Presto", short: "Pre", speed: 3.28 },
+      { label: "Prestissimo", short: "Prs", speed: 3.88 }
+    ];
+
+    const PS_RHYTHMS = [
+      { label: "Whole", short: "whole", symbol: "whole", cooldown: 46 },
+      { label: "Dotted Half", short: "d-half", symbol: "d-half", cooldown: 40 },
+      { label: "Half", short: "half", symbol: "half", cooldown: 34 },
+      { label: "Dotted Quarter", short: "d-qtr", symbol: "d-qtr", cooldown: 28 },
+      { label: "Quarter", short: "qtr", symbol: "qtr", cooldown: 22 },
+      { label: "Eighth", short: "8th", symbol: "8th", cooldown: 15 },
+      { label: "16th", short: "16th", symbol: "16th", cooldown: 10 }
+    ];
+
+
+    const PS_HARMONIES = [
+      { label: "Single Note", short: "X", count: 1, spread: 0 },
+      { label: "Add Third", short: "X³", count: 2, spread: 0.261799 },
+      { label: "Add Fifth", short: "X⁵", count: 3, spread: 0.261799 },
+      { label: "7th Chord", short: "X⁷", count: 4, spread: 0.261799 },
+      { label: "9th Chord", short: "X⁹", count: 5, spread: 0.261799 },
+      { label: "11th Chord", short: "X¹¹", count: 6, spread: 0.261799 },
+      { label: "13th Chord", short: "X¹³", count: 7, spread: 0.261799 }
+    ];
+
+    const PS_ARTICULATIONS = [
+      { id: "staccato", label: "Staccato", symbol: "•", message: "STACCATO: BOUNCE" },
+      { id: "legato", label: "Legato", symbol: "⌒", message: "LEGATO: CHAIN" },
+      { id: "accent", label: "Accent", symbol: ">", message: "ACCENT: PIERCE" },
+      { id: "tenuto", label: "Tenuto", symbol: "–", message: "TENUTO: HEAVY" },
+      { id: "trill", label: "Trill", symbol: "tr", message: "TRILL: WIGGLE" },
+      { id: "marcato", label: "Marcato", symbol: "^", message: "MARCATO: EXPLODE" }
+    ];
+
+    const PS_WORLD = { width: 1800, height: 1320 };
+    const PS_DROP_TARGETS = { D: 2, T: 2, R: 2, H: 2, articulation: 3, rest: 1 };
+    const PS_SPECIAL_KINDS = ["fermata", "treble", "bass"];
+    const PS_SPECIAL_FIRST_TIME = 2600;
+    const PS_SPECIAL_COOLDOWN = 3000;
+    const PS_REPEAT_FIRST_TIME = 9000;
+    const PS_REPEAT_COOLDOWN = 12000;
+    // Enemy target count intentionally has no hard cap; it rises over time.
+    const PS_ENEMY_TOO_FAR = 660;
+    const PS_ENEMY_RESPAWN_MIN = 250;
+    const PS_ENEMY_RESPAWN_MAX = 360;
+
+    let ps = null;
+
+    function psClamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function psRand(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function psWrapValue(value, max) {
+      value = value % max;
+      return value < 0 ? value + max : value;
+    }
+
+    function psWrapEntity(obj) {
+      obj.x = psWrapValue(obj.x, PS_WORLD.width);
+      obj.y = psWrapValue(obj.y, PS_WORLD.height);
+    }
+
+    function psWrappedDelta(from, to, size) {
+      let delta = to - from;
+      if (delta > size / 2) delta -= size;
+      if (delta < -size / 2) delta += size;
+      return delta;
+    }
+
+    function psDist(a, b) {
+      const dx = psWrappedDelta(a.x, b.x, PS_WORLD.width);
+      const dy = psWrappedDelta(a.y, b.y, PS_WORLD.height);
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    function psSetMessage(text, frames = 130) {
+      if (!ps) return;
+      ps.message = text;
+      ps.messageTimer = frames;
+      setMessage(text);
+    }
+
+    function psStatsLine() {
+      if (!ps) return "READY";
+      const art = ps.articulation ? ps.articulation.label : "None";
+      const special = ps.fermataTimer > 0 ? ` | Fermata ${Math.ceil(ps.fermataTimer / 60)}s` : ps.trebleTimer > 0 ? ` | Treble ${Math.ceil(ps.trebleTimer / 60)}s` : ps.bassTimer > 0 ? ` | Bass ${Math.ceil(ps.bassTimer / 60)}s` : "";
+      return `${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].label} | ${PS_RHYTHMS[ps.rhythm].label} | ${PS_HARMONIES[ps.harmony].short} | ${art}${special}`;
+    }
+
+    function psCompactStatsLine() {
+      const art = ps.articulation ? ps.articulation.symbol : "-";
+      return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
+    }
+
+    function psUpdateHud() {
+      if (!ps) return;
+      if (ps.messageTimer > 0) setMessage(ps.message);
+      else setMessage(psStatsLine());
+    }
+
+    function psUpdateCamera() {
+      ps.camera.x = ps.player.x - canvas.width / 2;
+      ps.camera.y = ps.player.y - canvas.height / 2;
+    }
+
+    function psWorldToScreen(x, y) {
+      let sx = x - ps.camera.x;
+      let sy = y - ps.camera.y;
+
+      if (sx < -PS_WORLD.width / 2) sx += PS_WORLD.width;
+      if (sx > PS_WORLD.width / 2) sx -= PS_WORLD.width;
+      if (sy < -PS_WORLD.height / 2) sy += PS_WORLD.height;
+      if (sy > PS_WORLD.height / 2) sy -= PS_WORLD.height;
+
+      return { x: sx, y: sy };
+    }
+
+    function psPointOnScreen(obj, pad = 30) {
+      const s = psWorldToScreen(obj.x, obj.y);
+      return s.x > -pad && s.x < canvas.width + pad && s.y > -pad && s.y < canvas.height + pad;
+    }
+
+    function psGetUpgradePickupLabel(track) {
+      if (track === "D") return PS_DYNAMICS[Math.min(ps.dyn + 1, PS_DYNAMICS.length - 1)].label;
+      if (track === "T") return PS_TEMPOS[Math.min(ps.tempo + 1, PS_TEMPOS.length - 1)].short;
+      if (track === "R") return PS_RHYTHMS[Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1)].short;
+      if (track === "H") return PS_HARMONIES[Math.min(ps.harmony + 1, PS_HARMONIES.length - 1)].short;
+      return "?";
+    }
+
+    function psRefreshDropLabels(track = null) {
+      ps.drops.forEach(drop => {
+        if (drop.kind !== "upgrade") return;
+        if (track && drop.track !== track) return;
+        drop.label = psGetUpgradePickupLabel(drop.track);
+        if (drop.track === "R") drop.rhythmIndex = Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1);
+        drop.fontSize = drop.label.length > 2 ? 8 : 11;
+      });
+    }
+
+    function psFindDropPosition(preferFar = false) {
+      let x = psRand(42, PS_WORLD.width - 42);
+      let y = psRand(42, PS_WORLD.height - 42);
+      if (!preferFar) return { x, y };
+      for (let i = 0; i < 80; i++) {
+        x = psRand(42, PS_WORLD.width - 42);
+        y = psRand(42, PS_WORLD.height - 42);
+        const candidate = { x, y };
+        const farFromPlayer = psDist(candidate, ps.player) > 260;
+        const farFromDrops = ps.drops.every(drop => psDist(candidate, drop) > 105);
+        if (farFromPlayer && farFromDrops) break;
+      }
+      return { x, y };
+    }
+
+    function psSpawnDrop(forceType = null, nearPlayer = false, forcedTrack = null) {
+      const kind = forceType || "upgrade";
+      let x, y;
+      if (nearPlayer) {
+        const angle = Math.random() * Math.PI * 2;
+        const distance = psRand(95, 180);
+        x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
+        y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
+      } else {
+        ({ x, y } = psFindDropPosition(true));
+      }
+
+      const drop = {
+        kind,
+        x,
+        y,
+        r: 9,
+        pulse: Math.random() * 100,
+        label: "?",
+        color: "#ffe08a",
+        fontSize: 11
+      };
+
+      if (kind === "upgrade") {
+        const availableTracks = ["D", "T", "R", "H"].filter(track => !psIsTrackMaxed(track));
+        if (availableTracks.length === 0) return;
+        drop.track = forcedTrack || availableTracks[Math.floor(Math.random() * availableTracks.length)];
+        if (psIsTrackMaxed(drop.track)) return;
+        drop.label = psGetUpgradePickupLabel(drop.track);
+        drop.color = { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[drop.track];
+        if (drop.track === "R") drop.rhythmIndex = Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1);
+        drop.fontSize = drop.label.length > 2 ? 8 : 11;
+      } else if (kind === "rest") {
+        const rests = [
+          { label: "𝄻", heal: 3, name: "WHOLE REST" },
+          { label: "𝄼", heal: 2, name: "HALF REST" },
+          { label: "𝄽", heal: 1, name: "QUARTER REST" }
+        ];
+        const rest = rests[Math.floor(Math.random() * rests.length)];
+        Object.assign(drop, { label: rest.label, heal: rest.heal, name: rest.name, color: "#f8fafc", fontSize: 12 });
+      } else if (kind === "articulation") {
+        const art = psChooseArticulationDrop();
+        if (!art) return;
+        Object.assign(drop, { articulation: art, label: art.symbol, color: "#c084fc", fontSize: 14 });
+      } else if (kind === "bonus") {
+        const track = forcedTrack || "D";
+        Object.assign(drop, { track, label: "✦", color: psBonusColor(track), r: 10, fontSize: 17 });
+      } else if (kind === "repeat") {
+        Object.assign(drop, { label: ":||", color: "#fb7185", r: 11, fontSize: 11 });
+      } else if (kind === "fermata") {
+        Object.assign(drop, { label: "𝄐", color: "#22d3ee", r: 11, fontSize: 15 });
+      } else if (kind === "treble") {
+        Object.assign(drop, { label: "𝄞", color: "#60a5fa", r: 11, fontSize: 16 });
+      } else if (kind === "bass") {
+        Object.assign(drop, { label: "𝄢", color: "#a78bfa", r: 11, fontSize: 16 });
+      }
+
+      ps.drops.push(drop);
+    }
+
+    function psIsTrackMaxed(track) {
+      if (track === "D") return ps.dyn >= PS_DYNAMICS.length - 1;
+      if (track === "T") return ps.tempo >= PS_TEMPOS.length - 1;
+      if (track === "R") return ps.rhythm >= PS_RHYTHMS.length - 1;
+      if (track === "H") return ps.harmony >= PS_HARMONIES.length - 1;
+      return false;
+    }
+
+    function psDropCount(kind, track = null) {
+      return ps.drops.filter(drop => {
+        if (drop.kind !== kind) return false;
+        if (track && drop.track !== track) return false;
+        return true;
+      }).length;
+    }
+
+    function psSpecialDropCount() {
+      return ps.drops.filter(drop => PS_SPECIAL_KINDS.includes(drop.kind)).length;
+    }
+
+    function psSpawnSpecialDrop() {
+      const kind = PS_SPECIAL_KINDS[Math.floor(Math.random() * PS_SPECIAL_KINDS.length)];
+      psSpawnDrop(kind);
+    }
+
+    function psChooseArticulationDrop() {
+      const currentId = ps.articulation?.id;
+      const alreadyOnMap = ps.drops
+        .filter(drop => drop.kind === "articulation" && drop.articulation)
+        .map(drop => drop.articulation.id);
+
+      let choices = PS_ARTICULATIONS.filter(art => art.id !== currentId);
+      const uniqueChoices = choices.filter(art => !alreadyOnMap.includes(art.id));
+      if (uniqueChoices.length > 0) choices = uniqueChoices;
+      return choices[Math.floor(Math.random() * choices.length)] || null;
+    }
+
+    function psBonusColor(track) {
+      return { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[track] || "#fef3c7";
+    }
+
+    function psMaintainDrops() {
+      ps.drops = ps.drops.filter(drop => {
+        if (drop.kind === "upgrade" && psIsTrackMaxed(drop.track)) return false;
+        if (drop.kind === "bonus" && !psIsTrackMaxed(drop.track)) return false;
+        if (drop.kind === "articulation" && ps.articulation && drop.articulation?.id === ps.articulation.id) return false;
+        return true;
+      });
+
+      ["D", "T", "R", "H"].forEach(track => {
+        if (psIsTrackMaxed(track)) {
+          while (psDropCount("bonus", track) < PS_DROP_TARGETS[track]) {
+            psSpawnDrop("bonus", false, track);
+          }
+          return;
+        }
+        while (psDropCount("upgrade", track) < PS_DROP_TARGETS[track]) {
+          psSpawnDrop("upgrade", false, track);
+        }
+      });
+
+      while (psDropCount("articulation") < PS_DROP_TARGETS.articulation) psSpawnDrop("articulation");
+
+      const needsRest = ps.hp <= ps.maxHp - 2;
+      while (needsRest && psDropCount("rest") < PS_DROP_TARGETS.rest) psSpawnDrop("rest");
+      if (!needsRest) ps.drops = ps.drops.filter(drop => drop.kind !== "rest");
+
+      if (ps.specialCooldown > 0) ps.specialCooldown--;
+      const allowSpecial = ps.time > PS_SPECIAL_FIRST_TIME && ps.specialCooldown <= 0;
+      if (allowSpecial && psSpecialDropCount() < 1) psSpawnSpecialDrop();
+      if (!allowSpecial) ps.drops = ps.drops.filter(drop => !PS_SPECIAL_KINDS.includes(drop.kind));
+
+      if (ps.repeatCooldown > 0) ps.repeatCooldown--;
+      const allowRepeat = ps.time > PS_REPEAT_FIRST_TIME && ps.repeats < 2 && ps.repeatCooldown <= 0;
+      if (allowRepeat && psDropCount("repeat") < 1) psSpawnDrop("repeat");
+      if (!allowRepeat) ps.drops = ps.drops.filter(drop => drop.kind !== "repeat");
+    }
+
+
+    function psCreateEnemyType() {
+      const t = ps.time;
+      const enemyPool = [
+        { name: "Violin", kind: "violin", unlock: 0, hp: 1.7, speed: 0.42, r: 8, score: 8, weight: 34 },
+        { name: "Flute", kind: "flute", unlock: 1800, hp: 2.15, speed: 0.5, r: 8, score: 11, weight: 22 },
+        { name: "Trumpet", kind: "trumpet", unlock: 3300, hp: 3.05, speed: 0.35, r: 9, score: 14, weight: 18 },
+        { name: "Cello", kind: "cello", unlock: 5700, hp: 4.8, speed: 0.29, r: 10, score: 22, weight: 13 },
+        { name: "Tuba", kind: "tuba", unlock: 7800, hp: 7.2, speed: 0.26, r: 11, score: 30, weight: 10 },
+        { name: "Drum", kind: "drum", unlock: 10500, hp: 9.8, speed: 0.24, r: 12, score: 42, weight: 7 }
+      ];
+
+      const available = enemyPool.filter(type => t >= type.unlock);
+      const totalWeight = available.reduce((sum, type) => sum + type.weight, 0);
+      let roll = Math.random() * totalWeight;
+      let type = available[0];
+      for (const candidate of available) {
+        roll -= candidate.weight;
+        if (roll <= 0) {
+          type = candidate;
+          break;
+        }
+      }
+
+      const bossChance = t > 3600 ? Math.min(0.28, 0.018 + (t - 3600) / 90000) : 0;
+      const boss = Math.random() < bossChance;
+      const scaling = 1 + Math.min(3.2, ps.time / 12000);
+      const bossScale = boss ? 6.4 + Math.min(3.6, ps.time / 24000) : 1;
+
+      return {
+        x: ps.player.x,
+        y: ps.player.y,
+        hp: type.hp * scaling * bossScale,
+        maxHp: type.hp * scaling * bossScale,
+        speed: type.speed * Math.min(1.9, 1 + ps.time / 16000) * (boss ? 1.12 : 1),
+        r: type.r * (boss ? 1.5 : 0.9),
+        kind: type.kind,
+        name: boss ? `${type.name} Boss` : type.name,
+        score: type.score * (boss ? 7 : 1),
+        boss,
+        hitFlash: 0
+      };
+    }
+
+    function psSpawnEnemy() {
+      const enemy = psCreateEnemyType();
+      psPlaceEnemyNearPlayer(enemy);
+      ps.enemies.push(enemy);
+    }
+
+    function psEnemyTargetCount() {
+      return 2 + Math.floor(ps.time / 920) + Math.floor(ps.time / 4600);
+    }
+
+    function psPlaceEnemyNearPlayer(enemy) {
+      const baseAngle = Math.atan2(ps.heading.y, ps.heading.x);
+      const arc = Math.PI * 2 / 3; // 120 degrees total, centered on current movement heading.
+      const angle = baseAngle + psRand(-arc / 2, arc / 2);
+      const distance = psRand(PS_ENEMY_RESPAWN_MIN, PS_ENEMY_RESPAWN_MAX);
+      enemy.x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
+      enemy.y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
+      enemy.hp = enemy.maxHp;
+      enemy.hitFlash = 0;
+    }
+
+    function psMaintainEnemies() {
+      const target = psEnemyTargetCount();
+      while (ps.enemies.length < target) psSpawnEnemy();
+
+      ps.enemies.forEach(enemy => {
+        if (psDist(enemy, ps.player) > PS_ENEMY_TOO_FAR) {
+          const replacement = psCreateEnemyType();
+          Object.assign(enemy, replacement);
+          psPlaceEnemyNearPlayer(enemy);
+        }
+      });
+    }
+
+    function psApplyUpgrade(track) {
+      if (track === "D" && ps.dyn < PS_DYNAMICS.length - 1) {
+        ps.dyn++;
+        psRefreshDropLabels("D");
+        psSetMessage(`DYNAMIC UP: ${PS_DYNAMICS[ps.dyn].label}`);
+        soundCorrect();
+        return;
+      }
+      if (track === "T" && ps.tempo < PS_TEMPOS.length - 1) {
+        ps.tempo++;
+        psRefreshDropLabels("T");
+        psSetMessage(`TEMPO UP: ${PS_TEMPOS[ps.tempo].label}`);
+        soundCorrect();
+        return;
+      }
+      if (track === "R" && ps.rhythm < PS_RHYTHMS.length - 1) {
+        ps.rhythm++;
+        psRefreshDropLabels("R");
+        psSetMessage(`RHYTHM UP: ${PS_RHYTHMS[ps.rhythm].label}`);
+        soundCorrect();
+        return;
+      }
+      if (track === "H" && ps.harmony < PS_HARMONIES.length - 1) {
+        ps.harmony++;
+        psRefreshDropLabels("H");
+        psSetMessage(`HARMONY UP: ${PS_HARMONIES[ps.harmony].short}`);
+        soundCorrect();
+        return;
+      }
+      addScore(15);
+      psSetMessage("MAXED: BONUS");
+      soundCorrect();
+    }
+
+    function psCollectDrop(drop) {
+      if (drop.kind === "upgrade") psApplyUpgrade(drop.track);
+      else if (drop.kind === "rest") {
+        ps.hp = Math.min(ps.maxHp, ps.hp + drop.heal);
+        psSetMessage(`${drop.name} +${drop.heal} HP`);
+        soundCorrect();
+      } else if (drop.kind === "articulation") {
+        ps.articulation = drop.articulation;
+        ps.drops = ps.drops.filter(item => item.kind !== "articulation" || item.articulation?.id !== ps.articulation.id);
+        psSetMessage(drop.articulation.message);
+        soundWin();
+      } else if (drop.kind === "bonus") {
+        addScore(50);
+        psSetMessage("BONUS +50");
+        soundCorrect();
+      } else if (drop.kind === "repeat") {
+        ps.repeats = Math.min(3, ps.repeats + 1);
+        ps.repeatCooldown = PS_REPEAT_COOLDOWN;
+        psSetMessage(`REPEAT LIFE x${ps.repeats}`);
+        soundWin();
+      } else if (drop.kind === "fermata") {
+        ps.fermataTimer = 320;
+        ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+        psSetMessage("FERMATA RAYS", 180);
+        soundWin();
+      } else if (drop.kind === "treble") {
+        ps.trebleTimer = 360;
+        ps.trebleCooldown = 0;
+        ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+        psSetMessage("TREBLE LINES", 180);
+        soundWin();
+      } else if (drop.kind === "bass") {
+        ps.bassTimer = 360;
+        ps.bassPulseCooldown = 0;
+        ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+        psSetMessage("BASS QUAKE", 180);
+        soundWin();
+      }
+    }
+
+    function psFire() {
+      if (ps.fireCooldown > 0) return;
+      const ax = ps.aim.x;
+      const ay = ps.aim.y;
+      const mag = Math.sqrt(ax * ax + ay * ay);
+      if (mag < 0.34) return;
+
+      const baseAngle = Math.atan2(ay, ax);
+      const rhythm = PS_RHYTHMS[ps.rhythm];
+      const harmony = PS_HARMONIES[ps.harmony];
+      const dyn = PS_DYNAMICS[ps.dyn];
+      const count = harmony.count;
+      const speed = ps.articulation?.id === "tenuto" ? 2.85 : 4.0;
+      const size = dyn.size + (ps.articulation?.id === "tenuto" ? 2 : 0);
+
+      if (ps.fermataTimer > 0) {
+        for (let i = 0; i < count; i++) {
+          const offset = count === 1 ? 0 : (i - (count - 1) / 2) * harmony.spread;
+          const angle = baseAngle + offset;
+          ps.rays.push({
+            x: ps.player.x,
+            y: ps.player.y,
+            angle,
+            life: 7,
+            damage: dyn.damage * 1.15,
+            width: 5 + dyn.size,
+            length: 255,
+            color: "fermata"
+          });
+        }
+        psSoundFire();
+        ps.fireCooldown = Math.max(4, Math.floor(rhythm.cooldown * 0.72));
+        return;
+      }
+
+      for (let i = 0; i < count; i++) {
+        const offset = count === 1 ? 0 : (i - (count - 1) / 2) * harmony.spread;
+        const angle = baseAngle + offset;
+        ps.bullets.push({
+          x: ps.player.x + Math.cos(angle) * 10,
+          y: ps.player.y + Math.sin(angle) * 10,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          r: size,
+          damage: dyn.damage,
+          life: ps.articulation?.id === "tenuto" ? 75 : 56,
+          pierce: ps.articulation?.id === "accent" ? 3 : 0,
+          bounces: ps.articulation?.id === "staccato" ? 3 : 0,
+          chain: ps.articulation?.id === "legato" ? 2 : 0,
+          wiggle: ps.articulation?.id === "trill" ? { phase: Math.random() * Math.PI * 2, amp: 4.8, freq: 0.78 } : null,
+          hitRadius: ps.articulation?.id === "trill" ? size + 4.5 : size,
+          explode: ps.articulation?.id === "marcato",
+          hitIds: new Set()
+        });
+      }
+
+      psSoundFire();
+      ps.fireCooldown = rhythm.cooldown;
+    }
+
+    function psSoundFire() {
+      if (!ps || ps.time < ps.nextFireSound) return;
+      const rhythmGap = PS_RHYTHMS[ps.rhythm]?.cooldown || 10;
+      ps.nextFireSound = ps.time + Math.max(1, Math.floor(rhythmGap * 0.45));
+      const freq = 300 + ps.rhythm * 32 + ps.harmony * 22;
+      beep(freq, 0.024, "square", 0.014);
+    }
+
+    function psSoundEnemyDie(enemy) {
+      const base = enemy.kind === "drum" ? 95 : enemy.kind === "tuba" ? 125 : enemy.kind === "cello" ? 155 : enemy.kind === "trumpet" ? 230 : enemy.kind === "flute" ? 420 : 330;
+      beep(base, enemy.boss ? 0.14 : 0.08, "sawtooth", enemy.boss ? 0.055 : 0.035);
+      setTimeout(() => beep(base * 1.5, 0.05, "square", 0.025), 45);
+      if (enemy.boss) setTimeout(() => beep(base * 0.75, 0.18, "triangle", 0.04), 95);
+    }
+
+    function psSpawnShockwave() {
+      ps.shockwaves.push({
+        x: ps.player.x,
+        y: ps.player.y,
+        r: 8,
+        maxR: 125,
+        damage: PS_DYNAMICS[ps.dyn].damage * 1.65,
+        life: 30,
+        hitIds: new Set()
+      });
+      beep(92, 0.09, "sawtooth", 0.045);
+    }
+
+    function psSpawnTrebleBolts() {
+      const dyn = PS_DYNAMICS[ps.dyn];
+      const burstCount = 4 + Math.floor(Math.random() * 5);
+      for (let i = 0; i < burstCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        ps.rays.push({
+          x: ps.player.x,
+          y: ps.player.y,
+          angle,
+          life: 5 + Math.floor(Math.random() * 5),
+          damage: dyn.damage * 0.78,
+          width: 3 + dyn.size * 0.5,
+          length: psRand(190, 330),
+          color: "treble",
+          jagged: true
+        });
+      }
+      beep(760 + Math.random() * 360, 0.035, "sawtooth", 0.028);
+    }
+
+    function psExplodeAt(x, y, damage) {
+      const radius = 54;
+      ps.explosions.push({ x, y, r: 6, maxR: radius, life: 15 });
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const d = psDist({ x, y }, enemy);
+        if (d < radius + enemy.r) psDamageEnemy(enemy, damage * 0.78);
+      });
+      beep(170, 0.05, "sawtooth", 0.03);
+    }
+
+    function psDamageEnemy(enemy, amount) {
+      enemy.hp -= amount;
+      enemy.hitFlash = 4;
+      ps.particles.push({ x: enemy.x, y: enemy.y, text: "♪", life: 16, vy: -0.25 });
+    }
+
+    function psKillEnemy(enemy) {
+      addScore(enemy.score);
+      ps.kills++;
+      psSoundEnemyDie(enemy);
+      ps.particles.push({ x: enemy.x, y: enemy.y, text: "✦", life: 18, vy: -0.22 });
+    }
+
+    function psChainFrom(enemy, damage, depth) {
+      if (depth <= 0) return;
+      let best = null;
+      let bestDist = 9999;
+      ps.enemies.forEach(other => {
+        if (other === enemy || other.hp <= 0) return;
+        const d = psDist(enemy, other);
+        if (d < 96 && d < bestDist) {
+          best = other;
+          bestDist = d;
+        }
+      });
+      if (!best) return;
+      ps.lines.push({ x1: enemy.x, y1: enemy.y, x2: best.x, y2: best.y, life: 10 });
+      psDamageEnemy(best, damage * 0.9);
+      psChainFrom(best, damage * 0.7, depth - 1);
+    }
+
+    function psTryRevive() {
+      if (ps.hp > 0) return true;
+      if (ps.repeats > 0) {
+        ps.repeats--;
+        ps.hp = ps.maxHp;
+        ps.invuln = 95;
+        psSetMessage(`REPEAT USED ${ps.repeats} LEFT`, 120);
+        soundWin();
+        return true;
+      }
+      return false;
+    }
+
+    function psDrawPixelPiano(x, y) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.fillStyle = "#2563eb";
+      ctx.fillRect(-10, -8, 20, 17);
+      ctx.fillStyle = "#60a5fa";
+      ctx.fillRect(-9, -7, 18, 4);
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(-10, -8, 20, 2);
+      ctx.fillStyle = "#f8fafc";
+      ctx.fillRect(-8, -1, 5, 8);
+      ctx.fillRect(-2, -1, 5, 8);
+      ctx.fillRect(4, -1, 5, 8);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(-8, -1, 5, 8);
+      ctx.strokeRect(-2, -1, 5, 8);
+      ctx.strokeRect(4, -1, 5, 8);
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(-5, -1, 3, 5);
+      ctx.fillRect(1, -1, 3, 5);
+      ctx.fillStyle = "#fde68a";
+      ctx.fillRect(-2, -11, 4, 3);
+      ctx.restore();
+    }
+
+    function psDrawViolin(x, y, flash) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.scale(0.68, 0.68);
+      const body = flash ? "#fef3c7" : "#b45309";
+      const bodyDark = flash ? "#fde68a" : "#78350f";
+      const wood = flash ? "#fff7ed" : "#d97706";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(0, -4);
+      ctx.bezierCurveTo(-12, -17, -21, -5, -12, 3);
+      ctx.bezierCurveTo(-24, 16, -4, 23, 0, 10);
+      ctx.bezierCurveTo(5, 23, 24, 16, 12, 3);
+      ctx.bezierCurveTo(21, -5, 12, -17, 0, -4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = bodyDark;
+      ctx.beginPath();
+      ctx.ellipse(-7, 2, 3, 7, -0.4, 0, Math.PI * 2);
+      ctx.ellipse(7, 2, 3, 7, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = wood;
+      ctx.fillRect(-3, -28, 6, 20);
+      ctx.strokeRect(-3, -28, 6, 20);
+      ctx.fillRect(-8, -32, 16, 5);
+      ctx.strokeRect(-8, -32, 16, 5);
+      ctx.strokeStyle = "#fef3c7";
+      ctx.lineWidth = 1;
+      [-3, -1, 1, 3].forEach(offset => {
+        ctx.beginPath();
+        ctx.moveTo(offset, -29);
+        ctx.lineTo(offset * 0.4, 16);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = "#e5e7eb";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-21, -18);
+      ctx.lineTo(22, 16);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function psDrawTrumpet(x, y, flash) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.scale(0.68, 0.68);
+      const brass = flash ? "#fef3c7" : "#fbbf24";
+      const brassDark = flash ? "#fde68a" : "#b45309";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+      ctx.fillStyle = brass;
+      ctx.fillRect(-25, -5, 30, 10);
+      ctx.strokeRect(-25, -5, 30, 10);
+      ctx.fillRect(-32, -3, 7, 6);
+      ctx.strokeRect(-32, -3, 7, 6);
+      ctx.beginPath();
+      ctx.moveTo(5, -8);
+      ctx.lineTo(27, -17);
+      ctx.lineTo(31, -15);
+      ctx.lineTo(31, 15);
+      ctx.lineTo(27, 17);
+      ctx.lineTo(5, 8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = brassDark;
+      ctx.fillRect(-13, -15, 4, 10);
+      ctx.fillRect(-6, -17, 4, 12);
+      ctx.fillRect(1, -15, 4, 10);
+      ctx.fillRect(-17, 5, 24, 8);
+      ctx.strokeRect(-17, 5, 24, 8);
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.fillRect(-21, -3, 18, 2);
+      ctx.fillRect(13, -9, 11, 3);
+      ctx.restore();
+    }
+
+    function psDrawTuba(x, y, flash) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.scale(0.62, 0.62);
+      const brass = flash ? "#fef3c7" : "#f59e0b";
+      const bright = flash ? "#fde68a" : "#fbbf24";
+      const dark = flash ? "#111827" : "#92400e";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2.5;
+      ctx.fillStyle = brass;
+      ctx.beginPath();
+      ctx.ellipse(-5, 5, 18, 20, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#0b1420";
+      ctx.beginPath();
+      ctx.ellipse(-5, 5, 9, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = bright;
+      ctx.beginPath();
+      ctx.moveTo(10, -20);
+      ctx.lineTo(33, -29);
+      ctx.lineTo(36, -26);
+      ctx.lineTo(36, -4);
+      ctx.lineTo(33, -1);
+      ctx.lineTo(10, -9);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = brass;
+      ctx.fillRect(4, -19, 8, 25);
+      ctx.strokeRect(4, -19, 8, 25);
+      ctx.fillRect(-19, -15, 7, 26);
+      ctx.strokeRect(-19, -15, 7, 26);
+      ctx.fillStyle = dark;
+      ctx.fillRect(-27, -18, 7, 5);
+      ctx.fillRect(-8, -22, 4, 9);
+      ctx.fillRect(-2, -22, 4, 9);
+      ctx.fillRect(4, -22, 4, 9);
+      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(-8, 3, 13, Math.PI * 0.25, Math.PI * 1.25);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function psDrawFlute(x, y, flash) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      ctx.rotate(-0.22);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.2;
+      ctx.fillStyle = flash ? "#fef3c7" : "#dbeafe";
+      ctx.fillRect(-15, -2, 30, 4);
+      ctx.strokeRect(-15, -2, 30, 4);
+      ctx.fillStyle = flash ? "#111827" : "#2563eb";
+      for (let i = -8; i <= 9; i += 5) ctx.fillRect(i, -1, 2, 2);
+      ctx.fillStyle = flash ? "#fef3c7" : "#93c5fd";
+      ctx.fillRect(-18, -3, 4, 6);
+      ctx.fillRect(14, -3, 3, 6);
+      ctx.restore();
+    }
+
+    function psDrawCello(x, y, flash) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      const body = flash ? "#fef3c7" : "#9a3412";
+      const dark = flash ? "#fde68a" : "#431407";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.2;
+      ctx.fillStyle = body;
+      ctx.beginPath();
+      ctx.moveTo(0, -5);
+      ctx.bezierCurveTo(-9, -13, -13, -3, -7, 3);
+      ctx.bezierCurveTo(-15, 11, -3, 19, 0, 10);
+      ctx.bezierCurveTo(3, 19, 15, 11, 7, 3);
+      ctx.bezierCurveTo(13, -3, 9, -13, 0, -5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = dark;
+      ctx.fillRect(-2, -21, 4, 15);
+      ctx.strokeRect(-2, -21, 4, 15);
+      ctx.fillRect(-5, -24, 10, 3);
+      ctx.strokeRect(-5, -24, 10, 3);
+      ctx.strokeStyle = "#fef3c7";
+      ctx.lineWidth = 0.8;
+      [-2, -0.6, 0.6, 2].forEach(offset => {
+        ctx.beginPath();
+        ctx.moveTo(offset, -22);
+        ctx.lineTo(offset * 0.35, 14);
+        ctx.stroke();
+      });
+      ctx.restore();
+    }
+
+    function psDrawDrum(x, y, flash) {
+      ctx.save();
+      ctx.translate(Math.round(x), Math.round(y));
+      const shell = flash ? "#fef3c7" : "#dc2626";
+      const rim = flash ? "#fde68a" : "#f8fafc";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.2;
+      ctx.fillStyle = shell;
+      ctx.fillRect(-13, -8, 26, 16);
+      ctx.strokeRect(-13, -8, 26, 16);
+      ctx.fillStyle = rim;
+      ctx.beginPath();
+      ctx.ellipse(0, -8, 13, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 13, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.strokeStyle = "#fef3c7";
+      ctx.lineWidth = 1.1;
+      ctx.beginPath();
+      ctx.moveTo(-16, -15);
+      ctx.lineTo(2, 0);
+      ctx.moveTo(16, -15);
+      ctx.lineTo(-2, 0);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function psDrawEnemy(enemy) {
+      const p = psWorldToScreen(enemy.x, enemy.y);
+      if (!psPointOnScreen(enemy, 34)) return;
+      const flash = enemy.hitFlash > 0;
+
+      if (enemy.boss) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.strokeStyle = "rgba(251,191,36,0.75)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, enemy.r + 5 + Math.sin(ps.time / 8), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.scale(1.35, 1.35);
+        if (enemy.kind === "violin") psDrawViolin(0, 0, flash);
+        else if (enemy.kind === "flute") psDrawFlute(0, 0, flash);
+        else if (enemy.kind === "trumpet") psDrawTrumpet(0, 0, flash);
+        else if (enemy.kind === "cello") psDrawCello(0, 0, flash);
+        else if (enemy.kind === "drum") psDrawDrum(0, 0, flash);
+        else psDrawTuba(0, 0, flash);
+        ctx.restore();
+
+        ctx.fillStyle = "rgba(3,7,18,0.82)";
+        ctx.fillRect(p.x - 15, p.y - enemy.r - 12, 30, 4);
+        ctx.fillStyle = "#fbbf24";
+        ctx.fillRect(p.x - 14, p.y - enemy.r - 11, 28 * Math.max(0, enemy.hp / enemy.maxHp), 2);
+        return;
+      }
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.scale(0.9, 0.9);
+      if (enemy.kind === "violin") psDrawViolin(0, 0, flash);
+      else if (enemy.kind === "flute") psDrawFlute(0, 0, flash);
+      else if (enemy.kind === "trumpet") psDrawTrumpet(0, 0, flash);
+      else if (enemy.kind === "cello") psDrawCello(0, 0, flash);
+      else if (enemy.kind === "drum") psDrawDrum(0, 0, flash);
+      else psDrawTuba(0, 0, flash);
+      ctx.restore();
+    }
+
+
+    function psStrokeLinePath(drawPath, color, outerWidth = 4, innerWidth = 2) {
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(3,7,18,0.95)";
+      ctx.lineWidth = outerWidth;
+      ctx.beginPath();
+      drawPath();
+      ctx.stroke();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = innerWidth;
+      ctx.beginPath();
+      drawPath();
+      ctx.stroke();
+    }
+
+    function psDrawRhythmSymbol(index, color) {
+      const rhythm = PS_RHYTHMS[index] || PS_RHYTHMS[0];
+      const s = 0.72;
+      ctx.save();
+      ctx.scale(s, s);
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 7;
+
+      function noteHead(filled) {
+        ctx.save();
+        ctx.rotate(-0.34);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(3,7,18,0.95)";
+        ctx.fillStyle = filled ? "rgba(3,7,18,0.95)" : "#0b1420";
+        ctx.beginPath();
+        ctx.ellipse(-5, 7, 6, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = color;
+        ctx.fillStyle = filled ? color : "#0b1420";
+        ctx.beginPath();
+        ctx.ellipse(-5, 7, 6, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      function stem() {
+        psStrokeLinePath(() => { ctx.moveTo(1, 4); ctx.lineTo(1, -18); }, color);
+      }
+
+      function flag(y1, y2) {
+        psStrokeLinePath(() => {
+          ctx.moveTo(1, y1);
+          ctx.bezierCurveTo(11, y1 + 1, 11, y2 - 1, 4, y2);
+        }, color);
+      }
+
+      if (rhythm.label === "Whole") {
+        ctx.save();
+        ctx.rotate(-0.12);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "rgba(3,7,18,0.95)";
+        ctx.fillStyle = "#0b1420";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        const filled = rhythm.label.includes("Quarter") || rhythm.label === "Eighth" || rhythm.label === "16th";
+        noteHead(filled);
+        stem();
+        if (rhythm.label === "Eighth" || rhythm.label === "16th") flag(-18, -7);
+        if (rhythm.label === "16th") flag(-12, -2);
+        if (rhythm.label.includes("Dotted")) {
+          ctx.fillStyle = "rgba(3,7,18,0.95)";
+          ctx.beginPath(); ctx.arc(9, 6, 3.3, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = color;
+          ctx.beginPath(); ctx.arc(9, 6, 2.1, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    function psDrawRestSymbol(drop) {
+      const color = drop.color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 7;
+      ctx.fillStyle = color;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "butt";
+      if (drop.heal > 1) {
+        const w = 13;
+        const h = 5;
+        const linePad = 2;
+        const lineY = 0;
+        const rectY = drop.heal === 2 ? -h : 0;
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 - linePad, lineY);
+        ctx.lineTo(w / 2 + linePad, lineY);
+        ctx.stroke();
+        ctx.fillRect(-w / 2, rectY, w, h);
+        return;
+      }
+      // Quarter rest: custom zig-zag so it does not depend on fragile music fonts.
+      psStrokeLinePath(() => {
+        ctx.moveTo(-3, -13);
+        ctx.lineTo(4, -5);
+        ctx.lineTo(-2, 0);
+        ctx.lineTo(5, 8);
+        ctx.bezierCurveTo(0, 6, -5, 8, -2, 14);
+      }, color, 4, 2);
+    }
+    function psDrawDrop(drop) {
+      if (!psPointOnScreen(drop, 22)) return;
+      const p = psWorldToScreen(drop.x, drop.y);
+      const pulse = Math.sin((ps.time + drop.pulse) / 16) * 0.12;
+      ctx.save();
+      ctx.translate(Math.round(p.x), Math.round(p.y));
+      ctx.scale(1 + pulse, 1 + pulse);
+
+      if (drop.kind === "upgrade" && drop.track === "R") {
+        psDrawRhythmSymbol(drop.rhythmIndex ?? Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1), drop.color);
+        ctx.restore();
+        return;
+      }
+
+      if (drop.kind === "rest") {
+        psDrawRestSymbol(drop);
+        ctx.restore();
+        return;
+      }
+
+      ctx.font = `bold ${drop.fontSize || 12}px Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = "rgba(3,7,18,0.95)";
+      ctx.strokeText(drop.label, 0, 0.5);
+      ctx.fillStyle = drop.color;
+      ctx.shadowColor = drop.color;
+      ctx.shadowBlur = 7;
+      ctx.fillText(drop.label, 0, 0.5);
+      ctx.restore();
+    }
+
+    function gameInit() {
+      ps = {
+        player: { x: PS_WORLD.width / 2, y: PS_WORLD.height / 2, r: 9 },
+        camera: { x: 0, y: 0 },
+        bullets: [],
+        rays: [],
+        shockwaves: [],
+        explosions: [],
+        enemies: [],
+        drops: [],
+        particles: [],
+        lines: [],
+        dyn: 0,
+        tempo: 0,
+        rhythm: 0,
+        harmony: 0,
+        articulation: null,
+        hp: 6,
+        maxHp: 6,
+        repeats: 0,
+        invuln: 0,
+        fireCooldown: 0,
+        repeatCooldown: 0,
+        specialCooldown: PS_SPECIAL_FIRST_TIME,
+        bassPulseCooldown: 0,
+        trebleCooldown: 0,
+        nextFireSound: 0,
+        heading: { x: 1, y: 0 },
+        time: 0,
+        kills: 0,
+        fermataTimer: 0,
+        trebleTimer: 0,
+        bassTimer: 0,
+        message: "EXPLORE FOR PICKUPS",
+        messageTimer: 200,
+        dpad: { x: 0, y: 0 },
+        aim: { x: 1, y: 0 }
+      };
+
+      setScore(0);
+      psUpdateCamera();
+      psMaintainDrops();
+      psMaintainEnemies();
+      psUpdateHud();
+
+      updateShellMenuTab("controls", `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Left joystick:</strong> move the piano. Stay near the center to slow down or stop.</li>
+            <li><strong>D-pad:</strong> tap for quick movement in one direction.</li>
+            <li><strong>Right joystick:</strong> aim and fire. Push it toward the enemies.</li>
+            <li><strong>MENU:</strong> pause, resume, or return to the player menu.</li>
+          </ul>
+          <p>Move with your left hand and aim with your right hand.</p>
+      `);
+
+      updateShellMenuTab("instructions", `
+          <h3>How to Play</h3>
+          <p>You are the tiny piano. Instrument enemies chase you through a large scrolling map.</p>
+          <ul>
+            <li>Use the left joystick to move away from danger.</li>
+            <li>Use the right joystick to aim and fire note shots.</li>
+            <li>Collect music symbols to upgrade your piano.</li>
+            <li><strong>Dynamics</strong> make your notes bigger and stronger.</li>
+            <li><strong>Tempo</strong> changes how fast you move.</li>
+            <li><strong>Rhythm</strong> changes how quickly you fire.</li>
+            <li><strong>Harmony</strong> adds more notes to your attack.</li>
+            <li><strong>Rests</strong> heal you. <strong>:||</strong> gives an extra life.</li>
+          </ul>
+          <p>Your score goes up as you survive.</p>
+      `);
+    }
+
+    function gameUpdate() {
+      if (!ps) return;
+      ps.time++;
+      if (ps.messageTimer > 0) ps.messageTimer--;
+      if (ps.invuln > 0) ps.invuln--;
+      if (ps.fermataTimer > 0) ps.fermataTimer--;
+      if (ps.trebleTimer > 0) ps.trebleTimer--;
+      if (ps.bassTimer > 0) ps.bassTimer--;
+      if (ps.trebleCooldown > 0) ps.trebleCooldown--;
+      if (ps.bassPulseCooldown > 0) ps.bassPulseCooldown--;
+      if (ps.fireCooldown > 0) ps.fireCooldown--;
+
+      let mx = sticks.left.x + ps.dpad.x;
+      let my = sticks.left.y + ps.dpad.y;
+      const rawMag = Math.sqrt(mx * mx + my * my);
+      const joystickDeadZone = 0.22;
+      const speed = PS_TEMPOS[ps.tempo].speed;
+
+      if (rawMag > joystickDeadZone) {
+        const nx = mx / rawMag;
+        const ny = my / rawMag;
+        const moveMag = Math.min(1, (rawMag - joystickDeadZone) / (1 - joystickDeadZone));
+        ps.heading.x = nx;
+        ps.heading.y = ny;
+        ps.player.x = psWrapValue(ps.player.x + nx * speed * moveMag, PS_WORLD.width);
+        ps.player.y = psWrapValue(ps.player.y + ny * speed * moveMag, PS_WORLD.height);
+      }
+
+      if (Math.abs(sticks.right.x) > 0.05 || Math.abs(sticks.right.y) > 0.05) {
+        ps.aim.x = sticks.right.x;
+        ps.aim.y = sticks.right.y;
+      }
+
+      psUpdateCamera();
+      psMaintainDrops();
+      psMaintainEnemies();
+      psFire();
+
+      if (ps.bassTimer > 0 && ps.bassPulseCooldown <= 0) {
+        psSpawnShockwave();
+        ps.bassPulseCooldown = 23;
+      }
+
+      if (ps.trebleTimer > 0 && ps.trebleCooldown <= 0) {
+        psSpawnTrebleBolts();
+        ps.trebleCooldown = 8 + Math.floor(Math.random() * 11);
+      }
+
+      ps.enemies.forEach(enemy => {
+        const dx = psWrappedDelta(enemy.x, ps.player.x, PS_WORLD.width);
+        const dy = psWrappedDelta(enemy.y, ps.player.y, PS_WORLD.height);
+        const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+        enemy.x += (dx / mag) * enemy.speed;
+        enemy.y += (dy / mag) * enemy.speed;
+        psWrapEntity(enemy);
+        if (enemy.hitFlash > 0) enemy.hitFlash--;
+
+        const enemyHitRadius = enemy.r * 0.76;
+        const playerHitRadius = ps.player.r * 0.78;
+        if (psDist(enemy, ps.player) < enemyHitRadius + playerHitRadius && ps.invuln <= 0) {
+          ps.hp--;
+          ps.invuln = 70;
+          psSetMessage(`OUCH HP ${ps.hp}/${ps.maxHp}`, 90);
+          soundLose();
+          if (!psTryRevive()) endGame("Out of rests.");
+        }
+      });
+
+      ps.bullets.forEach(bullet => {
+        bullet.x += bullet.vx;
+        bullet.y += bullet.vy;
+        if (bullet.wiggle) {
+          bullet.wiggle.phase += bullet.wiggle.freq;
+          const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 1;
+          const wobble = Math.sin(bullet.wiggle.phase) * bullet.wiggle.amp;
+          bullet.x += (-bullet.vy / spd) * wobble;
+          bullet.y += (bullet.vx / spd) * wobble;
+        }
+        psWrapEntity(bullet);
+        bullet.life--;
+
+        ps.enemies.forEach(enemy => {
+          if (enemy.hp <= 0 || bullet.hitIds.has(enemy)) return;
+          if (psDist(bullet, enemy) < (bullet.hitRadius || bullet.r) + enemy.r) {
+            bullet.hitIds.add(enemy);
+            psDamageEnemy(enemy, bullet.damage);
+            if (bullet.explode) psExplodeAt(enemy.x, enemy.y, bullet.damage);
+            if (bullet.chain > 0) psChainFrom(enemy, bullet.damage, bullet.chain);
+
+            if (bullet.bounces > 0) {
+              bullet.bounces--;
+              let target = null;
+              let bestD = 9999;
+              ps.enemies.forEach(other => {
+                if (other === enemy || other.hp <= 0 || bullet.hitIds.has(other)) return;
+                const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
+                if (d < bestD) { bestD = d; target = other; }
+              });
+              if (target) {
+                const dx = psWrappedDelta(bullet.x, target.x, PS_WORLD.width);
+                const dy = psWrappedDelta(bullet.y, target.y, PS_WORLD.height);
+                const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+                const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 4;
+                bullet.vx = (dx / mag) * spd;
+                bullet.vy = (dy / mag) * spd;
+              } else {
+                bullet.life = 0;
+              }
+            } else if (bullet.pierce > 0) {
+              bullet.pierce--;
+            } else {
+              bullet.life = 0;
+            }
+          }
+        });
+      });
+
+      ps.rays.forEach(ray => {
+        ray.life--;
+        const dx = Math.cos(ray.angle);
+        const dy = Math.sin(ray.angle);
+        ps.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = psWrappedDelta(ray.x, enemy.x, PS_WORLD.width);
+          const ey = psWrappedDelta(ray.y, enemy.y, PS_WORLD.height);
+          const forward = ex * dx + ey * dy;
+          if (forward < 0 || forward > ray.length) return;
+          const perp = Math.abs(ex * dy - ey * dx);
+          if (perp < enemy.r + ray.width * 0.36) psDamageEnemy(enemy, ray.damage);
+        });
+      });
+
+      ps.shockwaves.forEach(wave => {
+        wave.r += (wave.maxR - wave.r) * 0.18;
+        wave.life--;
+        ps.enemies.forEach(enemy => {
+          if (enemy.hp <= 0 || wave.hitIds.has(enemy)) return;
+          const d = psDist(wave, enemy);
+          if (Math.abs(d - wave.r) < enemy.r + 14) {
+            wave.hitIds.add(enemy);
+            psDamageEnemy(enemy, wave.damage);
+          }
+        });
+      });
+
+      ps.explosions.forEach(explosion => {
+        explosion.r += (explosion.maxR - explosion.r) * 0.35;
+        explosion.life--;
+      });
+
+      ps.enemies = ps.enemies.filter(enemy => {
+        if (enemy.hp > 0) return true;
+        psKillEnemy(enemy);
+        return false;
+      });
+
+      ps.bullets = ps.bullets.filter(b => b.life > 0);
+      ps.rays = ps.rays.filter(r => r.life > 0);
+      ps.shockwaves = ps.shockwaves.filter(w => w.life > 0);
+    ps.explosions = ps.explosions.filter(e => e.life > 0);
+
+      ps.drops.forEach(drop => {
+        if (psDist(drop, ps.player) < drop.r + ps.player.r) {
+          drop.collected = true;
+          psCollectDrop(drop);
+        }
+      });
+      ps.drops = ps.drops.filter(d => !d.collected);
+
+      ps.particles.forEach(p => { p.y += p.vy; p.life--; });
+      ps.particles = ps.particles.filter(p => p.life > 0);
+      ps.lines.forEach(l => l.life--);
+      ps.lines = ps.lines.filter(l => l.life > 0);
+
+      if (ps.time % 60 === 0) addScore(1);
+      psUpdateHud();
+    }
+
+    function gameDraw() {
+      if (!ps) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#0b1420";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "rgba(96,165,250,0.08)";
+      const grid = 28;
+      const gx = -(ps.camera.x % grid);
+      const gy = -(ps.camera.y % grid);
+      for (let x = gx; x < canvas.width; x += grid) ctx.fillRect(Math.floor(x), 0, 1, canvas.height);
+      for (let y = gy; y < canvas.height; y += grid) ctx.fillRect(0, Math.floor(y), canvas.width, 1);
+
+      ps.drops.forEach(psDrawDrop);
+
+      ps.lines.forEach(line => {
+        const a = psWorldToScreen(line.x1, line.y1);
+        const b = psWorldToScreen(line.x2, line.y2);
+        ctx.strokeStyle = `rgba(147,197,253,${line.life / 10})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(a.x, a.y);
+        ctx.lineTo(b.x, b.y);
+        ctx.stroke();
+      });
+
+      ps.rays.forEach(ray => {
+        const p = psWorldToScreen(ray.x, ray.y);
+        const dx = Math.cos(ray.angle);
+        const dy = Math.sin(ray.angle);
+        const drawBolt = (lineWidth, strokeStyle) => {
+          ctx.strokeStyle = strokeStyle;
+          ctx.lineWidth = lineWidth;
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          if (ray.jagged) {
+            const steps = 7;
+            const perpX = -dy;
+            const perpY = dx;
+            for (let i = 1; i <= steps; i++) {
+              const t = i / steps;
+              const jitter = (Math.random() - 0.5) * 17 * (1 - t * 0.35);
+              ctx.lineTo(p.x + dx * ray.length * t + perpX * jitter, p.y + dy * ray.length * t + perpY * jitter);
+            }
+          } else {
+            ctx.lineTo(p.x + dx * ray.length, p.y + dy * ray.length);
+          }
+          ctx.stroke();
+        };
+        drawBolt(ray.width, ray.color === "treble" ? `rgba(96,165,250,${0.24 + ray.life / 10})` : `rgba(147,197,253,${0.2 + ray.life / 10})`);
+        drawBolt(Math.max(1.1, ray.width * 0.22), "rgba(255,255,255,0.78)");
+      });
+
+      ps.shockwaves.forEach(wave => {
+        const p = psWorldToScreen(wave.x, wave.y);
+        ctx.strokeStyle = `rgba(167,139,250,${Math.max(0, wave.life / 24)})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, wave.r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, wave.life / 36)})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, wave.r * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+
+      ps.explosions.forEach(explosion => {
+        const p = psWorldToScreen(explosion.x, explosion.y);
+        ctx.strokeStyle = `rgba(251,191,36,${Math.max(0, explosion.life / 12)})`;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, explosion.r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.fillStyle = `rgba(251,113,133,${Math.max(0, explosion.life / 34)})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, explosion.r * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      ps.bullets.forEach(b => {
+        if (!psPointOnScreen(b, 15)) return;
+        const p = psWorldToScreen(b.x, b.y);
+        ctx.fillStyle = ps.articulation?.id === "legato" ? "#93c5fd" : "#ffe08a";
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "#111827";
+        ctx.font = `bold ${Math.max(6, b.r + 2)}px Arial, sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("♪", p.x, p.y + 0.5);
+      });
+
+      ps.enemies.forEach(psDrawEnemy);
+
+      const playerPos = psWorldToScreen(ps.player.x, ps.player.y);
+      if (ps.invuln % 12 < 6) psDrawPixelPiano(playerPos.x, playerPos.y);
+
+      ctx.fillStyle = "rgba(3,7,18,0.84)";
+      ctx.fillRect(0, 0, canvas.width, 15);
+      ctx.fillStyle = "#b7ff9e";
+      ctx.font = "bold 8px Courier New, monospace";
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText(psCompactStatsLine(), 4, 8);
+      ctx.textAlign = "right";
+      ctx.fillText(`K ${ps.kills}`, canvas.width - 4, 8);
+
+      ps.particles.forEach(p => {
+        if (!psPointOnScreen(p, 12)) return;
+        const sp = psWorldToScreen(p.x, p.y);
+        ctx.globalAlpha = Math.max(0, p.life / 16);
+        ctx.fillStyle = "#fef3c7";
+        ctx.font = "bold 9px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(p.text, sp.x, sp.y);
+        ctx.globalAlpha = 1;
+      });
+    }
+
+    function gameInput(action) {
+      if (!ps) return;
+
+      if (action === "up") ps.dpad.y = -1;
+      if (action === "down") ps.dpad.y = 1;
+      if (action === "left") ps.dpad.x = -1;
+      if (action === "right") ps.dpad.x = 1;
+
+      if (["up", "down", "left", "right"].includes(action)) {
+        setTimeout(() => {
+          if (!ps) return;
+          if (action === "up" || action === "down") ps.dpad.y = 0;
+          if (action === "left" || action === "right") ps.dpad.x = 0;
+        }, 130);
+      }
+
+      if (action === "a" || action === "x") psSetMessage("USE RIGHT STICK TO FIRE", 90);
+      if (action === "b" || action === "y") psSetMessage(psStatsLine(), 110);
+      if (action === "select") psSetMessage("EXPLORE FOR SYMBOLS", 110);
+    }
+
+    function gameStop() {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!ps) return;
+      ps.bullets = [];
+      ps.rays = [];
+      ps.shockwaves = [];
+      ps.dpad = { x: 0, y: 0 };
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
