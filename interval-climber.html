@@ -1,0 +1,2319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Interval Climber Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: auto;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 35px;
+      padding: 18px 12px;
+      background: rgba(16, 24, 39, 0.93);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 8px 12px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+
+    #gameCanvas {
+      background: #0b1420;
+      touch-action: none;
+    }
+
+    /* Interval Climber only: show only controls that do something in this game. */
+    #dpad {
+      left: 48px;
+      top: 34px;
+      width: 64px;
+      height: 116px;
+    }
+
+    #dpadLeft,
+    #dpadCenter,
+    #dpadRight,
+    #buttonX,
+    #buttonY,
+    #buttonB,
+    #rightJoystickPad,
+    #selectButton {
+      display: none !important;
+    }
+
+    #dpadUp,
+    #dpadDown {
+      left: 7px;
+      width: 50px;
+      font-size: 13px;
+      line-height: 50px;
+    }
+
+    #dpadUp {
+      top: 0;
+      border-radius: 14px 14px 6px 6px;
+    }
+
+    #dpadDown {
+      top: 62px;
+      border-radius: 6px 6px 14px 14px;
+    }
+
+    #faceButtons {
+      right: 40px;
+      top: 47px;
+      width: 120px;
+      height: 92px;
+    }
+
+    #buttonA {
+      left: 22px;
+      top: 7px;
+      width: 76px;
+      height: 76px;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    #systemButtons {
+      width: 86px;
+      top: 326px;
+    }
+
+    #startButton {
+      width: 86px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">HEIGHT: <span id="score">0</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">UP</button>
+            <button id="dpadLeft" class="dpadBtn">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">DOWN</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">JUMP</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Help and pause panel">
+          <div id="shellMenuHeader">
+            <h2>Help / Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
+    const STORAGE_KEY = "intervalClimberMobilePlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Height";
+    const FIRST_TIME_HELP_VERSION = "intervalClimberHowToPlay_v1";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let wixStorageAnswered = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Need a break? Resume the climb, or return to the player menu.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+          </div>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <ul>
+            <li>Look at the prompt in the green LCD, like <strong>UP A 3RD</strong>.</li>
+            <li>Start from the ledge your climber is standing on.</li>
+            <li>Count letter names upward to find the answer. For example, C up a 3rd is E: C-D-E.</li>
+            <li>Use <strong>UP</strong> and <strong>DOWN</strong> to highlight the correct letter ledge.</li>
+            <li>Press <strong>JUMP</strong> to climb to the selected ledge.</li>
+            <li>A correct jump keeps you climbing. A wrong ledge breaks and ends the run.</li>
+            <li>Your score is your height. Keep climbing before the bottom danger zone catches you.</li>
+          </ul>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>UP / DOWN:</strong> Move the selected ledge up or down.</li>
+            <li><strong>JUMP:</strong> Jump to the selected ledge.</li>
+            <li><strong>Left joystick up/down:</strong> Also moves the selected ledge.</li>
+            <li><strong>Tap a ledge:</strong> You can also tap a ledge directly.</li>
+            <li><strong>MENU:</strong> Pause, resume, or exit.</li>
+          </ul>
+          <p>Use UP/DOWN to choose, then JUMP to climb.</p>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "pause";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function setScore(value) {
+      score = Math.max(0, Math.floor(value));
+      scoreEl.textContent = score;
+    }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const best = data && typeof data === "object"
+          ? Number(data.best || 0)
+          : Number(data || 0);
+
+        const helpSeenVersion = data && typeof data === "object"
+          ? String(data.helpSeenVersion || "")
+          : "";
+
+        cleaned[cleanName] = {
+          best: Math.max(0, Math.floor(best || 0))
+        };
+
+        if (helpSeenVersion) {
+          cleaned[cleanName].helpSeenVersion = helpSeenVersion;
+        }
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this template stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .sort((a, b) => (b[1].best || 0) - (a[1].best || 0))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${data.best || 0}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${players[name].best || 0}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0 };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return;
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+    }
+
+    function shouldOpenFirstTimeHelp() {
+      if (!selectedPlayer) return true;
+      if (isGuestPlayerName(selectedPlayer)) return true;
+
+      ensureSelectedPlayerRecord();
+      return players[selectedPlayer].helpSeenVersion !== FIRST_TIME_HELP_VERSION;
+    }
+
+    function markFirstTimeHelpSeen() {
+      if (!selectedPlayer || isGuestPlayerName(selectedPlayer)) return;
+
+      ensureSelectedPlayerRecord();
+      players[selectedPlayer].helpSeenVersion = FIRST_TIME_HELP_VERSION;
+      savePlayers();
+    }
+
+    function startGameWithFirstTimeHelp() {
+      const shouldOpenHelp = shouldOpenFirstTimeHelp();
+
+      startGame();
+
+      if (shouldOpenHelp) {
+        markFirstTimeHelpSeen();
+        openShellMenu("instructions");
+      }
+    }
+
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0 };
+      }
+
+      savePlayers();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGameWithFirstTimeHelp();
+    };
+
+    playAgainBtn.onclick = () => startGameWithFirstTimeHelp();
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+      gameOverBox.style.display = "none";
+
+      setMessage("READY");
+      gameInit();
+
+      loop();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      soundLose();
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverBox.style.display = "block";
+    }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCorrect() {
+      beep(660, 0.08, "square", 0.06);
+      setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+      });
+    }
+
+    function soundLose() {
+      [300, 220, 160, 100].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+      });
+    }
+
+    /*
+      GAME MODULE — INTERVAL CLIMBER MOBILE ROUGH DRAFT
+      Uses the mobile emulator shell, Wix/Velo storage bridge, touchscreen, D-pad selector, and A button.
+    */
+
+    const IC_NOTES = ["C", "D", "E", "F", "G", "A", "B"];
+    const IC_INTERVAL_NAMES = {
+      2: "2nd",
+      3: "3rd",
+      4: "4th",
+      5: "5th",
+      6: "6th",
+      7: "7th",
+      8: "Octave",
+      9: "9th",
+      10: "10th",
+      11: "11th",
+      12: "12th",
+      13: "13th",
+      14: "14th",
+      15: "15th"
+    };
+
+    const IC_ALPHA_ORDER = ["A", "B", "C", "D", "E", "F", "G"];
+    const IC_LEDGE_W = 28;
+    const IC_LEDGE_H = 8;
+    const IC_LEDGE_GAP = 9.0;
+    const IC_START_Y = 96;
+    const IC_TOTAL_VISIBLE_START = 24;
+    const IC_CLIMBER_SCALE = 0.55;
+    const IC_LANES = [62, 100, 138, 176, 214, 252, 290];
+    const IC_CLOSE_NOTE_STEPS_TO_AVOID = 2;
+    const IC_DIRECTLY_ABOVE_GAP = IC_LEDGE_W + 4;
+
+    let ledges = [];
+    let currentLedge = null;
+    let focusLedge = null;
+    let currentInterval = null;
+    let heightFloat = 0;
+    let ledgesClimbed = 0;
+    let scrollSpeed = 0.17;
+    let shakeFrames = 0;
+    let climberX = 0;
+    let climberY = 0;
+    let jumpState = null;
+    let fallingState = null;
+    let lastFrameTime = 0;
+    let leftStickLastInput = 0;
+    let leftStickLastDirection = "";
+
+    function gameInit() {
+      score = 0;
+      heightFloat = 0;
+      ledgesClimbed = 0;
+      scrollSpeed = 0.075;
+      shakeFrames = 0;
+      jumpState = null;
+      fallingState = null;
+      lastFrameTime = performance.now();
+      makeStartingMountain();
+      chooseNextInterval();
+      setScore(0);
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+    }
+
+    function makeStartingMountain() {
+      ledges = [];
+      const startY = IC_START_Y;
+
+      for (let i = 0; i < IC_TOTAL_VISIBLE_START; i++) {
+        const noteIndex = i;
+        const letter = IC_NOTES[noteIndex % 7];
+        ledges.push({
+          id: cryptoId(),
+          noteIndex,
+          letter,
+          x: randomLedgeX(i),
+          y: startY - i * IC_LEDGE_GAP,
+          w: IC_LEDGE_W,
+          h: IC_LEDGE_H,
+          broken: false
+        });
+      }
+
+      currentLedge = ledges[0];
+      focusLedge = currentLedge;
+      const startPos = getClimberAnchor(currentLedge);
+      climberX = startPos.x;
+      climberY = startPos.y;
+    }
+
+    function randomLedgeX(noteIndex) {
+      return randomXForNoteIndex(noteIndex);
+    }
+
+    function randomFutureX(noteIndex) {
+      return randomXForNoteIndex(noteIndex);
+    }
+
+    function randomXForNoteIndex(noteIndex) {
+      let possible = IC_LANES.slice();
+
+      // A 2nd or 3rd away means the next one or two ledges in note order.
+      // Do not let those nearby ledges sit directly above each other,
+      // because the climber can cover the target letter on mobile.
+      const closeLedges = ledges.filter(l => {
+        const diff = Math.abs(noteIndex - l.noteIndex);
+        return diff > 0 && diff <= IC_CLOSE_NOTE_STEPS_TO_AVOID;
+      });
+
+      const noDirectOverlap = possible.filter(x => {
+        return closeLedges.every(l => Math.abs(x - l.x) > IC_DIRECTLY_ABOVE_GAP);
+      });
+
+      if (noDirectOverlap.length > 0) {
+        possible = noDirectOverlap;
+      } else {
+        const previous = ledges.find(l => l.noteIndex === noteIndex - 1);
+        if (previous) {
+          const noPreviousOverlap = IC_LANES.filter(x => Math.abs(x - previous.x) > IC_DIRECTLY_ABOVE_GAP);
+          if (noPreviousOverlap.length > 0) possible = noPreviousOverlap;
+        }
+      }
+
+      return possible[Math.floor(Math.random() * possible.length)] || IC_LANES[0];
+    }
+
+    function extendMountainIfNeeded() {
+      let topMost = ledges.reduce((min, l) => Math.min(min, l.y), Infinity);
+      while (topMost > -150) {
+        const last = ledges.reduce((top, l) => l.y < top.y ? l : top, ledges[0]);
+        const nextIndex = last.noteIndex + 1;
+        ledges.push({
+          id: cryptoId(),
+          noteIndex: nextIndex,
+          letter: IC_NOTES[nextIndex % 7],
+          x: randomFutureX(nextIndex),
+          y: last.y - IC_LEDGE_GAP,
+          w: IC_LEDGE_W,
+          h: IC_LEDGE_H,
+          broken: false
+        });
+        topMost -= IC_LEDGE_GAP;
+      }
+      ledges = ledges.filter(l => l.y < canvas.height + 70);
+      if (focusLedge && !ledges.includes(focusLedge)) focusLedge = currentLedge || nearestSelectableLedge();
+    }
+
+    function chooseNextInterval() {
+      extendMountainIfNeeded();
+      const maxInterval = ledgesClimbed < 5 ? 5 : 8;
+      const possible = [];
+      for (let size = 2; size <= maxInterval; size++) {
+        const targetIndex = currentLedge.noteIndex + (size - 1);
+        if (ledges.some(l => l.noteIndex === targetIndex)) possible.push(size);
+      }
+      currentInterval = possible[Math.floor(Math.random() * possible.length)] || 2;
+      setMessage(`UP A ${IC_INTERVAL_NAMES[currentInterval].toUpperCase()}`);
+      focusLedge = currentLedge || nearestSelectableLedge() || focusLedge;
+    }
+
+    function getFocusableLedges() {
+      const minVisibleY = -120;
+      const maxVisibleY = canvas.height - 18;
+      return ledges
+        .filter(l => {
+          if (l.broken) return false;
+          if (currentLedge && l.noteIndex < currentLedge.noteIndex) return false;
+          if (l === currentLedge) return true;
+          return l.y >= minVisibleY && l.y <= maxVisibleY;
+        })
+        .sort((a, b) => a.noteIndex - b.noteIndex);
+    }
+
+    function nearestSelectableLedge() {
+      const candidates = getFocusableLedges();
+      if (candidates.length === 0) return null;
+      return candidates[0];
+    }
+
+    function gameUpdate() {
+      const now = performance.now();
+      const dt = Math.min(2.2, (now - lastFrameTime) / 16.6667);
+      lastFrameTime = now;
+
+      scrollSpeed += 0.000020 * dt;
+      ledges.forEach(l => { l.y += scrollSpeed * dt; });
+      heightFloat += scrollSpeed * dt;
+      const nextScore = Math.floor(heightFloat);
+      if (nextScore !== score) setScore(nextScore);
+
+      updateClimberAnimation(dt);
+      extendMountainIfNeeded();
+      maybeSendLeftJoystickInput();
+
+      if (!fallingState && currentLedge && currentLedge.y > canvas.height - 36) {
+        currentLedge.broken = true;
+        beginFall("You fell!");
+      }
+
+      if (fallingState && climberY > canvas.height + 50) {
+        endGame(fallingState.reason);
+        return;
+      }
+
+      if (shakeFrames > 0) shakeFrames--;
+    }
+
+    function gameDraw() {
+      const shakeX = shakeFrames > 0 ? (Math.random() * 6 - 3) : 0;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(shakeX, 0);
+      drawMountainBackground();
+      drawLedges();
+      drawClimber();
+      drawBottomZone();
+      ctx.restore();
+    }
+
+    function gamePointer(point) {
+      if (!running || jumpState || fallingState) return;
+      const HIT_PAD_X = 14;
+      const HIT_PAD_TOP = 7;
+      const HIT_PAD_BOTTOM = 9;
+      const clicked = ledges
+        .filter(l => !l.broken && point.x >= l.x - HIT_PAD_X && point.x <= l.x + l.w + HIT_PAD_X && point.y >= l.y - HIT_PAD_TOP && point.y <= l.y + l.h + HIT_PAD_BOTTOM)
+        .sort((a, b) => b.y - a.y)[0];
+      if (clicked) attemptLedge(clicked);
+    }
+
+    canvas.addEventListener("pointerdown", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      gamePointer({
+        x: (event.clientX - rect.left) * (canvas.width / rect.width),
+        y: (event.clientY - rect.top) * (canvas.height / rect.height),
+        originalEvent: event
+      });
+    });
+
+    function attemptLedge(ledge) {
+      if (!ledge || jumpState || fallingState || !currentLedge) return;
+      focusLedge = ledge;
+      const targetIndex = currentLedge.noteIndex + (currentInterval - 1);
+      if (ledge.noteIndex === targetIndex) {
+        ledgesClimbed++;
+        beginJumpTo(ledge, true);
+        if (ledgesClimbed % 5 === 0) soundWin();
+        else soundCorrect();
+        chooseNextInterval();
+      } else {
+        beginJumpTo(ledge, false);
+      }
+    }
+
+    function moveFocus(direction) {
+      if (direction !== "up" && direction !== "down") return;
+
+      const candidates = getFocusableLedges();
+      if (candidates.length === 0) return;
+
+      let index = candidates.findIndex(l => focusLedge && l.id === focusLedge.id);
+      if (index < 0) {
+        focusLedge = currentLedge || candidates[0];
+        index = candidates.findIndex(l => focusLedge && l.id === focusLedge.id);
+      }
+
+      const step = direction === "up" ? 1 : -1;
+      const nextIndex = (index + step + candidates.length) % candidates.length;
+      focusLedge = candidates[nextIndex];
+
+      setMessage(`SELECTED ${focusLedge.letter} | UP A ${IC_INTERVAL_NAMES[currentInterval].toUpperCase()}`);
+    }
+
+    function gameInput(action) {
+      if (action === "up" || action === "down") moveFocus(action);
+      if (action === "a") attemptLedge(focusLedge);
+    }
+
+    function joystickDirection() {
+      const stick = sticks.left;
+      const ay = Math.abs(stick.y);
+      if (ay < 0.52) return "";
+      return stick.y < 0 ? "up" : "down";
+    }
+
+    function maybeSendLeftJoystickInput() {
+      const dir = joystickDirection();
+      if (!dir) {
+        leftStickLastDirection = "";
+        return;
+      }
+      const now = performance.now();
+      if (dir !== leftStickLastDirection || now - leftStickLastInput > 220) {
+        leftStickLastDirection = dir;
+        leftStickLastInput = now;
+        moveFocus(dir);
+      }
+    }
+
+    function getClimberAnchor(ledge) {
+      return {
+        x: ledge.x + ledge.w / 2 - 9 * IC_CLIMBER_SCALE,
+        y: ledge.y - 34 * IC_CLIMBER_SCALE
+      };
+    }
+
+    function beginJumpTo(targetLedge, isCorrect) {
+      const from = { x: climberX, y: climberY };
+      if (isCorrect) currentLedge = targetLedge;
+      const to = getClimberAnchor(targetLedge);
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const duration = Math.max(140, Math.min(310, distance * 3.5));
+      jumpState = {
+        target: targetLedge,
+        fromX: from.x,
+        fromY: from.y,
+        startedAt: performance.now(),
+        duration,
+        arc: Math.max(9, Math.min(28, distance * 0.30)),
+        isCorrect
+      };
+    }
+
+    function updateClimberAnimation() {
+      if (fallingState) {
+        fallingState.vy += 0.28;
+        climberX += fallingState.vx;
+        climberY += fallingState.vy;
+        fallingState.spin += fallingState.spinSpeed;
+        return;
+      }
+      if (!currentLedge) return;
+      if (!jumpState) {
+        const anchor = getClimberAnchor(currentLedge);
+        climberX = anchor.x;
+        climberY = anchor.y;
+        return;
+      }
+      const now = performance.now();
+      const t = Math.min(1, (now - jumpState.startedAt) / jumpState.duration);
+      const eased = t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) * (-2 * t + 2)) / 2;
+      const targetAnchor = getClimberAnchor(jumpState.target);
+      climberX = jumpState.fromX + (targetAnchor.x - jumpState.fromX) * eased;
+      climberY = jumpState.fromY + (targetAnchor.y - jumpState.fromY) * eased - Math.sin(Math.PI * t) * jumpState.arc;
+      if (t >= 1) {
+        climberX = targetAnchor.x;
+        climberY = targetAnchor.y;
+        if (!jumpState.isCorrect) {
+          jumpState.target.broken = true;
+          shakeFrames = 12;
+          soundLose();
+          jumpState = null;
+          beginFall("Wrong ledge!");
+          return;
+        }
+        jumpState = null;
+        focusLedge = currentLedge;
+      }
+    }
+
+    function beginFall(reason) {
+      if (fallingState) return;
+      jumpState = null;
+      fallingState = {
+        reason,
+        vx: Math.random() < 0.5 ? -0.8 : 0.8,
+        vy: -1.8,
+        spin: 0,
+        spinSpeed: Math.random() < 0.5 ? -0.15 : 0.15
+      };
+    }
+
+    function drawMountainBackground() {
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.fillStyle = "#7dd3fc";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#6b7280";
+      pixelPoly([[40,H],[75,150],[45,110],[96,40],[130,0],[190,0],[160,70],[210,120],[190,H]]);
+      ctx.fillStyle = "#4b5563";
+      pixelPoly([[0,H],[0,95],[46,40],[70,0],[122,0],[96,80],[130,135],[105,H]]);
+      ctx.fillStyle = "#374151";
+      pixelPoly([[W,H],[W,0],[290,0],[320,50],[303,100],[360,140],[330,H]]);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      pixelPoly([[130,0],[160,0],[145,36],[120,68]]);
+      pixelPoly([[292,0],[318,0],[330,48],[308,76]]);
+    }
+
+    function pixelPoly(points) {
+      ctx.beginPath();
+      ctx.moveTo(points[0][0], points[0][1]);
+      points.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    function drawLedges() {
+      ledges.forEach(l => {
+        if (l.broken) {
+          drawBrokenLedge(l);
+          return;
+        }
+
+        const isCurrent = currentLedge && l.id === currentLedge.id;
+        const isFocused = focusLedge && l.id === focusLedge.id;
+        const grassH = 2.5;
+
+        ctx.fillStyle = isCurrent ? "#111827" : "#7c4a21";
+        ctx.fillRect(l.x, l.y, l.w, l.h);
+
+        ctx.fillStyle = "#22c55e";
+        ctx.fillRect(l.x, l.y - grassH, l.w, grassH);
+
+        ctx.strokeStyle = "#111827";
+        ctx.lineWidth = 1.35;
+        ctx.strokeRect(l.x, l.y - grassH, l.w, l.h + grassH);
+
+        if (isFocused) {
+          const pulse = 0.5 + Math.sin(performance.now() / 135) * 0.5;
+          ctx.save();
+          ctx.strokeStyle = `rgba(255, 224, 138, ${0.72 + pulse * 0.25})`;
+          ctx.lineWidth = 1.45 + pulse * 0.75;
+          roundRect(l.x - 2.5, l.y - grassH - 2.5, l.w + 5, l.h + grassH + 5, 3.5);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.font = "bold 10px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#111827";
+        ctx.fillStyle = "white";
+        ctx.strokeText(l.letter, l.x + l.w / 2, l.y + l.h / 2 + 0.5);
+        ctx.fillText(l.letter, l.x + l.w / 2, l.y + l.h / 2 + 0.5);
+      });
+    }
+
+    function drawBrokenLedge(l) {
+      ctx.fillStyle = "#5b3418";
+      ctx.fillRect(l.x, l.y + 3, l.w / 2 - 2, Math.max(4, l.h / 2));
+      ctx.fillRect(l.x + l.w / 2 + 3, l.y + 5, l.w / 2 - 3, Math.max(4, l.h / 2));
+    }
+
+    function roundRect(x, y, w, h, r) {
+      const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function drawClimber() {
+      if (!currentLedge && !fallingState) return;
+      const cx = climberX;
+      const cy = climberY - 2;
+      const jumping = !!jumpState;
+      const falling = !!fallingState;
+      ctx.save();
+      if (falling) {
+        ctx.translate(cx + 9, cy + 18);
+        ctx.rotate(fallingState.spin);
+        ctx.translate(-9, -18);
+      } else {
+        ctx.translate(cx, cy);
+      }
+      ctx.scale(IC_CLIMBER_SCALE, IC_CLIMBER_SCALE);
+      ctx.fillStyle = "#111827";
+      if (jumping || falling) {
+        ctx.fillRect(2, 13, 5, 13);
+        ctx.fillRect(14, 11, 5, 14);
+        ctx.fillRect(2, 25, 7, 5);
+        ctx.fillRect(12, 25, 7, 5);
+      } else {
+        ctx.fillRect(4, 24, 4, 11);
+        ctx.fillRect(11, 24, 4, 11);
+        ctx.fillRect(0, 13, 5, 13);
+        ctx.fillRect(14, 13, 5, 13);
+      }
+      ctx.fillStyle = "#ef4444";
+      ctx.fillRect(4, 12, 11, 14);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(4, 12, 11, 14);
+      ctx.fillStyle = "#f9c08a";
+      ctx.fillRect(5, 0, 10, 10);
+      ctx.strokeRect(5, 0, 10, 10);
+      ctx.fillStyle = "#111827";
+      ctx.fillRect(6, 1, 8, 3);
+      ctx.restore();
+    }
+
+    function drawBottomZone() {
+      const H = canvas.height;
+      ctx.fillStyle = "rgba(220, 38, 38, 0.86)";
+      ctx.fillRect(0, H - 20, canvas.width, 20);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 5]);
+      ctx.beginPath();
+      ctx.moveTo(0, H - 20);
+      ctx.lineTo(canvas.width, H - 20);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font = "bold 11px Arial, sans-serif";
+      ctx.fillStyle = "white";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("DON'T FALL", canvas.width / 2, H - 10);
+    }
+
+    function cryptoId() {
+      return Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    function gameStop() {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      jumpState = null;
+      fallingState = null;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
