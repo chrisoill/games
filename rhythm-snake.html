@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Rhythm Snake Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: auto;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 35px;
+      padding: 18px 12px;
+      background: rgba(16, 24, 39, 0.93);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 8px 12px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* Rhythm Snake uses only turning controls and the menu button.
+       Keep the full emulator layout in the template, but hide unused controls here. */
+    #faceButtons,
+    #rightJoystickPad,
+    #selectButton {
+      display: none;
+    }
+
+    #systemButtons {
+      width: 96px;
+    }
+
+    #startButton {
+      width: 96px;
+      letter-spacing: 0.6px;
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+
+    #gameCanvas {
+      background: #0b1420;
+      touch-action: none;
+    }
+  </style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">A</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
+    const STORAGE_KEY = "rhythmSnakeMobilePlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Score";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const CANVAS_LOGICAL_WIDTH = 390;
+    const CANVAS_LOGICAL_HEIGHT = 219;
+    const CANVAS_PIXEL_RATIO = Math.max(2, Math.min(3, Math.ceil(window.devicePixelRatio || 2)));
+
+    function configureCanvasResolution() {
+      const targetWidth = CANVAS_LOGICAL_WIDTH * CANVAS_PIXEL_RATIO;
+      const targetHeight = CANVAS_LOGICAL_HEIGHT * CANVAS_PIXEL_RATIO;
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      canvas.style.width = `${CANVAS_LOGICAL_WIDTH}px`;
+      canvas.style.height = `${CANVAS_LOGICAL_HEIGHT}px`;
+      ctx.setTransform(CANVAS_PIXEL_RATIO, 0, 0, CANVAS_PIXEL_RATIO, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+    }
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let wixStorageAnswered = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Need a break? You can resume, save this score and return to the player menu, or leave without saving this run.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+          </div>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <p>Rhythm Snake is like the classic snake game, but every snack is a rhythm answer.</p>
+          <ul>
+            <li>Look at the rhythm equation in the green LCD message.</li>
+            <li>Steer the snake into the rhythm symbol that makes the equation true.</li>
+            <li>A correct rhythm gives you 1 point and shows a new equation.</li>
+            <li>The run ends if you eat the wrong rhythm, hit the wall, or run into your own tail.</li>
+          </ul>
+          <p><strong>Tip:</strong> Think first, then turn. The snake keeps moving.</p>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>D-pad:</strong> Tap ▲ ◄ ► ▼ to turn the snake.</li>
+            <li><strong>Left joystick:</strong> Push toward the direction you want to turn.</li>
+            <li><strong>MENU:</strong> Pause, resume, read How to Play, or exit.</li>
+          </ul>
+          <p>There is no jump, fire, or action button in Rhythm Snake. Just steer.</p>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "pause";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "instructions") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function setScore(value) {
+      score = Math.max(0, Math.floor(value));
+      scoreEl.textContent = score;
+    }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    // First-time-player help rule:
+    // Named players see How to Play once per version. Guest sees it every time.
+    const FIRST_TIME_HELP_VERSION = "rhythmSnakeHowToPlay_v1";
+
+    function isGuestPlayer(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+      return players[selectedPlayer];
+    }
+
+    function shouldShowFirstTimeHelp() {
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      if (isGuestPlayer()) return true;
+      return playerData.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
+    }
+
+    function markFirstTimeHelpSeen() {
+      if (isGuestPlayer()) return;
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = FIRST_TIME_HELP_VERSION;
+      savePlayers();
+    }
+
+    function maybeOpenFirstTimeHowToPlay() {
+      if (!shouldShowFirstTimeHelp()) return;
+      markFirstTimeHelpSeen();
+      openShellMenu("instructions");
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const best = data && typeof data === "object"
+          ? Number(data.best || 0)
+          : Number(data || 0);
+        const helpSeenVersion = data && typeof data === "object"
+          ? String(data.helpSeenVersion || "")
+          : "";
+
+        cleaned[cleanName] = {
+          best: Math.max(0, Math.floor(best || 0)),
+          helpSeenVersion
+        };
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this template stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .sort((a, b) => (b[1].best || 0) - (a[1].best || 0))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${data.best || 0}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${players[name].best || 0}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0 };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0 };
+      }
+
+      savePlayers();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+    };
+
+    playAgainBtn.onclick = () => startGame();
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+      gameOverBox.style.display = "none";
+
+      setMessage("READY");
+      gameInit();
+
+      loop();
+      maybeOpenFirstTimeHowToPlay();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      soundLose();
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverBox.style.display = "block";
+    }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCorrect() {
+      beep(660, 0.08, "square", 0.06);
+      setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+      });
+    }
+
+    function soundLose() {
+      [300, 220, 160, 100].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+      });
+    }
+
+    /*
+      GAME MODULE — RHYTHM SNAKE MOBILE ROUGH DRAFT
+      Uses the mobile emulator shell, Wix/Velo storage bridge, D-pad, and left joystick.
+    */
+
+    const BACKING_TRACK_URL = "https://static.wixstatic.com/mp3/8e8c0c_8b6b8e66a3c14b0ba1882d1be7eb3375.wav";
+    const MUSIC_FONT = null; // Rhythm icons are drawn manually so mobile browsers do not need music-symbol fonts.
+
+    const RS_FIELD_OUTER_X = 10;
+    const RS_FIELD_OUTER_Y = 5;
+    const RS_FIELD_OUTER_SIZE = 210;
+    const RS_FIELD_PAD = 8;
+    const RS_FIELD_SIZE = RS_FIELD_OUTER_SIZE - RS_FIELD_PAD * 2;
+    const RS_FIELD_X = RS_FIELD_OUTER_X + RS_FIELD_PAD;
+    const RS_FIELD_Y = RS_FIELD_OUTER_Y + RS_FIELD_PAD;
+    const RS_TILE_COUNT = 21;
+    const RS_STEP_MS = 135;
+
+    let snake = [];
+    let direction = { x: 1, y: 0 };
+    let nextDirection = { x: 1, y: 0 };
+    let foods = [];
+    let stepAccumulator = 0;
+    let lastFrameTime = 0;
+    let currentQuestionText = "";
+    let currentQuestionOption = null;
+    let allQuestionOptions = [];
+    let leftStickLastInput = 0;
+    let leftStickLastDirection = "";
+
+    // Backing-track audio. Web Audio gives tighter, gapless looping than normal <audio>.
+    // The hidden HTMLAudio fallback keeps the game from going silent if Wix/browser decoding is blocked.
+    let backingBuffer = null;
+    let backingSource = null;
+    let backingGain = null;
+    let backingTrackLoading = null;
+    let usingFallbackBackingTrack = false;
+
+    const fallbackBackingTrack = new Audio();
+    fallbackBackingTrack.src = BACKING_TRACK_URL;
+    fallbackBackingTrack.loop = true;
+    fallbackBackingTrack.volume = 0.28;
+
+    const rhythms = [
+      { value: 0.5, type: "eighthNote", label: "eighth note", short: "eighth" },
+      { value: 1, type: "quarterNote", label: "quarter note", short: "quarter" },
+      { value: 1, type: "quarterRest", label: "quarter rest", short: "qtr rest" },
+      { value: 1.5, type: "dottedQuarterNote", label: "dotted quarter", short: "dotted qtr" },
+      { value: 2, type: "halfNote", label: "half note", short: "half" },
+      { value: 2, type: "halfRest", label: "half rest", short: "half rest" },
+      { value: 3, type: "dottedHalfNote", label: "dotted half", short: "dotted half" },
+      { value: 4, type: "wholeNote", label: "whole note", short: "whole" },
+      { value: 4, type: "wholeRest", label: "whole rest", short: "whole rest" }
+    ];
+
+    const components = rhythms.filter(r => [0.5, 1, 1.5, 2].includes(r.value));
+    const answerRhythms = rhythms.filter(r => [0.5, 1, 1.5, 2, 3, 4].includes(r.value));
+
+    function rhythmText(r) {
+      if (!r) return "?";
+      return r.short || r.label || "?";
+    }
+
+    function buildAllQuestionOptions() {
+      const options = [];
+      const operators = ["+", "-"];
+      components.forEach(left => {
+        components.forEach(right => {
+          operators.forEach(operator => {
+            const rawTotal = operator === "+" ? left.value + right.value : left.value - right.value;
+            const total = Math.round(rawTotal * 2) / 2;
+            if (total <= 0 || total > 4) return;
+            const answers = answerRhythms.filter(r => r.value === total);
+            answers.forEach(answer => options.push({ left, right, operator, answer }));
+          });
+        });
+      });
+      return options;
+    }
+
+    allQuestionOptions = buildAllQuestionOptions();
+
+    async function loadBackingTrack() {
+      if (!BACKING_TRACK_URL) return null;
+      if (backingBuffer) return backingBuffer;
+
+      if (!backingTrackLoading) {
+        const ac = getAudio();
+        if (!ac) return null;
+
+        backingTrackLoading = fetch(BACKING_TRACK_URL)
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("Backing track failed to load.");
+            }
+            return response.arrayBuffer();
+          })
+          .then(arrayBuffer => ac.decodeAudioData(arrayBuffer))
+          .then(decodedBuffer => {
+            backingBuffer = decodedBuffer;
+            return backingBuffer;
+          });
+      }
+
+      return backingTrackLoading;
+    }
+
+    async function startBackingTrack() {
+      if (!BACKING_TRACK_URL) return;
+
+      const ac = getAudio();
+      if (!ac) return;
+
+      if (ac.state === "suspended") {
+        await ac.resume().catch(() => {});
+      }
+
+      stopBackingTrack();
+
+      try {
+        const buffer = await loadBackingTrack();
+        if (!buffer) return;
+
+        usingFallbackBackingTrack = false;
+
+        backingGain = ac.createGain();
+        backingGain.gain.value = 0.28;
+        backingGain.connect(ac.destination);
+
+        backingSource = ac.createBufferSource();
+        backingSource.buffer = buffer;
+        backingSource.loop = true;
+        backingSource.connect(backingGain);
+
+        // Start very slightly in the future to avoid click/pop edge cases after restarts.
+        backingSource.start(ac.currentTime + 0.03);
+      } catch (err) {
+        // Fallback: less perfect looping, but keeps music working if Web Audio decoding is blocked.
+        usingFallbackBackingTrack = true;
+        fallbackBackingTrack.currentTime = 0;
+        fallbackBackingTrack.play().catch(() => {});
+      }
+    }
+
+    function stopBackingTrack() {
+      if (backingSource) {
+        try { backingSource.stop(); } catch (err) {}
+        try { backingSource.disconnect(); } catch (err) {}
+        backingSource = null;
+      }
+
+      if (backingGain) {
+        try { backingGain.disconnect(); } catch (err) {}
+        backingGain = null;
+      }
+
+      if (usingFallbackBackingTrack) {
+        fallbackBackingTrack.pause();
+        fallbackBackingTrack.currentTime = 0;
+        usingFallbackBackingTrack = false;
+      }
+    }
+
+    function makeQuestion() {
+      const option = allQuestionOptions[Math.floor(Math.random() * allQuestionOptions.length)];
+      currentQuestionOption = option;
+      const correct = option.answer;
+      let wrong;
+      do {
+        wrong = answerRhythms[Math.floor(Math.random() * answerRhythms.length)];
+      } while (wrong.value === correct.value);
+      currentQuestionText = `${rhythmText(option.left)} ${option.operator} ${rhythmText(option.right)} = ?`;
+      setMessage(currentQuestionText);
+      foods = [
+        { x: 3, y: 3, rhythm: correct, correct: true },
+        { x: RS_TILE_COUNT - 4, y: RS_TILE_COUNT - 4, rhythm: wrong, correct: false }
+      ];
+      placeFoodsSafely();
+    }
+
+    function placeFoodsSafely() {
+      const used = new Set();
+      foods.forEach(food => {
+        let placed = false;
+        let attempts = 0;
+        while (!placed && attempts < 500) {
+          attempts++;
+          const x = Math.floor(Math.random() * (RS_TILE_COUNT - 2)) + 1;
+          const y = Math.floor(Math.random() * (RS_TILE_COUNT - 2)) + 1;
+          const key = `${x},${y}`;
+          const onSnake = snake.some(part => part.x === x && part.y === y);
+          if (!onSnake && !used.has(key)) {
+            food.x = x;
+            food.y = y;
+            used.add(key);
+            placed = true;
+          }
+        }
+      });
+    }
+
+    function gameInit() {
+      setScore(0);
+      snake = [
+        { x: 10, y: 10 },
+        { x: 9, y: 10 },
+        { x: 8, y: 10 }
+      ];
+      direction = { x: 1, y: 0 };
+      nextDirection = { x: 1, y: 0 };
+      stepAccumulator = 0;
+      lastFrameTime = performance.now();
+      leftStickLastInput = 0;
+      leftStickLastDirection = "";
+      makeQuestion();
+      if (running) startBackingTrack().catch(() => {});
+    }
+
+    function gameUpdate() {
+      const now = performance.now();
+      const delta = Math.min(250, now - lastFrameTime);
+      lastFrameTime = now;
+      maybeSendLeftJoystickInput();
+      stepAccumulator += delta;
+      while (stepAccumulator >= RS_STEP_MS) {
+        updateSnakeStep();
+        stepAccumulator -= RS_STEP_MS;
+      }
+    }
+
+    function updateSnakeStep() {
+      direction = nextDirection;
+      const head = {
+        x: snake[0].x + direction.x,
+        y: snake[0].y + direction.y
+      };
+      if (
+        head.x < 0 || head.x >= RS_TILE_COUNT ||
+        head.y < 0 || head.y >= RS_TILE_COUNT ||
+        snake.some(part => part.x === head.x && part.y === head.y)
+      ) {
+        endGame("Crash!");
+        return;
+      }
+      snake.unshift(head);
+      const eatenIndex = foods.findIndex(food => food.x === head.x && food.y === head.y);
+      if (eatenIndex >= 0) {
+        const eaten = foods[eatenIndex];
+        if (!eaten.correct) {
+          endGame("Wrong rhythm!");
+          return;
+        }
+        addScore(1);
+        soundCorrect();
+        if (score > 0 && score % 5 === 0) soundWin();
+        makeQuestion();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function gameDraw() {
+      configureCanvasResolution();
+      ctx.clearRect(0, 0, CANVAS_LOGICAL_WIDTH, CANVAS_LOGICAL_HEIGHT);
+      ctx.fillStyle = "#0b1420";
+      ctx.fillRect(0, 0, CANVAS_LOGICAL_WIDTH, CANVAS_LOGICAL_HEIGHT);
+      drawPlayField();
+      drawSidePanel();
+    }
+
+    function drawPlayField() {
+      const tileSize = RS_FIELD_SIZE / RS_TILE_COUNT;
+
+      // White breathing room around the grid keeps note stems from being clipped on edge tiles.
+      ctx.fillStyle = "#f7fbff";
+      roundRect(RS_FIELD_OUTER_X, RS_FIELD_OUTER_Y, RS_FIELD_OUTER_SIZE, RS_FIELD_OUTER_SIZE, 10);
+      ctx.fill();
+
+      ctx.fillStyle = "#f7fbff";
+      ctx.fillRect(RS_FIELD_X, RS_FIELD_Y, RS_FIELD_SIZE, RS_FIELD_SIZE);
+      ctx.strokeStyle = "#dbe7f5";
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= RS_TILE_COUNT; i++) {
+        const pos = RS_FIELD_X + i * tileSize;
+        ctx.beginPath();
+        ctx.moveTo(pos, RS_FIELD_Y);
+        ctx.lineTo(pos, RS_FIELD_Y + RS_FIELD_SIZE);
+        ctx.stroke();
+        const y = RS_FIELD_Y + i * tileSize;
+        ctx.beginPath();
+        ctx.moveTo(RS_FIELD_X, y);
+        ctx.lineTo(RS_FIELD_X + RS_FIELD_SIZE, y);
+        ctx.stroke();
+      }
+      foods.forEach(food => drawRhythmSymbol(food, tileSize));
+      snake.forEach((part, index) => {
+        ctx.fillStyle = index === 0 ? "#111827" : "#2563eb";
+        roundRect(
+          RS_FIELD_X + part.x * tileSize + 1,
+          RS_FIELD_Y + part.y * tileSize + 1,
+          tileSize - 2,
+          tileSize - 2,
+          3
+        );
+        ctx.fill();
+      });
+
+      ctx.strokeStyle = "#dbe7f5";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(RS_FIELD_X, RS_FIELD_Y, RS_FIELD_SIZE, RS_FIELD_SIZE);
+
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 2;
+      roundRect(RS_FIELD_OUTER_X, RS_FIELD_OUTER_Y, RS_FIELD_OUTER_SIZE, RS_FIELD_OUTER_SIZE, 10);
+      ctx.stroke();
+    }
+
+    function drawSidePanel() {
+      const x = RS_FIELD_OUTER_X + RS_FIELD_OUTER_SIZE + 10;
+      const w = CANVAS_LOGICAL_WIDTH - x - 10;
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      roundRect(x, RS_FIELD_OUTER_Y, w, RS_FIELD_OUTER_SIZE, 10);
+      ctx.fill();
+
+      ctx.fillStyle = "#f8fbff";
+      ctx.font = "bold 12px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillText("RHYTHM", x + w / 2, RS_FIELD_OUTER_Y + 12);
+      ctx.fillText("SNAKE", x + w / 2, RS_FIELD_OUTER_Y + 28);
+
+      drawQuestionIcons(currentQuestionOption, x, RS_FIELD_OUTER_Y + 56, w);
+
+      ctx.font = "bold 10px Arial, sans-serif";
+      ctx.fillStyle = "#b7ff9e";
+      ctx.textBaseline = "top";
+      ctx.fillText("Use D-pad", x + w / 2, RS_FIELD_OUTER_Y + 154);
+      ctx.fillText("or left stick", x + w / 2, RS_FIELD_OUTER_Y + 168);
+    }
+
+    function drawQuestionIcons(option, panelX, panelY, panelW) {
+      ctx.save();
+      ctx.fillStyle = "#f8fbff";
+      ctx.strokeStyle = "#f8fbff";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (!option) {
+        ctx.font = "bold 22px Arial, sans-serif";
+        ctx.fillText("?", panelX + panelW / 2, panelY + 36);
+        ctx.restore();
+        return;
+      }
+
+      const centerX = panelX + panelW / 2;
+      const topY = panelY + 31;
+      const bottomY = panelY + 78;
+
+      drawRhythmIcon(option.left, centerX - 42, topY, 1.08, "panel");
+      ctx.font = "bold 22px Arial, sans-serif";
+      ctx.fillText(option.operator, centerX, topY + 1);
+      drawRhythmIcon(option.right, centerX + 42, topY, 1.08, "panel");
+
+      ctx.font = "bold 24px Arial, sans-serif";
+      ctx.fillText("=", centerX - 15, bottomY);
+      ctx.fillText("?", centerX + 18, bottomY);
+
+      ctx.restore();
+    }
+
+    function drawRhythmSymbol(food, tileSize) {
+      const cx = RS_FIELD_X + food.x * tileSize + tileSize / 2;
+      const cy = RS_FIELD_Y + food.y * tileSize + tileSize / 2;
+
+      ctx.save();
+      ctx.fillStyle = "#111827";
+      ctx.strokeStyle = "#111827";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      // Grid icons are anchored by the notehead/rest center. Stems and flags are secondary.
+      drawRhythmIcon(food.rhythm, cx, cy, 1.0, "grid");
+
+      ctx.restore();
+    }
+
+    function drawRhythmIcon(rhythm, x, y, scale = 1, context = "grid") {
+      if (!rhythm) return;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      const isGrid = context === "grid";
+      ctx.lineWidth = isGrid ? 1.35 : 2.2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      if (rhythm.type === "eighthNote") {
+        drawNoteHead(0, 0, true, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+        drawFlagFromStem(isGrid);
+      } else if (rhythm.type === "quarterNote") {
+        drawNoteHead(0, 0, true, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+      } else if (rhythm.type === "dottedQuarterNote") {
+        drawNoteHead(0, 0, true, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+        drawDot(isGrid ? 7.0 : 8.5, isGrid ? -0.2 : 0.0, isGrid ? 1.15 : 1.7);
+      } else if (rhythm.type === "halfNote") {
+        drawNoteHead(0, 0, false, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+      } else if (rhythm.type === "dottedHalfNote") {
+        drawNoteHead(0, 0, false, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+        drawDot(isGrid ? 7.0 : 8.5, isGrid ? -0.2 : 0.0, isGrid ? 1.15 : 1.7);
+      } else if (rhythm.type === "wholeNote") {
+        drawNoteHead(0, 0, false, isGrid, isGrid ? 4.6 : 6.4, isGrid ? 3.1 : 4.2);
+      } else if (rhythm.type === "quarterRest") {
+        drawQuarterRestIcon(isGrid);
+      } else if (rhythm.type === "halfRest") {
+        drawHalfRestIcon(isGrid);
+      } else if (rhythm.type === "wholeRest") {
+        drawWholeRestIcon(isGrid);
+      }
+
+      ctx.restore();
+    }
+
+    function drawNoteHead(x, y, filled, isGrid, rx, ry) {
+      const headRx = rx || (isGrid ? 4.1 : 5.8);
+      const headRy = ry || (isGrid ? 2.8 : 3.9);
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-0.34);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, headRx, headRy, 0, 0, Math.PI * 2);
+      if (filled) {
+        ctx.fill();
+      } else {
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawStemFromNoteHead(x, y, isGrid) {
+      const stemX = x + (isGrid ? 3.6 : 5.0);
+      const stemTop = y - (isGrid ? 15.0 : 19.0);
+      const stemBottom = y - 0.5;
+
+      ctx.beginPath();
+      ctx.moveTo(stemX, stemBottom);
+      ctx.lineTo(stemX, stemTop);
+      ctx.stroke();
+    }
+
+    function drawFlagFromStem(isGrid) {
+      const stemX = isGrid ? 3.6 : 5.0;
+      const topY = -(isGrid ? 15.0 : 19.0);
+      const flagReach = isGrid ? 7.0 : 9.0;
+      const flagDrop = isGrid ? 8.0 : 10.5;
+
+      ctx.beginPath();
+      ctx.moveTo(stemX, topY);
+      ctx.bezierCurveTo(stemX + flagReach, topY + 1.0, stemX + flagReach, topY + flagDrop - 2.0, stemX + 1.4, topY + flagDrop);
+      ctx.stroke();
+    }
+
+    function drawDot(x, y, radius) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawQuarterRestIcon(isGrid) {
+      const s = isGrid ? 0.68 : 1.10;
+      ctx.save();
+      ctx.scale(s, s);
+
+      // Three ~38-degree zigzag segments, then a smooth semi-oval hook.
+      // On the grid, nudge the whole symbol slightly downward so the occupied square reads clearly.
+      const oldLineWidth = ctx.lineWidth;
+      ctx.lineWidth = oldLineWidth * (isGrid ? 1.02 : 1.14);
+
+      const yOffset = isGrid ? 1.4 : 0.4;
+      const angle = 38 * Math.PI / 180;
+      const seg = isGrid ? 6.2 : 8.8;
+      const dx = Math.cos(angle) * seg;
+      const dy = Math.sin(angle) * seg;
+
+      const p0 = { x: -2.4, y: -12.1 + yOffset };
+      const p1 = { x: p0.x + dx, y: p0.y + dy };
+      const p2 = { x: p1.x - dx, y: p1.y + dy };
+      const p3 = { x: p2.x + dx, y: p2.y + dy };
+
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+
+      // Smooth left-bulging semi-oval: no corners, no angled bottom.
+      const rx = isGrid ? 4.9 : 6.2;
+      const ry = isGrid ? 3.7 : 4.9;
+      const leftTip = { x: p3.x - rx * 1.15, y: p3.y + ry * 1.02 };
+      const end = { x: p3.x + 0.05, y: p3.y + ry * 1.98 };
+
+      ctx.bezierCurveTo(
+        p3.x - rx * 0.18, p3.y + ry * 0.18,
+        p3.x - rx * 1.02, p3.y + ry * 0.36,
+        leftTip.x, leftTip.y
+      );
+      ctx.bezierCurveTo(
+        p3.x - rx * 1.00, p3.y + ry * 1.72,
+        p3.x - rx * 0.12, p3.y + ry * 2.02,
+        end.x, end.y
+      );
+
+      ctx.stroke();
+
+      ctx.lineWidth = oldLineWidth;
+      ctx.restore();
+    }
+
+    function drawHalfRestIcon(isGrid) {
+      const staffY = isGrid ? 2.8 : 4.2;
+      const restW = isGrid ? 8.0 : 11.0;
+      const restH = isGrid ? 3.8 : 5.0;
+      ctx.beginPath();
+      ctx.moveTo(-restW, staffY);
+      ctx.lineTo(restW, staffY);
+      ctx.stroke();
+      ctx.fillRect(-restW * 0.55, staffY - restH, restW * 1.1, restH);
+    }
+
+    function drawWholeRestIcon(isGrid) {
+      const staffY = isGrid ? -2.8 : -4.2;
+      const restW = isGrid ? 8.0 : 11.0;
+      const restH = isGrid ? 3.8 : 5.0;
+      ctx.beginPath();
+      ctx.moveTo(-restW, staffY);
+      ctx.lineTo(restW, staffY);
+      ctx.stroke();
+      ctx.fillRect(-restW * 0.55, staffY, restW * 1.1, restH);
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function wrapCanvasText(text, x, y, maxWidth, lineHeight) {
+      const words = String(text || "").split(/\s+/);
+      let line = "";
+      const lines = [];
+      words.forEach(word => {
+        const testLine = line ? `${line} ${word}` : word;
+        if (ctx.measureText(testLine).width > maxWidth && line) {
+          lines.push(line);
+          line = word;
+        } else {
+          line = testLine;
+        }
+      });
+      if (line) lines.push(line);
+      lines.slice(0, 5).forEach((drawLine, i) => {
+        ctx.fillText(drawLine, x + maxWidth / 2, y + i * lineHeight);
+      });
+    }
+
+    function setDirection(dir) {
+      if (dir === "up" && direction.y !== 1) nextDirection = { x: 0, y: -1 };
+      if (dir === "down" && direction.y !== -1) nextDirection = { x: 0, y: 1 };
+      if (dir === "left" && direction.x !== 1) nextDirection = { x: -1, y: 0 };
+      if (dir === "right" && direction.x !== -1) nextDirection = { x: 1, y: 0 };
+    }
+
+    function joystickDirection() {
+      const ax = Math.abs(sticks.left.x);
+      const ay = Math.abs(sticks.left.y);
+      if (Math.max(ax, ay) < 0.52) return "";
+      return ax > ay ? (sticks.left.x < 0 ? "left" : "right") : (sticks.left.y < 0 ? "up" : "down");
+    }
+
+    function maybeSendLeftJoystickInput() {
+      const dir = joystickDirection();
+      if (!dir) {
+        leftStickLastDirection = "";
+        return;
+      }
+      const now = performance.now();
+      if (dir !== leftStickLastDirection || now - leftStickLastInput > 260) {
+        leftStickLastDirection = dir;
+        leftStickLastInput = now;
+        setDirection(dir);
+      }
+    }
+
+    function gameInput(action) {
+      if (["up", "down", "left", "right"].includes(action)) {
+        setDirection(action);
+      }
+      if (action === "select") {
+        setMessage(currentQuestionText || "Find the right rhythm.");
+      }
+    }
+
+    function gameStop() {
+      stopBackingTrack();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab,
+      maybeOpenFirstTimeHowToPlay
+    };
+
+    scaleAppToFrame();
+    configureCanvasResolution();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
