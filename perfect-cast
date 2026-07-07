@@ -1,0 +1,3025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Perfect Cast | Piano Arcade Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: pixelated;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 5px;
+      top: auto;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      color: white;
+      text-align: center;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    #gameOverBox h1,
+    #gameOverScore {
+      display: none;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.95);
+      color: #111827;
+      padding: 5px 8px;
+      margin: 2px;
+      min-width: 74px;
+      font-size: 10px;
+      font-weight: bold;
+      pointer-events: auto;
+    }
+
+    #gameOverBox button.resultSelected,
+    #gameOverBox button:focus-visible {
+      outline: 3px solid #ffe08a;
+      outline-offset: 2px;
+      filter: brightness(1.08);
+    }
+
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      display: none;
+    }
+
+    #lcdScore {
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      font-weight: bold;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+
+    /* Perfect Cast uses hold/release, reset, menu, and result selection controls. */
+    #leftJoystickPad,
+    #rightJoystickPad,
+    #buttonX,
+    #buttonY {
+      display: none !important;
+    }
+
+    #faceButtons {
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    #buttonA {
+      left: 74px;
+      top: 20px;
+      width: 72px;
+      height: 72px;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+      background: radial-gradient(circle at 30% 30%, #ffe08a, #c27803);
+      color: #111827;
+    }
+
+    #buttonB {
+      left: 12px;
+      top: 92px;
+      width: 62px;
+      height: 62px;
+      font-size: 10px;
+      letter-spacing: 0.2px;
+      background: radial-gradient(circle at 30% 30%, #ffd6d6, #b91c1c);
+      color: white;
+    }
+
+    #startButton {
+      letter-spacing: 0.5px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Perfect Cast</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Try Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">OFF: <span id="score">—</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">—</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">CAST</button>
+            <button id="buttonB" class="faceBtn" data-action="b">RESET</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
+    const STORAGE_KEY = "perfectCastMobilePlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Off";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let pendingFirstTimeStart = false;
+
+    const FIRST_TIME_HELP_VERSION = "perfectCastHowToPlay_v1";
+    let wixStorageAnswered = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Return to the player menu. Choose whether this completed run should count toward the saved best score.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+          </div>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>CAST:</strong> Hold to cast. Release to reel in.</li>
+            <li><strong>Lake screen:</strong> Touch and hold to cast. Release to reel in.</li>
+            <li><strong>RESET or SELECT:</strong> Restart the timing attempt before you release.</li>
+            <li><strong>D-pad:</strong> Choose Try Again or Player Menu after a catch.</li>
+            <li><strong>CAST / MENU / SELECT:</strong> Pick the highlighted result button.</li>
+            <li><strong>MENU:</strong> Open the pause menu during play.</li>
+          </ul>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <ul>
+            <li>Wait for the 1-2-3 count-in.</li>
+            <li>Hold CAST, or hold the lake screen, to cast your line.</li>
+            <li>Release when you think exactly 20 seconds have passed.</li>
+            <li>Your score is how many milliseconds you were off, so lower is better.</li>
+            <li>The closer you are to perfect, the better the catch.</li>
+          </ul>
+          <p>You can restart the attempt before releasing if you know your timing is already off.</p>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "pause";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      const shouldStartAfterHelp = shouldResume && pendingFirstTimeStart;
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+
+      if (
+        shouldStartAfterHelp &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        pendingFirstTimeStart = false;
+        startGame({ skipFirstTimeHelp: true });
+      }
+    }
+
+    function isGuestPlayer(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: null, lastScore: null, helpSeenVersion: "" };
+      }
+      if (!Object.prototype.hasOwnProperty.call(players[selectedPlayer], "helpSeenVersion")) {
+        players[selectedPlayer].helpSeenVersion = "";
+      }
+      return players[selectedPlayer];
+    }
+
+    function shouldShowFirstTimeHelp() {
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      if (isGuestPlayer()) return true;
+      return playerData.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
+    }
+
+    function markFirstTimeHelpSeen() {
+      if (isGuestPlayer()) return;
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = FIRST_TIME_HELP_VERSION;
+      savePlayers();
+    }
+
+    function openFirstTimeHowToPlayBeforeStart() {
+      markFirstTimeHelpSeen();
+      pendingFirstTimeStart = true;
+      openShellMenu("instructions");
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!hasValidScore(score)) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: null, lastScore: null, helpSeenVersion: "" };
+      }
+
+      players[selectedPlayer].lastScore = score;
+
+      if (isBetterScore(score, players[selectedPlayer].best)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = formatScoreValue(players[selectedPlayer].best);
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      pendingFirstTimeStart = false;
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function normalizeScore(value) {
+      if (value === null || value === undefined || value === "") return null;
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0) return null;
+      return Math.round(n);
+    }
+
+    function hasValidScore(value) {
+      return normalizeScore(value) !== null;
+    }
+
+    function formatScoreValue(value) {
+      const n = normalizeScore(value);
+      return n === null ? "—" : `${n} ms`;
+    }
+
+    function isBetterScore(candidate, currentBest) {
+      const c = normalizeScore(candidate);
+      const b = normalizeScore(currentBest);
+      if (c === null) return false;
+      if (b === null) return true;
+      return c < b;
+    }
+
+    function setScore(value) {
+      score = normalizeScore(value);
+      scoreEl.textContent = formatScoreValue(score);
+    }
+
+    function addScore(amount) {
+      const current = normalizeScore(score) || 0;
+      setScore(current + amount);
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const best = data && typeof data === "object"
+          ? normalizeScore(data.best)
+          : normalizeScore(data);
+        const lastScore = data && typeof data === "object"
+          ? normalizeScore(data.lastScore)
+          : null;
+
+        const helpSeenVersion = data && typeof data === "object" ? String(data.helpSeenVersion || "") : "";
+        cleaned[cleanName] = { best, lastScore, helpSeenVersion };
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this template stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .filter(([, data]) => hasValidScore(data.best))
+        .sort((a, b) => normalizeScore(a[1].best) - normalizeScore(b[1].best))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${formatScoreValue(data.best)}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${formatScoreValue(players[selectedPlayer].best)}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${formatScoreValue(players[name].best)}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = null;
+      players[selectedPlayer].lastScore = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: null, lastScore: null, helpSeenVersion: "" };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: null, lastScore: null, helpSeenVersion: "" };
+      }
+
+      savePlayers();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+    };
+
+    playAgainBtn.onclick = () => startGame();
+
+    backToMenuBtn.onclick = () => {
+      pendingFirstTimeStart = false;
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    const gameOverButtons = [playAgainBtn, backToMenuBtn];
+    let gameOverButtonIndex = 0;
+
+    function setGameOverButtonFocus(index = 0) {
+      gameOverButtonIndex = Math.max(0, Math.min(gameOverButtons.length - 1, index));
+      gameOverButtons.forEach((button, i) => {
+        button.classList.toggle("resultSelected", i === gameOverButtonIndex);
+      });
+      const focused = gameOverButtons[gameOverButtonIndex];
+      if (focused && gameOverBox.style.display === "block") {
+        try { focused.focus({ preventScroll: true }); } catch (err) { focused.focus(); }
+      }
+    }
+
+    function handleGameOverControl(action) {
+      if (gameOverBox.style.display !== "block") return false;
+
+      if (action === "left" || action === "up") {
+        setGameOverButtonFocus(0);
+        return true;
+      }
+
+      if (action === "right" || action === "down") {
+        setGameOverButtonFocus(1);
+        return true;
+      }
+
+      if (action === "a" || action === "aDown" || action === "select" || action === "start") {
+        const focused = gameOverButtons[gameOverButtonIndex] || gameOverButtons[0];
+        if (focused) focused.click();
+        return true;
+      }
+
+      return false;
+    }
+
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      let activePointerId = null;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+
+        if (action === "a") {
+          activePointerId = event.pointerId;
+          try { button.setPointerCapture(event.pointerId); } catch (err) {}
+          handleInput("aDown");
+        } else {
+          handleInput(action);
+        }
+      });
+
+      function releaseAction(event) {
+        if (action !== "a") return;
+        if (activePointerId !== null && event.pointerId !== activePointerId) return;
+        event.preventDefault();
+        activePointerId = null;
+        try {
+          if (button.hasPointerCapture(event.pointerId)) button.releasePointerCapture(event.pointerId);
+        } catch (err) {}
+        handleInput("aUp");
+      }
+
+      button.addEventListener("pointerup", releaseAction);
+      button.addEventListener("pointercancel", releaseAction);
+      button.addEventListener("lostpointercapture", event => {
+        if (action === "a" && activePointerId !== null) releaseAction(event);
+      });
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    let actionKeyHeld = false;
+    document.addEventListener("keydown", event => {
+      if (shellMenu.classList.contains("open")) return;
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+      if (gameOverBox.style.display === "block") {
+        if (key === "arrowleft" || key === "w" || key === "arrowup") { event.preventDefault(); handleGameOverControl("left"); }
+        if (key === "arrowright" || key === "s" || key === "arrowdown") { event.preventDefault(); handleGameOverControl("right"); }
+        if (key === " " || key === "enter") { event.preventDefault(); handleGameOverControl("aDown"); }
+        return;
+      }
+
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        if (!actionKeyHeld && !event.repeat) {
+          actionKeyHeld = true;
+          handleInput("aDown");
+        }
+      }
+    });
+
+    document.addEventListener("keyup", event => {
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        if (actionKeyHeld) {
+          actionKeyHeld = false;
+          handleInput("aUp");
+        }
+      }
+    });
+
+    window.addEventListener("blur", () => {
+      if (actionKeyHeld) {
+        actionKeyHeld = false;
+        if (running) handleInput("aUp");
+      }
+    });
+
+    function startGame(options = {}) {
+      stopGame();
+
+      score = null;
+
+      scoreEl.textContent = formatScoreValue(score);
+      bestScoreEl.textContent = formatScoreValue(players[selectedPlayer]?.best);
+      gameOverBox.style.display = "none";
+
+      setMessage("READY");
+
+      if (!options.skipFirstTimeHelp && shouldShowFirstTimeHelp()) {
+        openFirstTimeHowToPlayBeforeStart();
+        return;
+      }
+
+      running = true;
+      gameInit();
+
+      loop();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: null, lastScore: null, helpSeenVersion: "" };
+      }
+
+      if (hasValidScore(score)) {
+        players[selectedPlayer].lastScore = score;
+        if (isBetterScore(score, players[selectedPlayer].best)) {
+          players[selectedPlayer].best = score;
+        }
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = formatScoreValue(players[selectedPlayer].best);
+
+      const finalMessage = `${reason} ${SCORE_LABEL}: ${formatScoreValue(score)}. Best: ${formatScoreValue(players[selectedPlayer].best)}`;
+      setMessage(finalMessage);
+      gameOverScore.textContent = "";
+      gameOverBox.style.display = "block";
+      setGameOverButtonFocus(0);
+    }
+
+    function handleInput(action) {
+      if (handleGameOverControl(action)) return;
+
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCorrect() {
+      beep(660, 0.08, "square", 0.06);
+      setTimeout(() => beep(880, 0.08, "square", 0.05), 70);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.12, "triangle", 0.06), i * 90);
+      });
+    }
+
+    function soundLose() {
+      [300, 220, 160, 100].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.16, "sawtooth", 0.05), i * 120);
+      });
+    }
+
+    function beepSweep(startFreq, endFreq, duration, type = "triangle", volume = 0.05) {
+      const ac = getAudio();
+      if (!ac) return;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(startFreq, ac.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, endFreq), ac.currentTime + duration);
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundCountdownClick(number = 3) {
+      const freq = number === 1 ? 620 : 520;
+      beep(freq, 0.035, "square", 0.026);
+    }
+
+    function soundCastAction() {
+      beepSweep(480, 190, 0.15, "triangle", 0.045);
+      setTimeout(() => beepSweep(240, 110, 0.11, "sine", 0.028), 35);
+    }
+
+    function soundBobberSplash() {
+      // Very quiet on purpose: this happens during the player's 20-second count.
+      beepSweep(760, 420, 0.035, "triangle", 0.010);
+      setTimeout(() => beepSweep(220, 130, 0.055, "sine", 0.007), 14);
+    }
+
+    function soundReleaseTug() {
+      beepSweep(250, 520, 0.055, "square", 0.036);
+      setTimeout(() => beepSweep(540, 240, 0.08, "triangle", 0.028), 28);
+    }
+
+    function soundCatchReveal(kind = "good", quality = 0.5) {
+      if (kind === "awful") {
+        beepSweep(190, 95, 0.14, "sawtooth", 0.038);
+        setTimeout(() => beep(82, 0.10, "triangle", 0.024), 92);
+        return;
+      }
+
+      if (kind === "blueWhale") {
+        beepSweep(150, 270, 0.13, "square", 0.048);
+        setTimeout(() => beep(392, 0.10, "triangle", 0.042), 92);
+        setTimeout(() => beep(523, 0.12, "triangle", 0.040), 170);
+        setTimeout(() => beep(784, 0.14, "triangle", 0.034), 260);
+        return;
+      }
+
+      if (kind === "veryGood") {
+        beep(392, 0.08, "triangle", 0.040);
+        setTimeout(() => beep(523, 0.09, "triangle", 0.036), 78);
+        setTimeout(() => beep(659, 0.11, "triangle", 0.032), 158);
+        return;
+      }
+
+      beep(330 + quality * 90, 0.075, "triangle", 0.034);
+      setTimeout(() => beep(440 + quality * 120, 0.085, "triangle", 0.030), 82);
+    }
+
+    function getFinalRevealSoundKind() {
+      if (resultKind === "air") return "awful";
+      if (missMs !== null && missMs > VALID_WINDOW_MS) return "awful";
+      if (resultText === "Blue Whale") return "blueWhale";
+
+      const quality = getCatchQuality(missMs);
+      if (quality >= 0.72) return "veryGood";
+      return "good";
+    }
+
+    /*
+      GAME MODULE: PERFECT CAST - STEP 7 CAST-TIMER + AIR RESULT
+      Keep these function names.
+    */
+
+    const TARGET_HOLD_MS = 20000;
+  const VALID_WINDOW_MS = 3000;
+  const COUNT_BEAT_MS = 1000; // 60 bpm
+  const CAST_ANIM_MS = 620;
+  const REVEAL_MS = 3000;
+
+  const CATCH_LADDER = [
+    "Blue Whale",
+    "Orca",
+    "Great White Shark",
+    "Giant Squid",
+    "Swordfish",
+    "Tuna",
+    "Octopus",
+    "Salmon",
+    "Bass",
+    "Trout",
+    "Lobster",
+    "Crab",
+    "Clam",
+    "Minnow",
+    "Shrimp"
+  ];
+
+  const CATCH_SIZE_STEPS = [
+    110, 90, 76, 64, 53,
+    45, 38, 33, 28, 24,
+    20, 17, 14, 11, 8
+  ];
+
+
+
+    // Development switch only. Keep false for normal play so the player must count internally.
+    const SHOW_DEBUG_TIMER = false;
+
+    let castState = "count";
+    let stateStartedAt = 0;
+    let castStartedAt = 0;
+    let heldMs = 0;
+    let missMs = null;
+    let resultText = "";
+    let resultKind = "catch";
+    let timingDirection = "";
+    let revealSaved = false;
+    let castSoundPlayed = false;
+    let bobberSplashPlayed = false;
+    let releaseSoundPlayed = false;
+    let revealSoundPlayed = false;
+    let lastCountdownNumber = null;
+    let inputHeld = false;
+    let queuedEarlyCast = false;
+    let holdPointerId = null;
+    let lastUiText = "";
+
+    function nowMs() {
+      return performance.now();
+    }
+
+    function round2(value) {
+      return Math.round(value * 100) / 100;
+    }
+
+    function secondsText(ms) {
+      return (ms / 1000).toFixed(3) + "s";
+    }
+
+    function shortMsText(ms) {
+      const n = normalizeScore(ms);
+      return n === null ? "—" : `${n} ms`;
+    }
+
+  function getCatchBandIndex(ms) {
+    const n = normalizeScore(ms);
+    if (n === null || n > VALID_WINDOW_MS) return -1;
+    return Math.min(CATCH_LADDER.length - 1, Math.floor(n / 200));
+  }
+
+  function getCatchName(ms) {
+    const bandIndex = getCatchBandIndex(ms);
+    if (bandIndex < 0) return "Seaweed";
+    return CATCH_LADDER[bandIndex];
+  }
+
+  function getCatchQuality(ms) {
+    const bandIndex = getCatchBandIndex(ms);
+    if (bandIndex < 0) return 0;
+    if (CATCH_LADDER.length <= 1) return 1;
+    return 1 - (bandIndex / (CATCH_LADDER.length - 1));
+  }
+
+  function getTimingDirection(msHeld) {
+      const delta = Math.round(msHeld - TARGET_HOLD_MS);
+      if (delta === 0) return "perfect";
+      return delta < 0 ? "early" : "late";
+    }
+
+    function timingDetailText() {
+      if (missMs === null) return "";
+      return `${shortMsText(missMs)} ${timingDirection || ""}`.trim();
+    }
+
+    function ui(text) {
+      if (text === lastUiText) return;
+      lastUiText = text;
+      setMessage(text);
+    }
+
+    function resetCastRun() {
+      castState = "count";
+      stateStartedAt = nowMs();
+      castStartedAt = 0;
+      heldMs = 0;
+      missMs = null;
+      resultText = "";
+      resultKind = "catch";
+      timingDirection = "";
+      revealSaved = false;
+      castSoundPlayed = false;
+      bobberSplashPlayed = false;
+      releaseSoundPlayed = false;
+      revealSoundPlayed = false;
+      lastCountdownNumber = 3;
+      inputHeld = false;
+      queuedEarlyCast = false;
+      holdPointerId = null;
+      lastUiText = "";
+      setScore(null);
+      ui("Cast in 3");
+      soundCountdownClick(3);
+    }
+
+    function beginCast(startTime = nowMs()) {
+    if (castState !== "ready" && castState !== "count") return;
+    castState = "casting";
+    stateStartedAt = startTime;
+    castStartedAt = startTime;
+    heldMs = 0;
+    missMs = null;
+    resultText = "";
+    resultKind = "catch";
+    timingDirection = "";
+    revealSaved = false;
+    queuedEarlyCast = false;
+    if (!castSoundPlayed) {
+      soundCastAction();
+      castSoundPlayed = true;
+    }
+    ui("Release on 20 seconds");
+  }
+
+    function handleHoldStart() {
+      if (castState === "count") {
+        inputHeld = true;
+        queuedEarlyCast = true;
+        return;
+      }
+
+      if (castState === "ready") {
+        inputHeld = true;
+        beginCast();
+        return;
+      }
+
+      if (castState === "holding") {
+        inputHeld = true;
+      }
+    }
+
+    function handleHoldEnd() {
+    if (castState === "count") {
+      inputHeld = false;
+      queuedEarlyCast = false;
+      return;
+    }
+
+    if (castState === "ready") {
+      inputHeld = false;
+      queuedEarlyCast = false;
+      return;
+    }
+
+    if (castState === "casting") {
+      inputHeld = false;
+      queuedEarlyCast = false;
+      releaseCast({ air: true });
+      return;
+    }
+
+    if (castState === "holding") {
+      inputHeld = false;
+      releaseCast();
+      return;
+    }
+
+    inputHeld = false;
+    queuedEarlyCast = false;
+  }
+
+    function releaseCast(options = {}) {
+    if (castState !== "holding" && castState !== "casting") return;
+
+    const t = nowMs();
+    heldMs = Math.max(0, t - castStartedAt);
+    missMs = Math.round(Math.abs(heldMs - TARGET_HOLD_MS));
+    timingDirection = getTimingDirection(heldMs);
+    resultKind = options.air ? "air" : "catch";
+    resultText = resultKind === "air" ? "Air!" : getCatchName(missMs);
+    setScore(missMs);
+    if (!releaseSoundPlayed) {
+      soundReleaseTug();
+      releaseSoundPlayed = true;
+    }
+
+    castState = "reveal";
+    stateStartedAt = t;
+    ui(`${resultText} — ${timingDetailText()}`);
+  }
+
+    function gameInit() {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      updateShellMenuTab("instructions", `
+        <h3>How to Play</h3>
+        <ul>
+          <li>Wait for the 1-2-3 count-in.</li>
+          <li>Hold CAST, or hold the lake screen, to cast your line.</li>
+          <li>Release when you think exactly 20 seconds have passed.</li>
+          <li>Your score is how many milliseconds you were off, so lower is better.</li>
+          <li>The closer you are to perfect, the better the catch.</li>
+        </ul>
+        <p>You can restart the attempt before releasing if you know your timing is already off.</p>
+      `);
+      resetCastRun();
+    }
+
+    function gameUpdate() {
+    const t = nowMs();
+
+    if (castState === "count") {
+      const elapsed = t - stateStartedAt;
+      const remaining = Math.max(1, 3 - Math.floor(elapsed / COUNT_BEAT_MS));
+
+      if (elapsed >= COUNT_BEAT_MS * 3) {
+        castState = "ready";
+        stateStartedAt = t;
+
+        if (inputHeld && queuedEarlyCast) {
+          beginCast(t);
+        } else {
+          ui("");
+        }
+      } else {
+        if (remaining !== lastCountdownNumber) {
+          lastCountdownNumber = remaining;
+          soundCountdownClick(remaining);
+        }
+        ui(`Cast in ${remaining}`);
+      }
+    }
+
+    if (castState === "ready") {
+      ui("");
+    }
+
+    if (castState === "casting") {
+      const elapsed = t - stateStartedAt;
+      heldMs = Math.max(0, t - castStartedAt);
+
+      if (!inputHeld) {
+        releaseCast({ air: true });
+      } else if (elapsed >= CAST_ANIM_MS) {
+        if (!bobberSplashPlayed) {
+          soundBobberSplash();
+          bobberSplashPlayed = true;
+        }
+        castState = "holding";
+        stateStartedAt = t;
+        ui("Release on 20 seconds");
+      } else {
+        ui(SHOW_DEBUG_TIMER ? `Casting ${secondsText(heldMs)} — release at 20 seconds` : "Release on 20 seconds");
+      }
+    }
+
+    if (castState === "holding") {
+      heldMs = t - castStartedAt;
+      ui(SHOW_DEBUG_TIMER ? `Holding ${secondsText(heldMs)} — release at 20 seconds` : "Release on 20 seconds");
+    }
+
+    if (castState === "reveal") {
+      const elapsed = t - stateStartedAt;
+      const revealProgress = Math.min(1, elapsed / REVEAL_MS);
+      const revealThreshold = 0.78;
+      if (!revealSoundPlayed && revealProgress >= revealThreshold) {
+        revealSoundPlayed = true;
+        soundCatchReveal(getFinalRevealSoundKind(), getCatchQuality(missMs));
+      }
+      if (!revealSaved && elapsed >= REVEAL_MS) {
+        revealSaved = true;
+        endGame(`${resultText}. ${timingDetailText()}.`);
+      }
+    }
+  }
+
+    
+  function drawSky(w, h, lakeY, t) {
+    const steps = 44;
+    for (let i = 0; i < steps; i++) {
+      const p = i / (steps - 1);
+      const r = Math.round(104 + p * 108);
+      const g = Math.round(164 + p * 68);
+      const b = Math.round(226 + p * 21);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(0, Math.floor(p * lakeY), w, Math.ceil(lakeY / steps) + 2);
+    }
+
+    ctx.fillStyle = 'rgba(255,244,196,0.18)';
+    ctx.beginPath();
+    ctx.arc(w * 0.82, h * 0.16, Math.max(40, w * 0.08), 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,243,171,0.90)';
+    ctx.beginPath();
+    ctx.arc(w * 0.82, h * 0.16, Math.max(22, w * 0.04), 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(0, lakeY - h * 0.12, w, h * 0.03);
+
+    drawCloud((w * 0.10 + t * 12) % (w + 180) - 90, h * 0.14, w * 0.13);
+    drawCloud((w * 0.48 + t * 8.2) % (w + 210) - 105, h * 0.23, w * 0.18);
+    drawCloud((w * 0.87 + t * 5.9) % (w + 170) - 85, h * 0.10, w * 0.11);
+    drawBirds(w, h, t);
+  }
+
+  function drawCloud(x, y, s) {
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.fillRect(x - s * 0.42, y, s * 0.88, s * 0.18);
+    ctx.fillRect(x - s * 0.30, y - s * 0.14, s * 0.26, s * 0.18);
+    ctx.fillRect(x - s * 0.08, y - s * 0.22, s * 0.32, s * 0.24);
+    ctx.fillRect(x + s * 0.14, y - s * 0.14, s * 0.26, s * 0.18);
+    ctx.fillStyle = 'rgba(227,240,250,0.65)';
+    ctx.fillRect(x - s * 0.34, y + s * 0.18, s * 0.70, s * 0.05);
+    ctx.fillStyle = 'rgba(255,255,255,0.32)';
+    ctx.fillRect(x - s * 0.18, y - s * 0.06, s * 0.18, s * 0.05);
+    ctx.fillRect(x + s * 0.06, y - s * 0.10, s * 0.16, s * 0.05);
+  }
+
+  function drawBirds(w, h, t) {
+    ctx.strokeStyle = 'rgba(31,52,78,0.45)';
+    ctx.lineWidth = 2;
+    const birds = [
+      { x: (w * 0.22 + t * 18) % (w + 60) - 30, y: h * 0.18 },
+      { x: (w * 0.28 + t * 18) % (w + 60) - 30, y: h * 0.16 },
+      { x: (w * 0.64 + t * 11) % (w + 80) - 40, y: h * 0.21 }
+    ];
+    birds.forEach((bird, idx) => {
+      const flap = Math.sin(t * 7 + idx * 0.8) * 3;
+      ctx.beginPath();
+      ctx.moveTo(bird.x - 7, bird.y + flap * 0.3);
+      ctx.lineTo(bird.x, bird.y - flap);
+      ctx.lineTo(bird.x + 7, bird.y + flap * 0.3);
+      ctx.stroke();
+    });
+  }
+
+  function drawMountains(w, h, lakeY) {
+    ctx.fillStyle = '#9cb8c8';
+    ctx.beginPath();
+    ctx.moveTo(0, lakeY);
+    ctx.lineTo(w * 0.11, h * 0.31);
+    ctx.lineTo(w * 0.25, lakeY);
+    ctx.lineTo(w * 0.42, h * 0.27);
+    ctx.lineTo(w * 0.56, lakeY);
+    ctx.lineTo(w * 0.72, h * 0.34);
+    ctx.lineTo(w * 0.88, lakeY);
+    ctx.lineTo(w, h * 0.30);
+    ctx.lineTo(w, lakeY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#7c9aae';
+    ctx.beginPath();
+    ctx.moveTo(0, lakeY);
+    ctx.lineTo(w * 0.19, h * 0.37);
+    ctx.lineTo(w * 0.35, lakeY);
+    ctx.lineTo(w * 0.54, h * 0.35);
+    ctx.lineTo(w * 0.73, lakeY);
+    ctx.lineTo(w * 0.90, h * 0.39);
+    ctx.lineTo(w, lakeY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#e6f3fb';
+    [[0.11,0.31],[0.42,0.27],[0.72,0.34]].forEach(([mx,my]) => {
+      ctx.beginPath();
+      ctx.moveTo(w * mx, h * my);
+      ctx.lineTo(w * (mx - 0.03), h * (my + 0.08));
+      ctx.lineTo(w * (mx + 0.04), h * (my + 0.08));
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    ctx.fillStyle = '#4f765e';
+    ctx.fillRect(0, lakeY - h * 0.012, w, h * 0.022);
+
+    for (let x = -10; x < w + 24; x += Math.max(16, w * 0.028)) {
+      const treeH = h * (0.08 + ((x * 19) % 9) * 0.005);
+      ctx.fillStyle = '#3f5c49';
+      ctx.fillRect(x + 5, lakeY - treeH * 0.32, 3, treeH * 0.32);
+      ctx.fillStyle = '#416b57';
+      ctx.beginPath();
+      ctx.moveTo(x - 2, lakeY - treeH * 0.18);
+      ctx.lineTo(x + 6, lakeY - treeH);
+      ctx.lineTo(x + 14, lakeY - treeH * 0.18);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+
+  function drawLake(w, h, lakeY, t) {
+    const waterH = h - lakeY;
+    const steps = 24;
+    for (let i = 0; i < steps; i++) {
+      const p = i / (steps - 1);
+      const r = Math.round(53 - p * 18);
+      const g = Math.round(149 - p * 28);
+      const b = Math.round(194 - p * 44);
+      ctx.fillStyle = `rgb(${r},${g},${b})`;
+      ctx.fillRect(0, lakeY + p * waterH, w, waterH / steps + 2);
+    }
+
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(w * 0.76, lakeY + 4, w * 0.12, h * 0.22);
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(w * 0.795, lakeY + 4, w * 0.05, h * 0.22);
+
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    for (let y = lakeY + 14; y < h; y += Math.max(13, h * 0.04)) {
+      const offset = Math.sin(t * 0.9 + y * 0.045) * 15;
+      for (let x = -70; x < w + 70; x += 84) {
+        ctx.fillRect(x + offset, y, 34, 2);
+        ctx.fillRect(x + offset + 42, y + 2, 18, 2);
+      }
+    }
+
+    ctx.strokeStyle = 'rgba(14,72,108,0.36)';
+    ctx.lineWidth = 2;
+    for (let y = lakeY + 8; y < h; y += 22) {
+      ctx.beginPath();
+      for (let x = 0; x <= w; x += 24) {
+        const waveY = y + Math.sin(t * 1.6 + x * 0.04 + y * 0.03) * 2.5;
+        if (x === 0) ctx.moveTo(x, waveY);
+        else ctx.lineTo(x, waveY);
+      }
+      ctx.stroke();
+    }
+
+    ctx.fillStyle = 'rgba(14,70,105,0.26)';
+    ctx.fillRect(0, lakeY, w, 5);
+
+    ctx.fillStyle = '#467f53';
+    for (let x = 8; x < w; x += 46) {
+      const reedY = h - 6;
+      ctx.fillRect(x, reedY - 18, 2, 18);
+      ctx.fillRect(x + 4, reedY - 24, 2, 24);
+      ctx.fillRect(x + 8, reedY - 14, 2, 14);
+    }
+  }
+
+  function getRevealProgress() {
+    if (castState !== 'reveal') return 0;
+    return Math.min(1, (nowMs() - stateStartedAt) / REVEAL_MS);
+  }
+
+  function getCastProgress() {
+    if (castState !== 'casting') return castState === 'holding' || castState === 'reveal' ? 1 : 0;
+    return Math.min(1, (nowMs() - stateStartedAt) / CAST_ANIM_MS);
+  }
+
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
+
+  function easeOutCubic(value) {
+    const p = clamp01(value);
+    return 1 - Math.pow(1 - p, 3);
+  }
+
+  function easeInOutSine(value) {
+    const p = clamp01(value);
+    return 0.5 - Math.cos(p * Math.PI) / 2;
+  }
+
+  function lerp(a, b, p) {
+    return a + (b - a) * p;
+  }
+
+  function getCatchDisplaySize(ms) {
+    const bandIndex = getCatchBandIndex(ms);
+    if (bandIndex < 0) return 28;
+    return CATCH_SIZE_STEPS[bandIndex] || CATCH_SIZE_STEPS[CATCH_SIZE_STEPS.length - 1];
+  }
+
+  function drawSeaweedCatch(x, y, unit, p) {
+    const lift = Math.max(0.2, p);
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = '#276738';
+    ctx.lineWidth = Math.max(2, unit * 2);
+    for (let i = -2; i <= 2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * unit * 4, unit * 9);
+      ctx.quadraticCurveTo(
+        i * unit * 5 + Math.sin(nowMs() / 180 + i) * unit * 5,
+        -unit * 6 * lift,
+        i * unit * 2,
+        -unit * (18 + i * 2) * lift
+      );
+      ctx.stroke();
+    }
+    ctx.fillStyle = '#3f8f4f';
+    ctx.fillRect(-unit * 15, unit * 6, unit * 30, unit * 7);
+    ctx.fillStyle = 'rgba(255,255,255,0.28)';
+    ctx.fillRect(-unit * 8, -unit * 10, unit * 2, unit * 4);
+    ctx.fillRect(unit * 3, -unit * 16, unit * 2, unit * 3);
+    ctx.restore();
+  }
+
+  function drawFishCatch(x, y, unit, p) {
+    const name = resultText || 'Fish';
+    const size = getCatchDisplaySize(missMs) * unit;
+    const bob = Math.sin(nowMs() / 120) * unit * 2 * (1 - p * 0.5);
+    const revealScale = 0.52 + 0.48 * clamp01(p);
+
+    ctx.save();
+    ctx.translate(x, y + bob);
+    ctx.scale(revealScale, revealScale);
+
+    function eye(ex, ey, s=1) {
+      ctx.fillStyle = '#0b1220';
+      ctx.fillRect(ex, ey, unit * 3 * s, unit * 3 * s);
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillRect(ex + unit * 0.8 * s, ey + unit * 0.7 * s, unit * 1.1 * s, unit * 1.1 * s);
+    }
+
+    if (name === 'Blue Whale') {
+      const bw = size * 2.55;
+      const bh = size * 0.76;
+      ctx.fillStyle = '#1d4ed8';
+      ctx.fillRect(-bw * 0.52, -bh * 0.44, bw * 0.88, bh);
+      ctx.fillRect(-bw * 0.26, -bh * 0.68, bw * 0.34, bh * 0.26);
+      ctx.fillStyle = '#0f2f76';
+      ctx.fillRect(bw * 0.23, -bh * 0.14, bw * 0.36, bh * 0.18);
+      ctx.fillRect(bw * 0.45, -bh * 0.40, bw * 0.20, bh * 0.20);
+      ctx.fillRect(bw * 0.45, bh * 0.20, bw * 0.20, bh * 0.20);
+      ctx.fillRect(-bw * 0.03, -bh * 0.86, bw * 0.10, bh * 0.20);
+      ctx.fillStyle = '#dbeafe';
+      ctx.fillRect(-bw * 0.43, bh * 0.18, bw * 0.52, bh * 0.18);
+      ctx.fillRect(-bw * 0.26, bh * 0.02, bw * 0.12, bh * 0.08);
+      ctx.fillStyle = '#93c5fd';
+      ctx.fillRect(-bw * 0.04, -bh * 0.80, bw * 0.05, bh * 0.16);
+      ctx.fillRect(bw * 0.08, -bh * 0.10, bw * 0.16, bh * 0.06);
+      eye(-bw * 0.41, -bh * 0.16, 1.2);
+      ctx.restore();
+      return;
+    }
+
+    if (name === 'Orca' || name.includes('Shark')) {
+      const bw = size * 2.02;
+      const bh = size * 0.58;
+      ctx.fillStyle = name === 'Orca' ? '#111827' : '#64748b';
+      ctx.fillRect(-bw * 0.48, -bh * 0.42, bw * 0.82, bh);
+      ctx.fillRect(bw * 0.22, -bh * 0.12, bw * 0.30, bh * 0.24);
+      ctx.fillRect(bw * 0.42, -bh * 0.35, bw * 0.18, bh * 0.19);
+      ctx.fillRect(bw * 0.42, bh * 0.16, bw * 0.18, bh * 0.19);
+      ctx.fillRect(-bw * 0.10, -bh * 0.84, bw * 0.20, bh * 0.42);
+      ctx.fillStyle = name === 'Orca' ? '#f8fafc' : '#cbd5e1';
+      ctx.fillRect(-bw * 0.31, bh * 0.13, bw * 0.40, bh * 0.17);
+      ctx.fillRect(-bw * 0.14, -bh * 0.04, bw * 0.16, bh * 0.05);
+      eye(-bw * 0.38, -bh * 0.15);
+      ctx.restore();
+      return;
+    }
+
+    if (name === 'Giant Squid' || name === 'Octopus') {
+      const bw = size * 0.98;
+      const bh = size * 0.94;
+      ctx.fillStyle = name === 'Giant Squid' ? '#a855f7' : '#c2410c';
+      ctx.fillRect(-bw * 0.35, -bh * 0.46, bw * 0.70, bh * 0.64);
+      ctx.fillRect(-bw * 0.22, -bh * 0.68, bw * 0.44, bh * 0.25);
+      ctx.fillStyle = 'rgba(255,255,255,0.22)';
+      ctx.fillRect(-bw * 0.14, -bh * 0.54, bw * 0.16, bh * 0.10);
+      ctx.strokeStyle = name === 'Giant Squid' ? '#7e22ce' : '#9a3412';
+      ctx.lineWidth = Math.max(2, unit * 2);
+      for (let i = -3; i <= 3; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * bw * 0.09, bh * 0.10);
+        ctx.lineTo(i * bw * 0.12 + Math.sin(nowMs() / 160 + i) * unit * 3, bh * 0.58);
+        ctx.stroke();
+      }
+      eye(-bw * 0.16, -bh * 0.25);
+      eye(bw * 0.10, -bh * 0.25);
+      ctx.restore();
+      return;
+    }
+
+    if (['Lobster', 'Crab', 'Clam', 'Shrimp'].includes(name)) {
+      const bw = size * 1.08;
+      const bh = size * 0.50;
+      ctx.fillStyle = name === 'Clam' ? '#d6b48c' : '#e85d3f';
+      ctx.fillRect(-bw * 0.38, -bh * 0.35, bw * 0.76, bh * 0.70);
+      ctx.fillStyle = name === 'Clam' ? '#e7c9a8' : '#b53a2a';
+      if (name !== 'Clam') {
+        ctx.fillRect(-bw * 0.58, -bh * 0.20, bw * 0.18, bh * 0.18);
+        ctx.fillRect(bw * 0.40, -bh * 0.20, bw * 0.18, bh * 0.18);
+        ctx.fillRect(-bw * 0.32, bh * 0.33, bw * 0.12, bh * 0.24);
+        ctx.fillRect(bw * 0.20, bh * 0.33, bw * 0.12, bh * 0.24);
+        ctx.fillRect(-bw * 0.10, -bh * 0.52, bw * 0.10, bh * 0.18);
+      } else {
+        ctx.fillRect(-bw * 0.28, -bh * 0.08, bw * 0.56, bh * 0.08);
+      }
+      ctx.restore();
+      return;
+    }
+
+    const bw = size * 1.56;
+    const bh = size * 0.67;
+    ctx.fillStyle = name === 'Swordfish' ? '#60a5fa' : name === 'Tuna' ? '#2563eb' : name === 'Salmon' ? '#fb7185' : name === 'Bass' ? '#84cc16' : '#f59e0b';
+    ctx.fillRect(-bw * 0.42, -bh * 0.42, bw * 0.72, bh * 0.84);
+    ctx.fillStyle = 'rgba(255,255,255,0.20)';
+    ctx.fillRect(-bw * 0.18, -bh * 0.24, bw * 0.20, bh * 0.10);
+    ctx.fillStyle = '#0f766e';
+    ctx.fillRect(bw * 0.24, -bh * 0.24, bw * 0.28, bh * 0.20);
+    ctx.fillRect(bw * 0.24, bh * 0.04, bw * 0.28, bh * 0.20);
+    ctx.fillRect(-bw * 0.06, -bh * 0.66, bw * 0.18, bh * 0.22);
+    if (name === 'Swordfish') {
+      ctx.fillStyle = '#dbeafe';
+      ctx.fillRect(-bw * 0.78, -unit * 1.4, bw * 0.38, unit * 3);
+    }
+    eye(-bw * 0.33, -bh * 0.14);
+    ctx.restore();
+  }
+
+  function isAirResult() {
+    return resultKind === 'air' || resultText === 'Air!';
+  }
+
+  function drawAirCatch(x, y, unit, p) {
+    const pulse = 1 + Math.sin(nowMs() / 90) * 0.04;
+    const alpha = 0.82 * (1 - clamp01(p) * 0.18);
+    ctx.save();
+    ctx.translate(x, y - unit * 8 * clamp01(p));
+    ctx.scale(pulse, pulse);
+
+    ctx.strokeStyle = `rgba(255,255,255,${alpha})`;
+    ctx.lineWidth = Math.max(2, unit * 1.8);
+    ctx.setLineDash([unit * 5, unit * 4]);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, unit * 24, unit * 14, -0.18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.fillStyle = `rgba(255,255,255,${0.65 * alpha})`;
+    ctx.fillRect(-unit * 12, -unit * 4, unit * 7, unit * 5);
+    ctx.fillRect(-unit * 2, -unit * 8, unit * 10, unit * 6);
+    ctx.fillRect(unit * 8, -unit * 2, unit * 8, unit * 5);
+    ctx.strokeStyle = 'rgba(255,255,255,0.40)';
+    ctx.strokeRect(-unit * 16, unit * 12, unit * 32, unit * 12);
+
+    ctx.fillStyle = 'rgba(16,32,51,0.82)';
+    ctx.font = `bold ${Math.max(10, unit * 13)}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('AIR!', 0, unit * 21);
+    ctx.restore();
+  }
+
+  function drawCaughtThing(x, y, unit, p) {
+    if (isAirResult()) {
+      drawAirCatch(x, y, unit, p);
+    } else if (missMs !== null && missMs > VALID_WINDOW_MS) {
+      drawSeaweedCatch(x, y, unit, p);
+    } else {
+      drawFishCatch(x, y, unit, p);
+    }
+  }
+
+  
+  function drawBoat(w, h, lakeY, t) {
+    const unit = Math.max(1, Math.min(w / 390, h / 219));
+    const revealP = getRevealProgress();
+    const castP = getCastProgress();
+    const casting = castState === 'casting';
+    const holding = castState === 'holding';
+    const revealing = castState === 'reveal';
+    const airResult = isAirResult();
+    const badCatch = !airResult && missMs !== null && missMs > VALID_WINDOW_MS;
+    const catchQuality = missMs === null ? 0.5 : getCatchQuality(missMs);
+    const heavyCatch = !airResult && !badCatch && catchQuality > 0.72;
+
+    const struggle = revealing ? Math.max(0, 1 - revealP / 0.42) : 0;
+    const boatRockBase = Math.sin(t * 1.17) * unit * 2.1;
+
+    let windBack = 0;
+    let castSnap = 0;
+    if (casting) {
+      windBack = clamp01(castP / 0.18);
+      castSnap = clamp01((castP - 0.16) / 0.46);
+    }
+    const castPrep = Math.sin(windBack * Math.PI * 0.5);
+    const castRelease = Math.sin(clamp01(castSnap) * Math.PI);
+    const castFollow = casting ? Math.sin(clamp01((castP - 0.48) / 0.52) * Math.PI) : 0;
+
+    const struggleWhip = struggle * Math.sin(t * 28) * unit * 4.8;
+    const tug = struggle * Math.sin(t * 34) * unit * 3.8;
+    const boatX = w * 0.27 + tug * 0.50;
+    const boatY = lakeY + h * 0.18 + boatRockBase + struggle * Math.sin(t * 14) * unit * 1.4;
+    const boatW = w * 0.31;
+    const boatH = h * 0.082;
+    const hookX = w * 0.70 + tug * 0.95;
+    const hookY = lakeY + h * 0.245 + Math.sin(t * 1.55) * unit * 2.2;
+
+    ctx.fillStyle = 'rgba(8,44,67,0.20)';
+    ctx.fillRect(boatX - boatW * 0.48, boatY + boatH * 0.86, boatW * 0.94, Math.max(4, unit * 3));
+    ctx.fillStyle = 'rgba(255,255,255,0.10)';
+    ctx.fillRect(boatX - boatW * 0.46, boatY + boatH * 1.02, boatW * 0.75, Math.max(2, unit * 2));
+
+    ctx.fillStyle = '#6a3d1c';
+    ctx.beginPath();
+    ctx.moveTo(boatX - boatW * 0.52, boatY);
+    ctx.lineTo(boatX + boatW * 0.50, boatY);
+    ctx.lineTo(boatX + boatW * 0.35, boatY + boatH);
+    ctx.lineTo(boatX - boatW * 0.42, boatY + boatH);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = '#9d5d2a';
+    ctx.fillRect(boatX - boatW * 0.31, boatY + boatH * 0.12, boatW * 0.60, boatH * 0.18);
+    ctx.fillStyle = '#c78647';
+    ctx.fillRect(boatX - boatW * 0.48, boatY + boatH * 0.08, boatW * 0.94, boatH * 0.08);
+    ctx.fillStyle = '#4a2a18';
+    ctx.fillRect(boatX - boatW * 0.42, boatY + boatH * 0.60, boatW * 0.78, Math.max(2, unit * 2));
+    ctx.fillRect(boatX - boatW * 0.10, boatY + boatH * 0.28, boatW * 0.14, boatH * 0.22);
+    ctx.fillStyle = '#7f5327';
+    ctx.fillRect(boatX - boatW * 0.38, boatY + boatH * 0.20, boatW * 0.09, boatH * 0.42);
+    ctx.fillStyle = '#3b2315';
+    ctx.fillRect(boatX + boatW * 0.12, boatY + boatH * 0.24, boatW * 0.08, boatH * 0.46);
+    ctx.fillStyle = '#bcd7e7';
+    ctx.fillRect(boatX + boatW * 0.16, boatY + boatH * 0.18, boatW * 0.06, boatH * 0.10);
+
+    const bodyLean = casting
+      ? (-unit * 5.2 * castPrep + unit * 8.2 * castRelease - unit * 2.2 * castFollow)
+      : revealing
+      ? (-unit * 5.5 * struggle + unit * 1.2 * revealP)
+      : Math.sin(t * 1.3) * unit * 0.8;
+    const armLift = casting ? (-unit * 3.2 * castPrep + unit * 6.2 * castRelease) : revealing ? unit * 2.2 * struggle : unit * 0.6;
+
+    const fx = boatX - boatW * 0.08 - tug * 0.2;
+    const fy = boatY - boatH * 0.18 + tug * 0.1;
+
+    ctx.fillStyle = '#314560';
+    ctx.fillRect(fx - unit * 5.5 + bodyLean * 0.18, fy - unit * 3.0, unit * 12, unit * 15);
+    ctx.fillStyle = '#24364b';
+    ctx.fillRect(fx - unit * 3.5 + bodyLean * 0.15, fy + unit * 5, unit * 8, unit * 8);
+    ctx.fillStyle = '#f1bf86';
+    ctx.fillRect(fx - unit * 4.5 + bodyLean * 0.14, fy - unit * 12, unit * 10, unit * 9);
+    ctx.fillStyle = '#d69b2d';
+    ctx.fillRect(fx - unit * 7 + bodyLean * 0.16, fy - unit * 15, unit * 16, unit * 4);
+    ctx.fillRect(fx - unit * 3 + bodyLean * 0.16, fy - unit * 19, unit * 9, unit * 4);
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(fx - unit * 5 + bodyLean * 0.18, fy - unit * 2, unit * 3, unit * 7);
+    ctx.fillStyle = '#1f2937';
+    ctx.fillRect(fx - unit * 8, fy + unit * 8, unit * 11, unit * 4);
+    ctx.fillRect(fx + unit * 4, fy + unit * 8, unit * 12, unit * 4);
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(fx - unit * 1.2, fy - unit * 10.2, unit * 1.3, unit * 1.3);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(fx + unit * 2.7, fy - unit * 10.1, unit * 1.4, unit * 1.4);
+
+    const rodStartX = fx + unit * 7 + bodyLean * 0.25;
+    const rodStartY = fy - unit * 3 - armLift * 0.20;
+    let rodEndX = boatX + boatW * 0.41;
+    let rodEndY = boatY - boatH * 1.28;
+    if (casting) {
+      rodEndX += -unit * 12 * castPrep + unit * 19 * castRelease - unit * 3 * castFollow;
+      rodEndY += unit * 10 * castPrep - unit * 21 * castRelease + unit * 7 * castFollow;
+    } else if (revealing) {
+      rodEndX += -unit * 6.8 * struggle + unit * 3.0 * revealP;
+      rodEndY += -unit * 12.5 * struggle + unit * 4.5 * revealP + struggleWhip * 0.18;
+    } else if (holding) {
+      rodEndX += Math.sin(t * 1.4) * unit * 1.2;
+      rodEndY += Math.sin(t * 2.1) * unit * 1.4;
+    }
+
+    ctx.strokeStyle = '#3b2414';
+    ctx.lineWidth = Math.max(2, unit * 2.1);
+    ctx.beginPath();
+    ctx.moveTo(rodStartX, rodStartY);
+    ctx.lineTo(rodEndX, rodEndY);
+    ctx.stroke();
+    ctx.fillStyle = '#2c1a12';
+    ctx.fillRect(rodStartX - unit * 2.5, rodStartY - unit * 1.5, unit * 4.5, unit * 3);
+    ctx.fillStyle = '#c9d3dc';
+    ctx.fillRect(rodStartX - unit * 1.2, rodStartY + unit * 1.2, unit * 3.1, unit * 3.1);
+    ctx.fillStyle = '#1f130b';
+    ctx.fillRect(rodEndX - unit * 1.3, rodEndY - unit * 1.3, unit * 2.6, unit * 2.6);
+
+    function drawLineTo(x, y, alpha = 0.84, widthBoost = 1) {
+      ctx.strokeStyle = `rgba(20,30,38,${alpha})`;
+      ctx.lineWidth = Math.max(1, unit * widthBoost);
+      ctx.beginPath();
+      ctx.moveTo(rodEndX, rodEndY);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    }
+
+    if (casting) {
+      const p = easeOutCubic(castP);
+      const bobX = lerp(rodEndX, hookX, p);
+      const bobY = lerp(rodEndY + unit * 4, hookY, p) - Math.sin(castP * Math.PI) * h * 0.24;
+      ctx.strokeStyle = 'rgba(20,30,38,0.62)';
+      ctx.lineWidth = Math.max(1, unit);
+      ctx.beginPath();
+      ctx.moveTo(rodEndX, rodEndY);
+      ctx.quadraticCurveTo(lerp(rodEndX, hookX, 0.46), Math.min(rodEndY, hookY) - h * 0.18, bobX, bobY);
+      ctx.stroke();
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(bobX - unit * 3, bobY - unit * 3, unit * 6, unit * 6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(bobX - unit * 3, bobY - unit * 3, unit * 6, unit * 3);
+      if (castP > 0.82) {
+        const splashP = clamp01((castP - 0.82) / 0.18);
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+        ctx.lineWidth = Math.max(1, unit);
+        ctx.beginPath();
+        ctx.ellipse(hookX, hookY + unit * 3, unit * (5 + 8 * splashP), unit * (2 + 3 * splashP), 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+
+    if (holding) {
+      const driftX = Math.sin(t * 0.9) * unit * 1.6;
+      const driftY = Math.sin(t * 1.2) * unit * 0.8;
+      drawLineTo(hookX + driftX * 0.15, hookY + driftY, 0.74, 1);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(hookX - unit * 3 + driftX, hookY - unit * 3 + driftY, unit * 6, unit * 6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(hookX - unit * 3 + driftX, hookY - unit * 3 + driftY, unit * 6, unit * 3);
+      ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+      ctx.lineWidth = Math.max(1, unit);
+      ctx.beginPath();
+      ctx.ellipse(hookX + driftX, hookY + unit * 3 + driftY * 0.2, unit * 10, unit * 3.5, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(hookX + driftX, hookY + unit * 3 + driftY * 0.2, unit * 15, unit * 5.2, 0, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+      ctx.stroke();
+    }
+
+    if (revealing) {
+      const splashX = hookX;
+      const splashY = lakeY + h * 0.245;
+      const airCastP = clamp01(heldMs / CAST_ANIM_MS);
+      const airX = lerp(rodEndX, hookX, easeOutCubic(airCastP));
+      const airY = lerp(rodEndY + unit * 4, hookY, easeOutCubic(airCastP)) - Math.sin(airCastP * Math.PI) * h * 0.24;
+      const struggleP = clamp01(revealP / 0.38);
+      const launchStart = airResult ? 0.00 : heavyCatch ? 0.40 : badCatch ? 0.28 : 0.34;
+      const launchDur = airResult ? 0.38 : heavyCatch ? 0.30 : 0.26;
+      const popP = airResult ? clamp01(revealP / 0.38) : clamp01((revealP - launchStart) / launchDur);
+      const throwP = easeOutCubic(popP);
+      const retractP = easeInOutSine((revealP - 0.70) / 0.30);
+      const catchSize = getCatchDisplaySize(missMs) * unit;
+      const apexLift = h * (0.26 + Math.min(0.15, catchSize / Math.max(1, h) * 0.25));
+
+      let caughtX = splashX + Math.sin(t * 10.5) * unit * 3 * (1 - popP * 0.35);
+      let caughtY = splashY - unit * 4 - throwP * apexLift + retractP * h * 0.08;
+      caughtX = lerp(caughtX, rodEndX + w * 0.12, retractP * 0.10);
+      caughtY = lerp(caughtY, splashY - h * 0.19, retractP * 0.18);
+
+      if (airResult) {
+        caughtX = lerp(airX, airX + unit * 22, throwP * 0.35);
+        caughtY = airY - unit * (8 + 28 * throwP) + retractP * unit * 18;
+      }
+
+      if (!airResult && !badCatch && revealP < launchStart) {
+        const shadowP = easeInOutSine(struggleP);
+        const shadowW = Math.max(unit * 16, catchSize * (0.42 + catchQuality * 0.18)) * shadowP;
+        const shadowH = Math.max(unit * 5, shadowW * 0.22);
+        ctx.fillStyle = `rgba(9,49,74,${0.28 + 0.18 * shadowP})`;
+        ctx.beginPath();
+        ctx.ellipse(splashX + Math.sin(t * 6.5) * unit * 3.5 * struggleP, splashY + unit * 10, shadowW, shadowH, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (popP > 0.02) {
+        drawLineTo(caughtX, caughtY, 0.90 - retractP * 0.25, 1.25);
+      } else if (airResult) {
+        drawLineTo(airX, airY, 0.72, 1);
+      } else if (badCatch) {
+        ctx.strokeStyle = 'rgba(20,30,38,0.72)';
+        ctx.lineWidth = Math.max(1, unit);
+        ctx.beginPath();
+        ctx.moveTo(rodEndX, rodEndY);
+        ctx.quadraticCurveTo(lerp(rodEndX, splashX, 0.5), lerp(rodEndY, splashY, 0.5) + unit * 12, splashX + tug * 0.2, splashY + tug * 0.6);
+        ctx.stroke();
+      } else {
+        drawLineTo(splashX + tug * 0.2, splashY + tug * 0.6, 0.92, 1.35);
+      }
+
+      const splashPower = airResult ? 0 : Math.max(0.16, 1 - popP * 0.70) * (heavyCatch ? 1.25 : 1);
+      ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+      ctx.lineWidth = Math.max(2, unit * 2);
+      for (let i = 0; i < 9; i++) {
+        const a = -Math.PI + i * Math.PI / 8;
+        ctx.beginPath();
+        ctx.moveTo(splashX, splashY);
+        ctx.lineTo(
+          splashX + Math.cos(a) * unit * (11 + 30 * revealP) * splashPower,
+          splashY + Math.sin(a) * unit * (6 + 21 * revealP) * splashPower
+        );
+        ctx.stroke();
+      }
+
+      ctx.strokeStyle = 'rgba(255,255,255,0.48)';
+      ctx.lineWidth = Math.max(1, unit);
+      ctx.beginPath();
+      ctx.ellipse(splashX, splashY + unit * 4, unit * (12 + 34 * revealP) * splashPower, unit * (4 + 9 * revealP) * splashPower, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      if (badCatch && popP > 0.02) {
+        ctx.save();
+        ctx.translate(caughtX, caughtY);
+        ctx.rotate(Math.sin(t * 6.5) * 0.08);
+        drawCaughtThing(0, 0, unit, popP);
+        ctx.restore();
+      } else if (popP > 0.02) {
+        drawCaughtThing(caughtX, caughtY, unit, popP);
+      }
+    }
+  }
+
+
+
+  function gameDraw() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const t = nowMs() / 1000;
+      const lakeY = h * 0.52;
+
+      ctx.clearRect(0, 0, w, h);
+      drawSky(w, h, lakeY, t);
+      drawMountains(w, h, lakeY);
+      drawLake(w, h, lakeY, t);
+      drawBoat(w, h, lakeY, t);
+
+      let topText = "";
+      let detailText = "";
+      if (castState === "count") topText = lastUiText;
+      if (castState === "casting" || castState === "holding") topText = SHOW_DEBUG_TIMER ? `Release at 20 seconds • ${secondsText(heldMs)}` : "Release on 20 seconds";
+      if (castState === "reveal" && missMs !== null) {
+        topText = resultText;
+        detailText = timingDetailText();
+      }
+
+      if (topText) {
+        const panelH = detailText ? 39 : 27;
+        ctx.fillStyle = "rgba(255,255,255,0.76)";
+        ctx.fillRect(8, 8, w - 16, panelH);
+        ctx.fillStyle = "#102033";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 12px Arial, sans-serif";
+        ctx.fillText(topText, w / 2, detailText ? 20 : 22);
+        if (detailText) {
+          ctx.font = "bold 10px Arial, sans-serif";
+          ctx.fillText(detailText, w / 2, 35);
+        }
+      }
+    }
+
+    function gameInput(action) {
+      if (action === "a" || action === "aDown") {
+        handleHoldStart();
+        return;
+      }
+
+      if (action === "aUp") {
+        handleHoldEnd();
+        return;
+      }
+
+      if (action === "b" || action === "select") {
+        if (castState === "reveal") return;
+        resetCastRun();
+      }
+    }
+
+    function gameStop() {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      holdPointerId = null;
+      inputHeld = false;
+      queuedEarlyCast = false;
+    }
+
+    canvas.addEventListener("pointerdown", event => {
+      if (!running) return;
+      event.preventDefault();
+      holdPointerId = event.pointerId;
+      try { canvas.setPointerCapture(event.pointerId); } catch (err) {}
+      gameInput("aDown");
+    }, { passive: false });
+
+    canvas.addEventListener("pointerup", event => {
+      if (holdPointerId !== event.pointerId) return;
+      event.preventDefault();
+      holdPointerId = null;
+      try {
+        if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      } catch (err) {}
+      gameInput("aUp");
+    }, { passive: false });
+
+    canvas.addEventListener("pointercancel", event => {
+      if (holdPointerId !== event.pointerId) return;
+      holdPointerId = null;
+      gameInput("aUp");
+    });
+
+    canvas.addEventListener("contextmenu", event => event.preventDefault());
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      maybeOpenFirstTimeHowToPlay: openFirstTimeHowToPlayBeforeStart,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
