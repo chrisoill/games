@@ -1,0 +1,3328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Beat Balance | Piano Arcade Mobile</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: auto;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 35px;
+      padding: 18px 12px;
+      background: rgba(16, 24, 39, 0.93);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 8px 12px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+    /* Beat Balance game-specific mobile controls */
+    #faceButtons,
+    #rightJoystickPad,
+    #selectButton,
+    #dpadUp,
+    #dpadDown,
+    #dpadCenter {
+      display: none !important;
+    }
+
+    #dpad {
+      left: 18px;
+      top: 38px;
+      width: 150px;
+      height: 74px;
+    }
+
+    #dpadLeft {
+      left: 8px;
+      top: 12px;
+      border-radius: 10px;
+    }
+
+    #dpadRight {
+      left: 92px;
+      top: 12px;
+      border-radius: 10px;
+    }
+
+    #leftJoystickPad {
+      left: 50%;
+      top: 178px;
+      transform: translateX(-50%);
+    }
+
+    #systemButtons {
+      top: 326px;
+      width: 90px;
+      gap: 0;
+    }
+
+    #startButton {
+      width: 86px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">BEATS: <span id="score">0</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">A</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
+    const STORAGE_KEY = "beatBalanceMobilePlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Beats";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "beat_balance_how_to_play_v1";
+    let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let pendingStartAfterHelp = false;
+    let wixStorageAnswered = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Need a break? Use this menu to resume, save your score and exit, or leave without saving.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+          </div>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Left joystick:</strong> Pull left or right to tilt the table. Small pulls make small tilts; big pulls make stronger tilts.</li>
+            <li><strong>D-pad Left/Right:</strong> Quick tilt taps.</li>
+            <li><strong>MENU:</strong> Pause, resume, or go back to the player menu.</li>
+          </ul>
+          <p>Use gentle joystick pulls when the token is almost lined up, and stronger pulls when it is drifting away.</p>
+
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <ul>
+            <li>Rhythm tokens fall from the top funnel onto the balance table.</li>
+            <li>Tilt the table left or right to guide tokens into the cold or hot funnel.</li>
+            <li>Each token adds its beat value to the side it enters.</li>
+            <li>Keep the cold and hot totals close together.</li>
+            <li>At 30 beats apart, the game warns you. At 40, you are in danger. At 50, the run ends.</li>
+            <li>Your score is the total number of rhythm beats collected.</li>
+          </ul>
+
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "pause";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (pendingStartAfterHelp) {
+        pendingStartAfterHelp = false;
+        shellMenuWasRunning = false;
+        startGame();
+        return;
+      }
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function setScore(value) {
+      score = Math.max(0, Math.floor(value));
+      scoreEl.textContent = score;
+    }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const isObjectData = data && typeof data === "object" && !Array.isArray(data);
+        const best = isObjectData
+          ? Number(data.best || 0)
+          : Number(data || 0);
+
+        cleaned[cleanName] = {
+          ...(isObjectData ? data : {}),
+          best: Math.max(0, Math.floor(best || 0))
+        };
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this template stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+
+    function isGuestPlayer() {
+      return String(selectedPlayer || "").trim().toLowerCase() === "guest";
+    }
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      const existing = players[selectedPlayer];
+      if (!existing || typeof existing !== "object" || Array.isArray(existing)) {
+        const best = Number(existing || 0);
+        players[selectedPlayer] = {
+          best: Math.max(0, Math.floor(best || 0))
+        };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function shouldShowFirstTimeHelp() {
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      if (isGuestPlayer()) return true;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData || isGuestPlayer()) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function beginGameWithFirstTimeHelp() {
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      gameOverBox.style.display = "none";
+
+      if (shouldShowFirstTimeHelp()) {
+        pendingStartAfterHelp = true;
+        markFirstTimeHelpSeen();
+        openShellMenu("instructions");
+        return;
+      }
+
+      startGame();
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .sort((a, b) => (b[1].best || 0) - (a[1].best || 0))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${data.best || 0}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${players[name].best || 0}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0 };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0 };
+      }
+
+      savePlayers();
+
+      beginGameWithFirstTimeHelp();
+    };
+
+    playAgainBtn.onclick = () => beginGameWithFirstTimeHelp();
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+      gameOverBox.style.display = "none";
+
+      getAudio();
+      setMessage("READY");
+      gameInit();
+
+      loop();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      soundLose();
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverBox.style.display = "block";
+    }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function toneSweep(startFreq, endFreq, duration, type = "sine", volume = 0.05) {
+      const ac = getAudio();
+      if (!ac) return;
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(Math.max(1, startFreq), ac.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(1, endFreq), ac.currentTime + duration);
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(ac.destination);
+      osc.start();
+      osc.stop(ac.currentTime + duration + 0.02);
+    }
+
+    function noiseBurst(duration = 0.08, volume = 0.04, filterType = "lowpass", filterFreq = 420) {
+      const ac = getAudio();
+      if (!ac) return;
+      const frames = Math.max(1, Math.floor(ac.sampleRate * duration));
+      const buffer = ac.createBuffer(1, frames, ac.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < frames; i += 1) {
+        const decay = 1 - i / frames;
+        data[i] = (Math.random() * 2 - 1) * decay * decay;
+      }
+      const source = ac.createBufferSource();
+      const filter = ac.createBiquadFilter();
+      const gain = ac.createGain();
+      source.buffer = buffer;
+      filter.type = filterType;
+      filter.frequency.value = filterFreq;
+      filter.Q.value = filterType === "bandpass" ? 2.4 : 0.8;
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(ac.destination);
+      source.start();
+    }
+
+    function soundTableHit(intensity = 0.5) {
+      const amount = Math.max(0.15, Math.min(1, Number(intensity) || 0.5));
+      noiseBurst(0.055 + amount * 0.045, 0.020 + amount * 0.034, "lowpass", 150 + amount * 300);
+      toneSweep(125 + amount * 50, 72 + amount * 20, 0.080 + amount * 0.035, "triangle", 0.020 + amount * 0.026);
+    }
+
+    function soundSpawn() {
+      toneSweep(760, 520, 0.090, "sine", 0.018);
+      noiseBurst(0.035, 0.010, "highpass", 1300);
+    }
+
+    function soundFunnel(side = "left", value = 1) {
+      const v = Math.max(1, Math.min(4, Number(value) || 1));
+      if (side === "left") {
+        noiseBurst(0.105, 0.028 + v * 0.005, "highpass", 760 + v * 120);
+        toneSweep(360 + v * 38, 260 + v * 24, 0.130, "triangle", 0.030 + v * 0.004);
+        setTimeout(() => toneSweep(520 + v * 42, 610 + v * 45, 0.055, "sine", 0.018), 45);
+      } else {
+        noiseBurst(0.120, 0.034 + v * 0.006, "bandpass", 420 + v * 55);
+        toneSweep(150 + v * 22, 95 + v * 12, 0.145, "sawtooth", 0.026 + v * 0.004);
+        setTimeout(() => noiseBurst(0.050, 0.012, "highpass", 1700), 55);
+      }
+    }
+
+    function soundMiss() {
+      toneSweep(720, 260, 0.160, "sine", 0.024);
+      noiseBurst(0.120, 0.030, "highpass", 900);
+    }
+
+    function soundWarning(state = "warning") {
+      if (state === "danger") {
+        toneSweep(420, 630, 0.110, "sawtooth", 0.036);
+        setTimeout(() => toneSweep(630, 420, 0.120, "sawtooth", 0.032), 115);
+      } else {
+        toneSweep(330, 430, 0.120, "triangle", 0.026);
+      }
+    }
+
+    function soundCorrect() {
+      soundFunnel("right", 2);
+    }
+
+    function soundWin() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => toneSweep(n, n * 1.08, 0.11, "triangle", 0.050), i * 80);
+      });
+      setTimeout(() => noiseBurst(0.10, 0.020, "highpass", 1600), 190);
+    }
+
+    function soundLose() {
+      noiseBurst(0.36, 0.070, "lowpass", 180);
+      [240, 185, 135, 82].forEach((n, i) => {
+        setTimeout(() => toneSweep(n, n * 0.62, 0.18, "sawtooth", 0.044), i * 105);
+      });
+    }
+
+
+    /* =========================
+      GAME MODULE — BEAT BALANCE FINAL
+      Final clean build with fixed 50-beat gap, cleaner HUD, and richer game sounds.
+      ========================= */
+
+
+    const BB_VERSION = "final";
+    const BB_BG = "#f7fbff";
+    const BB_INK = "#111827";
+    const BB_BLUE = "#2563eb";
+    const BB_GOLD = "#ffe08a";
+    const BB_DANGER = "#b91c1c";
+    const BB_WARNING = "#c27803";
+    const BB_SUCCESS = "#15803d";
+
+    const BB_TOKEN_TYPES = [
+      { id: "quarter", label: "Quarter", value: 1, fill: "#ffffff", rim: "rgba(37,99,235,0.52)", mass: 1.00 },
+      { id: "half", label: "Half", value: 2, fill: "#fff3bf", rim: "rgba(146,64,14,0.36)", mass: 1.08 },
+      { id: "whole", label: "Whole", value: 4, fill: "#dff3ff", rim: "rgba(37,99,235,0.44)", mass: 1.18 }
+    ];
+
+    let bbHelpRegistered = false;
+    let bbState = null;
+
+    function bbFreshState() {
+      const now = performance.now();
+      return {
+        version: BB_VERSION,
+        startedAt: now,
+        now,
+        lastMs: now,
+        elapsedMs: 0,
+        tilt: 0,
+        targetTilt: 0,
+        tiltVelocity: 0,
+        activeTiltInput: false,
+        keys: { left: false, right: false, up: false, down: false },
+        dpadTilt: 0,
+        dpadFrames: 0,
+        tokens: [],
+        popups: [],
+        bursts: [],
+        nextTokenId: 1,
+        nextSpawnAt: now + 400,
+        spawnEveryMs: 920,
+        totalSpawned: 0,
+        leftBeats: 0,
+        rightBeats: 0,
+        missed: 0,
+        collected: 0,
+        stability: 50,
+        dangerState: "safe",
+        dangerLabel: "STABLE",
+        dangerColor: BB_SUCCESS,
+        dangerDiff: 0,
+        dangerPercent: 0,
+        difficultyLevel: 0,
+        leftPulse: 0,
+        rightPulse: 0,
+        missPulse: 0,
+        balancePulse: 0,
+        eventText: "",
+        eventMs: 0,
+        lastInput: "none",
+        pointer: null,
+        lastCollectMs: 0,
+        lastTableSoundMs: 0,
+        lastSpawnSoundMs: 0,
+        lastMissSoundMs: 0,
+        lastDangerSoundMs: 0,
+        lastDangerAudioState: "safe"
+      };
+    }
+
+    function bbClamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function bbEase(current, target, amount) {
+      return current + (target - current) * amount;
+    }
+
+    function bbRoundRect(x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function bbFillRoundRect(x, y, w, h, r, fillStyle) {
+      ctx.fillStyle = fillStyle;
+      bbRoundRect(x, y, w, h, r);
+      ctx.fill();
+    }
+
+    function bbStrokeRoundRect(x, y, w, h, r, strokeStyle, lineWidth = 2) {
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      bbRoundRect(x, y, w, h, r);
+      ctx.stroke();
+    }
+
+    function bbDrawText(text, x, y, options = {}) {
+      ctx.fillStyle = options.fill || BB_INK;
+      ctx.font = options.font || "16px Arial, sans-serif";
+      ctx.textAlign = options.align || "center";
+      ctx.textBaseline = options.baseline || "middle";
+      ctx.fillText(text, x, y);
+    }
+
+        function bbLayout() {
+      const w = canvas.width;
+      const h = canvas.height;
+      const mobile = h < 300;
+      const sx = w / 720;
+      const sy = h / 520;
+      const s = mobile ? Math.min(w / 390, h / 219) : Math.min(sx, sy);
+      const centerX = w / 2;
+
+      if (mobile) {
+        const hudH = 27 * s;
+        const topFunnelY = 34 * s;
+        const topFunnelH = 36 * s;
+        const topFunnelTopW = 88 * s;
+        const topFunnelBottomW = 34 * s;
+        const platformW = Math.min(178 * s, w - 128 * s);
+        const platformY = 112 * s;
+        const funnelY = 152 * s;
+        const mouthW = 118 * s;
+        const funnelH = 31 * s;
+        const neckW = 32 * s;
+        const leftX = 14 * s;
+        const rightX = w - 14 * s - mouthW;
+        const leftMouthCenter = leftX + mouthW / 2;
+        const rightMouthCenter = rightX + mouthW / 2;
+        return {
+          w, h, mobile, s, centerX,
+          gravity: 980 * s,
+          maxAngle: 0.36,
+          topHud: { x: 8 * s, y: 5 * s, w: w - 16 * s, h: hudH },
+          tube: { x: centerX - topFunnelTopW / 2, y: topFunnelY, w: topFunnelTopW, h: topFunnelH },
+          dropFunnel: { x: centerX, y: topFunnelY, topW: topFunnelTopW, bottomW: topFunnelBottomW, h: topFunnelH },
+          spawn: { x: centerX, y: topFunnelY + topFunnelH + 12 * s, spread: 8 * s },
+          platform: { x: centerX, y: platformY, w: platformW, h: 9 * s, r: 5 * s },
+          pivot: { x: centerX, y: platformY + 14 * s, r: 7 * s },
+          leftFunnel: { side: "left", x: leftX, y: funnelY, topW: mouthW, neckW, h: funnelH, neckX: leftMouthCenter, neckY: funnelY + funnelH },
+          rightFunnel: { side: "right", x: rightX, y: funnelY, topW: mouthW, neckW, h: funnelH, neckX: rightMouthCenter, neckY: funnelY + funnelH },
+          leftTank: { x: 12 * s, y: 186 * s, w: 145 * s, h: 25 * s, gauge: "cool" },
+          rightTank: { x: w - 157 * s, y: 186 * s, w: 145 * s, h: 25 * s, gauge: "heat" },
+          centerDial: { x: centerX, y: 199 * s, r: 15 * s },
+          wallPad: 5 * s
+        };
+      }
+
+      const margin = 24 * s;
+      const topHud = { x: margin, y: 18 * s, w: w - margin * 2, h: 54 * s };
+      const topFunnelY = topHud.y + topHud.h + 16 * s;
+      const topFunnelH = 72 * s;
+      const topFunnelTopW = 150 * s;
+      const topFunnelBottomW = 52 * s;
+      const platformY = h * 0.505;
+      const platformW = Math.min(280 * s, w - 230 * s);
+      const funnelY = h * 0.650;
+      const mouthW = Math.min(190 * s, w * 0.30);
+      const funnelH = 72 * s;
+      const neckW = 58 * s;
+      const leftX = 46 * s;
+      const rightX = w - 46 * s - mouthW;
+      const leftMouthCenter = leftX + mouthW / 2;
+      const rightMouthCenter = rightX + mouthW / 2;
+      return {
+        w, h, mobile, s, centerX,
+        gravity: 1500 * s,
+        maxAngle: 0.36,
+        topHud,
+        tube: { x: centerX - topFunnelTopW / 2, y: topFunnelY, w: topFunnelTopW, h: topFunnelH },
+        dropFunnel: { x: centerX, y: topFunnelY, topW: topFunnelTopW, bottomW: topFunnelBottomW, h: topFunnelH },
+        spawn: { x: centerX, y: topFunnelY + topFunnelH + 14 * s, spread: 13 * s },
+        platform: { x: centerX, y: platformY, w: platformW, h: 15 * s, r: 8 * s },
+        pivot: { x: centerX, y: platformY + 24 * s, r: 11 * s },
+        leftFunnel: { side: "left", x: leftX, y: funnelY, topW: mouthW, neckW, h: funnelH, neckX: leftMouthCenter, neckY: funnelY + funnelH },
+        rightFunnel: { side: "right", x: rightX, y: funnelY, topW: mouthW, neckW, h: funnelH, neckX: rightMouthCenter, neckY: funnelY + funnelH },
+        leftTank: { x: 50 * s, y: h - 102 * s, w: 238 * s, h: 76 * s, gauge: "cool" },
+        rightTank: { x: w - 288 * s, y: h - 102 * s, w: 238 * s, h: 76 * s, gauge: "heat" },
+        centerDial: { x: centerX, y: h - 58 * s, r: 27 * s },
+        wallPad: 10 * s
+      };
+    }
+
+    function bbKindRadius(kind, layout) {
+      const s = layout.s;
+      const base = layout.mobile ? 9.5 * s : 18 * s;
+      if (kind.value === 4) return base * 1.18;
+      if (kind.value === 2) return base * 1.08;
+      return base;
+    }
+
+    function bbRegisterHelp() {
+      if (bbHelpRegistered) return;
+      bbHelpRegistered = true;
+
+      updateShellMenuTab("controls", `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Left joystick:</strong> Pull left or right to tilt the table. Small pulls make small tilts; big pulls make stronger tilts.</li>
+            <li><strong>D-pad Left/Right:</strong> Quick tilt taps.</li>
+            <li><strong>MENU:</strong> Pause, resume, or go back to the player menu.</li>
+          </ul>
+          <p>Use gentle joystick pulls when the token is almost lined up, and stronger pulls when it is drifting away.</p>
+
+    `);
+      updateShellMenuTab("instructions", `
+          <h3>How to Play</h3>
+          <ul>
+            <li>Rhythm tokens fall from the top funnel onto the balance table.</li>
+            <li>Tilt the table left or right to guide tokens into the cold or hot funnel.</li>
+            <li>Each token adds its beat value to the side it enters.</li>
+            <li>Keep the cold and hot totals close together.</li>
+            <li>At 30 beats apart, the game warns you. At 40, you are in danger. At 50, the run ends.</li>
+            <li>Your score is the total number of rhythm beats collected.</li>
+          </ul>
+
+    `);
+    }
+
+    function bbSetTiltFromInputs() {
+      // sticks.left.x is already normalized from -1 to 1.
+      // Use a dead zone, then curve the remaining pull so small pulls are gentle and full pulls are strong.
+      const joystickRaw = bbClamp(Number(sticks.left.x) || 0, -1, 1);
+      const deadZone = 0.16;
+      let joystickTilt = 0;
+      if (Math.abs(joystickRaw) > deadZone) {
+        const pull = (Math.abs(joystickRaw) - deadZone) / (1 - deadZone);
+        joystickTilt = Math.sign(joystickRaw) * Math.pow(pull, 0.82);
+      }
+
+      if (bbState.dpadFrames > 0) {
+        bbState.dpadFrames -= 1;
+      } else {
+        bbState.dpadTilt = 0;
+      }
+
+      const rawTilt = bbClamp(joystickTilt + bbState.dpadTilt, -1, 1);
+      bbState.targetTilt = rawTilt;
+      bbState.activeTiltInput = Math.abs(joystickTilt) > 0 || Math.abs(bbState.dpadTilt) > 0;
+    }
+
+
+    function bbFormatBeats(value) {
+      const rounded = Math.round((Number(value) || 0) * 100) / 100;
+      if (Number.isInteger(rounded)) return String(rounded);
+      return String(rounded).replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
+    }
+
+    function bbBeatWord(value) {
+      return Math.abs((Number(value) || 0) - 1) < 0.001 ? "beat" : "beats";
+    }
+
+    function bbBalanceStats() {
+      const left = Number(bbState?.leftBeats || 0);
+      const right = Number(bbState?.rightBeats || 0);
+      const total = Math.max(0, left + right);
+      const diffSigned = right - left;
+      const diff = Math.abs(diffSigned);
+
+      // Survival is now based on raw beat difference, not percentage.
+      // 30 = warning, 40 = danger, 50 = loss.
+      const lossDiff = 50;
+      const warningDiff = 30;
+      const dangerDiff = 40;
+      const percent = Math.round(bbClamp(diff / lossDiff, 0, 1) * 100);
+      const balancePos = bbClamp(diffSigned / lossDiff, -1, 1);
+      const imbalance = total > 0 ? diff / total : 0;
+      const gaugeScale = lossDiff;
+      return { left, right, total, diff, diffSigned, imbalance, percent, balancePos, gaugeScale, warningDiff, dangerDiff, lossDiff };
+    }
+
+    
+
+    function bbDifficultyStats() {
+      const elapsedSec = Math.max(0, (bbState?.elapsedMs || 0) / 1000);
+      const level = Math.floor(elapsedSec / 22);
+      const ramp = bbClamp(elapsedSec / 180, 0, 1);
+      const layout = bbLayout();
+
+      // Release speed is now a major source of late-game chaos.
+      // It starts calm, then steadily becomes much faster.
+      const baseSpawn = layout.mobile ? 960 : 900;
+      const minSpawn = layout.mobile ? 185 : 165;
+      const curvedRamp = 1 - Math.pow(1 - ramp, 1.65);
+      const spawnEveryMs = Math.round(baseSpawn - (baseSpawn - minSpawn) * curvedRamp);
+
+      const clumpChance = elapsedSec < 26 ? 0 : bbClamp((elapsedSec - 26) / 120, 0, 0.42);
+      const maxExtra = elapsedSec > 145 ? 4 : elapsedSec > 92 ? 3 : elapsedSec > 55 ? 2 : 1;
+      return { elapsedSec, level, ramp, spawnEveryMs, clumpChance, maxExtra };
+    }
+
+    function bbDangerStats() {
+      const stats = bbBalanceStats();
+      const warningDiff = 30;
+      const dangerDiff = 40;
+      const lossDiff = 50;
+      let state = "safe";
+      let label = "STABLE";
+      let color = BB_SUCCESS;
+
+      if (stats.diff >= lossDiff) {
+        state = "lost";
+        label = stats.diffSigned > 0 ? "HEATER OVERLOAD" : "COOLER FREEZE";
+        color = BB_DANGER;
+      } else if (stats.diff >= dangerDiff) {
+        state = "danger";
+        label = stats.diffSigned > 0 ? "HOT DANGER" : "COLD DANGER";
+        color = BB_DANGER;
+      } else if (stats.diff >= warningDiff) {
+        state = "warning";
+        label = stats.diffSigned > 0 ? "WARMING" : "CHILLING";
+        color = BB_WARNING;
+      } else if (stats.diff <= 10) {
+        state = "balanced";
+        label = "BALANCED";
+        color = BB_SUCCESS;
+      }
+
+      const remaining = bbClamp(lossDiff - stats.diff, 0, lossDiff);
+      return { ...stats, warningDiff, dangerDiff, lossDiff, remaining, state, label, color };
+    }
+
+    function bbScoreValue() {
+      const collectedBeats = Number(bbState.leftBeats || 0) + Number(bbState.rightBeats || 0);
+      return Math.floor(collectedBeats);
+    }
+
+    function bbUpdateScoreDisplay() {
+      setScore(bbScoreValue());
+    }
+
+    function bbApplyDangerAndScore(dtSec) {
+      const danger = bbDangerStats();
+      bbState.dangerState = danger.state;
+      bbState.dangerLabel = danger.label;
+      bbState.dangerColor = danger.color;
+      bbState.dangerDiff = danger.diff;
+      bbState.dangerPercent = danger.percent;
+      if ((danger.state === "warning" || danger.state === "danger") &&
+          danger.state !== bbState.lastDangerAudioState &&
+          bbState.now - (bbState.lastDangerSoundMs || 0) > 900) {
+        bbState.lastDangerSoundMs = bbState.now;
+        bbState.lastDangerAudioState = danger.state;
+        soundWarning(danger.state);
+      }
+      if (danger.state === "safe" || danger.state === "balanced") {
+        bbState.lastDangerAudioState = danger.state;
+      }
+
+      // Stability is now a live raw-difference buffer: 50 difference means 0% stability.
+      // No more percentage scaling and no more slow-drain grace period.
+      bbState.stability = bbClamp(danger.remaining, 0, 50);
+
+      bbUpdateScoreDisplay();
+
+      if (bbState.eventMs <= 0) {
+        if (danger.state === "lost" || danger.state === "danger" || danger.state === "warning") {
+          bbSetStatus(danger.label);
+        } else {
+          bbSetStatus("");
+        }
+      }
+
+      if (danger.diff >= danger.lossDiff) {
+        const ending = danger.diffSigned > 0 ? "The heater overloaded." : "The cooler froze over.";
+        endGame(`${ending}`);
+      }
+    }
+
+    function bbSpawnClump(layout, difficulty) {
+      if (Math.random() >= difficulty.clumpChance) return;
+      const extraCount = 1 + Math.floor(Math.random() * difficulty.maxExtra);
+      for (let i = 0; i < extraCount; i += 1) {
+        const offset = (Math.random() * 2 - 1) * layout.spawn.spread * (1.4 + i * 0.35);
+        const yOffset = -i * (layout.mobile ? 7 * layout.s : 12 * layout.s);
+        bbSpawnToken({
+          x: layout.spawn.x + offset,
+          y: layout.spawn.y + yOffset,
+          vx: (Math.random() * 2 - 1) * 35 * layout.s,
+          vy: (92 + Math.random() * 54) * layout.s
+        });
+      }
+      bbState.eventText = "Rhythm clump!";
+      bbState.eventMs = 700;
+    }
+
+    function bbDrawBackground(layout) {
+      const stats = bbBalanceStats();
+      const heatBias = bbClamp(stats.balancePos || 0, -1, 1);
+      const coldStrength = bbClamp(-heatBias, 0, 1);
+      const heatStrength = bbClamp(heatBias, 0, 1);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, layout.h);
+      gradient.addColorStop(0, "#f7fbff");
+      gradient.addColorStop(0.55, "#eef6ff");
+      gradient.addColorStop(1, "#e7eef8");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, layout.w, layout.h);
+
+      if (coldStrength > 0.01) {
+        const cold = ctx.createLinearGradient(0, 0, layout.w, layout.h);
+        cold.addColorStop(0, `rgba(37,99,235,${0.12 + coldStrength * 0.50})`);
+        cold.addColorStop(0.55, `rgba(96,165,250,${coldStrength * 0.34})`);
+        cold.addColorStop(1, `rgba(239,246,255,${coldStrength * 0.05})`);
+        ctx.fillStyle = cold;
+        ctx.fillRect(0, 0, layout.w, layout.h);
+      }
+
+      if (heatStrength > 0.01) {
+        const heat = ctx.createLinearGradient(layout.w, 0, 0, layout.h);
+        heat.addColorStop(0, `rgba(249,115,22,${0.12 + heatStrength * 0.52})`);
+        heat.addColorStop(0.55, `rgba(251,191,36,${heatStrength * 0.32})`);
+        heat.addColorStop(1, `rgba(255,247,237,${heatStrength * 0.05})`);
+        ctx.fillStyle = heat;
+        ctx.fillRect(0, 0, layout.w, layout.h);
+      }
+
+      ctx.strokeStyle = "rgba(37,99,235,0.035)";
+      ctx.lineWidth = Math.max(1, layout.s);
+      const grid = layout.mobile ? 30 * layout.s : 54 * layout.s;
+      for (let x = grid * 0.55; x < layout.w; x += grid) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, layout.h);
+        ctx.stroke();
+      }
+      for (let y = grid * 0.55; y < layout.h; y += grid) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(layout.w, y);
+        ctx.stroke();
+      }
+    }
+
+    function bbDrawHud(layout) {
+      const hud = layout.topHud;
+      bbFillRoundRect(hud.x, hud.y, hud.w, hud.h, layout.mobile ? 10 * layout.s : 18 * layout.s, "rgba(255,255,255,0.84)");
+      bbStrokeRoundRect(hud.x, hud.y, hud.w, hud.h, layout.mobile ? 10 * layout.s : 18 * layout.s, "rgba(17,24,39,0.13)", 2 * layout.s);
+
+      const stats = bbBalanceStats();
+      const diff = Math.round(stats.diff);
+      const labelColor = bbState.dangerColor || "rgba(17,24,39,0.78)";
+
+      if (layout.mobile) {
+        const meterX = hud.x + 112 * layout.s;
+        const meterY = hud.y + 9 * layout.s;
+        const meterW = Math.max(64 * layout.s, hud.w - 224 * layout.s);
+        bbDrawText(bbState.dangerLabel || "BALANCED", hud.x + 10 * layout.s, hud.y + 15 * layout.s, { font: `bold ${10.5 * layout.s}px Arial, sans-serif`, align: "left", fill: labelColor });
+        bbDrawText(`GAP ${diff}/50`, hud.x + hud.w - 10 * layout.s, hud.y + 15 * layout.s, { font: `bold ${10.5 * layout.s}px Arial, sans-serif`, align: "right", fill: "rgba(17,24,39,0.76)" });
+        bbFillRoundRect(meterX, meterY, meterW, 9 * layout.s, 5 * layout.s, "rgba(17,24,39,0.13)");
+        const knobX = meterX + meterW / 2 + stats.balancePos * (meterW / 2 - 6 * layout.s);
+        ctx.fillStyle = BB_GOLD;
+        ctx.beginPath();
+        ctx.arc(knobX, meterY + 4.5 * layout.s, 7 * layout.s, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = BB_INK;
+        ctx.lineWidth = 1.5 * layout.s;
+        ctx.stroke();
+        return;
+      }
+
+      const meterX = layout.centerX - 108 * layout.s;
+      const meterY = hud.y + 21 * layout.s;
+      const meterW = 216 * layout.s;
+      const meterH = 13 * layout.s;
+      bbDrawText(bbState.dangerLabel || "BALANCED", hud.x + 24 * layout.s, hud.y + hud.h / 2, { font: `bold ${17 * layout.s}px Arial, sans-serif`, align: "left", fill: labelColor });
+      bbDrawText(`GAP ${diff}/50`, hud.x + hud.w - 24 * layout.s, hud.y + hud.h / 2, { font: `bold ${17 * layout.s}px Arial, sans-serif`, align: "right", fill: "rgba(17,24,39,0.76)" });
+      bbFillRoundRect(meterX, meterY, meterW, meterH, 7 * layout.s, "rgba(17,24,39,0.13)");
+      ctx.fillStyle = BB_GOLD;
+      ctx.beginPath();
+      ctx.arc(meterX + meterW / 2 + stats.balancePos * (meterW / 2 - 12 * layout.s), meterY + meterH / 2, 11 * layout.s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = BB_INK;
+      ctx.lineWidth = 2 * layout.s;
+      ctx.stroke();
+    }
+
+    function bbDrawTube(layout) {
+      const f = layout.dropFunnel;
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.18)";
+      ctx.shadowBlur = 13 * layout.s;
+      ctx.shadowOffsetY = 5 * layout.s;
+      const funnelGradient = ctx.createLinearGradient(f.x - f.topW / 2, f.y, f.x + f.topW / 2, f.y + f.h);
+      funnelGradient.addColorStop(0, "#dbeafe");
+      funnelGradient.addColorStop(0.48, "#ffffff");
+      funnelGradient.addColorStop(1, "#c7d2e4");
+      ctx.fillStyle = funnelGradient;
+      ctx.strokeStyle = "rgba(17,24,39,0.24)";
+      ctx.lineWidth = 3 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(f.x - f.topW / 2, f.y);
+      ctx.lineTo(f.x + f.topW / 2, f.y);
+      ctx.lineTo(f.x + f.bottomW / 2, f.y + f.h);
+      ctx.lineTo(f.x - f.bottomW / 2, f.y + f.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = BB_BLUE;
+      ctx.lineWidth = layout.mobile ? 4 * layout.s : 7 * layout.s;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(f.x - f.topW / 2 + 5 * layout.s, f.y + 2 * layout.s);
+      ctx.lineTo(f.x + f.topW / 2 - 5 * layout.s, f.y + 2 * layout.s);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(17,24,39,0.76)";
+      ctx.beginPath();
+      ctx.ellipse(f.x, f.y + f.h, f.bottomW * 0.48, Math.max(4 * layout.s, f.bottomW * 0.16), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+    }
+
+    function bbDrawNoteGlyph(x, y, r, typeId) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.strokeStyle = BB_INK;
+      ctx.fillStyle = BB_INK;
+      ctx.lineWidth = Math.max(1.5, r * 0.11);
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      if (typeId === "quarter") {
+        ctx.save();
+        ctx.rotate(-0.23);
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.18, r * 0.12, r * 0.28, r * 0.20, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(r * 0.07, r * 0.04);
+        ctx.lineTo(r * 0.07, -r * 0.62);
+        ctx.stroke();
+        ctx.restore();
+      } else if (typeId === "half") {
+        ctx.save();
+        ctx.rotate(-0.23);
+        ctx.beginPath();
+        ctx.ellipse(-r * 0.18, r * 0.12, r * 0.29, r * 0.20, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(r * 0.08, r * 0.03);
+        ctx.lineTo(r * 0.08, -r * 0.62);
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.rotate(-0.14);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, r * 0.46, r * 0.28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+
+    function bbDrawToken(token) {
+      const alpha = token.alpha ?? 1;
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(token.x, token.y);
+      ctx.rotate(token.rotation);
+
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.22)";
+      ctx.shadowBlur = 9 * token.r / 18;
+      ctx.shadowOffsetY = 4 * token.r / 18;
+      ctx.fillStyle = token.kind.fill;
+      ctx.beginPath();
+      ctx.arc(0, 0, token.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.strokeStyle = token.kind.rim;
+      ctx.lineWidth = Math.max(2, token.r * 0.22);
+      ctx.beginPath();
+      ctx.arc(0, 0, token.r - token.r * 0.08, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(17,24,39,0.28)";
+      ctx.lineWidth = Math.max(1, token.r * 0.08);
+      ctx.beginPath();
+      ctx.arc(0, 0, token.r, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(255,255,255,0.42)";
+      ctx.beginPath();
+      ctx.ellipse(-token.r * 0.28, -token.r * 0.33, token.r * 0.30, token.r * 0.12, -0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      bbDrawNoteGlyph(0, 0, token.r * 1.08, token.kind.id);
+      ctx.restore();
+    }
+
+        function bbMakeToken(layout, options = {}) {
+      const kind = options.kind || BB_TOKEN_TYPES[Math.floor(Math.random() * BB_TOKEN_TYPES.length)];
+      const r = options.r || bbKindRadius(kind, layout);
+      const fallbackX = layout.centerX;
+      const fallbackY = layout.dropFunnel.y + layout.dropFunnel.h + r * 0.95;
+      const fromPointer = Number.isFinite(Number(options.x)) && Number.isFinite(Number(options.y));
+      let x = fromPointer ? Number(options.x) : (layout.spawn.x + (Math.random() * 2 - 1) * layout.spawn.spread);
+      let y = fromPointer ? Number(options.y) : layout.spawn.y;
+
+      // Defensive only: never allow auto-spawned tokens to pile up offscreen or at 0,0.
+      // If the math breaks, fail visibly at the funnel mouth instead of somewhere hidden.
+      if (!Number.isFinite(x) || !Number.isFinite(y) || (!fromPointer && (x < 0 || x > layout.w || y < 0 || y > layout.platform.y))) {
+        x = fallbackX;
+        y = fallbackY;
+      }
+
+      return {
+        id: bbState.nextTokenId++,
+        kind,
+        x,
+        y,
+        r,
+        vx: options.vx ?? ((Math.random() * 2 - 1) * 18 * layout.s),
+        vy: options.vy ?? (105 * layout.s + Math.random() * 35 * layout.s),
+        spin: (Math.random() * 2 - 1) * 1.8,
+        rotation: (Math.random() * 2 - 1) * 0.15,
+        ageMs: 0,
+        alpha: 1,
+        status: "active",
+        side: null,
+        animMs: 0,
+        lastTableHit: 0,
+        settledFrames: 0
+      };
+    }
+
+    function bbSpawnToken(options = {}) {
+      if (!bbState) return;
+      const layout = bbLayout();
+      const token = bbMakeToken(layout, options);
+      bbState.tokens.push(token);
+      bbState.totalSpawned += 1;
+      bbState.lastInput = options.manual ? "manual drop" : "auto drop";
+      if (!options.silent && bbState.now - (bbState.lastSpawnSoundMs || 0) > 260) {
+        bbState.lastSpawnSoundMs = bbState.now;
+        soundSpawn();
+      }
+    }
+
+    function bbAddPopup(text, x, y, fill = BB_INK) {
+      bbState.popups.push({ text, x, y, fill, ageMs: 0, alpha: 1 });
+    }
+
+
+    function bbAddBurst(x, y, side, value = 1) {
+      const fill = side === "left" ? "rgba(37,99,235," : "rgba(249,115,22,";
+      const count = Math.min(14, 6 + Math.ceil(value * 2));
+      for (let i = 0; i < count; i += 1) {
+        const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.35;
+        const speed = 32 + Math.random() * 82;
+        bbState.bursts.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          r: 2.2 + Math.random() * 3.4,
+          ageMs: 0,
+          lifeMs: 360 + Math.random() * 240,
+          fill
+        });
+      }
+    }
+
+    function bbUpdateBursts(dtSec) {
+      bbState.bursts.forEach(p => {
+        p.ageMs += dtSec * 1000;
+        p.vy += 90 * dtSec;
+        p.x += p.vx * dtSec;
+        p.y += p.vy * dtSec;
+      });
+      bbState.bursts = bbState.bursts.filter(p => p.ageMs < p.lifeMs);
+    }
+
+    function bbDrawBursts() {
+      bbState.bursts.forEach(p => {
+        const t = bbClamp(p.ageMs / p.lifeMs, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = 1 - t;
+        ctx.fillStyle = `${p.fill}${0.85 - t * 0.35})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * (1 - t * 0.35), 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
+
+    function bbUpdatePopups(dtSec) {
+      bbState.popups.forEach(p => {
+        p.ageMs += dtSec * 1000;
+        p.y -= 18 * dtSec;
+        p.alpha = bbClamp(1 - p.ageMs / 650, 0, 1);
+      });
+      bbState.popups = bbState.popups.filter(p => p.alpha > 0.02);
+    }
+
+    function bbDrawPopups() {
+      bbState.popups.forEach(p => {
+        ctx.save();
+        ctx.globalAlpha = p.alpha;
+        bbDrawText(p.text, p.x, p.y, { font: "bold 14px Arial, sans-serif", fill: p.fill });
+        ctx.restore();
+      });
+    }
+
+    function bbPointInFunnel(token, funnel) {
+      const yTop = funnel.y;
+      const yBottom = funnel.y + funnel.h;
+      if (token.y + token.r * 0.25 < yTop || token.y - token.r > yBottom) return false;
+      const t = bbClamp((token.y - yTop) / Math.max(1, funnel.h), 0, 1);
+      const centerX = funnel.x + funnel.topW / 2;
+      const halfW = (funnel.topW / 2) * (1 - t) + (funnel.neckW / 2) * t;
+      return Math.abs(token.x - centerX) <= halfW + token.r * 0.10;
+    }
+
+    function bbCollectToken(token, side, layout) {
+      if (token.status !== "active") return;
+      const value = Number(token.kind.value || 0);
+      token.status = "collected";
+      token.side = side;
+      token.animMs = 0;
+      token.startX = token.x;
+      token.startY = token.y;
+      const targetGauge = side === "left" ? layout.leftTank : layout.rightTank;
+      token.targetX = targetGauge.x + targetGauge.w / 2;
+      token.targetY = targetGauge.y + targetGauge.h * 0.50;
+      token.startR = token.r;
+      token.collectValue = value;
+
+      if (side === "left") {
+        bbState.leftBeats = Math.round((bbState.leftBeats + value) * 100) / 100;
+        bbState.leftPulse = 1;
+      } else {
+        bbState.rightBeats = Math.round((bbState.rightBeats + value) * 100) / 100;
+        bbState.rightPulse = 1;
+      }
+
+      bbState.collected += 1;
+      bbState.balancePulse = 1;
+      bbState.eventText = `${side === "left" ? "Cooler" : "Heater"} absorbed ${bbFormatBeats(value)} ${bbBeatWord(value)}`;
+      bbState.eventMs = 950;
+
+      bbUpdateScoreDisplay();
+      bbSetStatus("");
+      bbAddPopup(`${side === "left" ? "COLD" : "HOT"} +${bbFormatBeats(value)}`, token.x, token.y - token.r * 1.5, side === "left" ? BB_BLUE : "#c2410c");
+      bbAddBurst(token.x, token.y, side, value);
+
+      if (bbState.now - bbState.lastCollectMs > 80) {
+        bbState.lastCollectMs = bbState.now;
+        soundFunnel(side, value);
+      }
+    }
+
+    function bbMissToken(token, layout) {
+      if (token.status !== "active") return;
+      token.status = "missed";
+      token.animMs = 0;
+      bbState.missed += 1;
+      bbState.missPulse = 1;
+      bbState.eventText = "Missed rhythm — no temperature change";
+      bbState.eventMs = 850;
+      bbSetStatus("");
+      bbAddPopup("MISS", bbClamp(token.x, 30 * layout.s, layout.w - 30 * layout.s), Math.min(token.y, layout.h - 40 * layout.s), BB_DANGER);
+      if (bbState.now - (bbState.lastMissSoundMs || 0) > 220) {
+        bbState.lastMissSoundMs = bbState.now;
+        soundMiss();
+      }
+    }
+
+    function bbSegmentCollision(token, x1, y1, x2, y2, options = {}) {
+      const restitution = options.restitution ?? 0.64;
+      const tangentKeep = options.tangentKeep ?? 0.985;
+      const minBounce = options.minBounce ?? 8;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const lenSq = dx * dx + dy * dy;
+      if (lenSq <= 0.0001) return false;
+
+      const rawT = ((token.x - x1) * dx + (token.y - y1) * dy) / lenSq;
+      const t = bbClamp(rawT, 0, 1);
+      const cx = x1 + dx * t;
+      const cy = y1 + dy * t;
+      let nx = token.x - cx;
+      let ny = token.y - cy;
+      let dist = Math.hypot(nx, ny);
+
+      if (dist >= token.r || dist <= 0.0001) {
+        if (dist <= 0.0001 && Math.abs(rawT) < 1.2) {
+          const invLen = 1 / Math.sqrt(lenSq);
+          nx = -dy * invLen;
+          ny = dx * invLen;
+          dist = 0.0001;
+        } else {
+          return false;
+        }
+      }
+
+      nx /= dist;
+      ny /= dist;
+      const penetration = token.r - dist;
+      const slop = options.slop ?? 0.08;
+      token.x += nx * (penetration + slop);
+      token.y += ny * (penetration + slop);
+
+      const vn = token.vx * nx + token.vy * ny;
+      if (vn < 0) {
+        const bounce = Math.max(minBounce, -vn * restitution);
+        token.vx += (-vn + bounce) * nx;
+        token.vy += (-vn + bounce) * ny;
+      }
+
+      const tx = -ny;
+      const ty = nx;
+      const vt = token.vx * tx + token.vy * ty;
+      token.vx += vt * (tangentKeep - 1) * tx;
+      token.vy += vt * (tangentKeep - 1) * ty;
+      token.spin += (vt / Math.max(1, token.r)) * 0.020;
+      return true;
+    }
+
+    function bbCollideFunnelWalls(token, funnel, layout) {
+      const topY = funnel.y;
+      const bottomY = funnel.y + funnel.h;
+      if (token.y + token.r < topY - token.r || token.y - token.r > bottomY + token.r) return false;
+
+      const mouthLeft = funnel.x;
+      const mouthRight = funnel.x + funnel.topW;
+      const mouthCenter = funnel.x + funnel.topW / 2;
+      const neckLeft = mouthCenter - funnel.neckW / 2;
+      const neckRight = mouthCenter + funnel.neckW / 2;
+
+      if (token.x + token.r < mouthLeft - token.r * 1.8 || token.x - token.r > mouthRight + token.r * 1.8) {
+        return false;
+      }
+
+      const wallRestitution = 0.58;
+      const wallKeep = 0.992;
+      const leftHit = bbSegmentCollision(token, mouthLeft, topY, neckLeft, bottomY, {
+        restitution: wallRestitution,
+        tangentKeep: wallKeep,
+        minBounce: 6 * layout.s,
+        slop: 0.10 * layout.s
+      });
+      const rightHit = bbSegmentCollision(token, mouthRight, topY, neckRight, bottomY, {
+        restitution: wallRestitution,
+        tangentKeep: wallKeep,
+        minBounce: 6 * layout.s,
+        slop: 0.10 * layout.s
+      });
+
+      if (leftHit || rightHit) {
+        token.spin *= 0.98;
+      }
+
+      return leftHit || rightHit;
+    }
+
+    function bbHandleFunnel(token, funnel, side, dtSec, layout) {
+      bbCollideFunnelWalls(token, funnel, layout);
+      if (!bbPointInFunnel(token, funnel)) return false;
+
+      const centerX = funnel.x + funnel.topW / 2;
+      const t = bbClamp((token.y - funnel.y) / Math.max(1, funnel.h), 0, 1);
+      const halfW = (funnel.topW / 2) * (1 - t) + (funnel.neckW / 2) * t;
+      const guideStrength = 4.2 + t * 5.0;
+
+      token.vx += (centerX - token.x) * dtSec * guideStrength;
+      token.vy += layout.gravity * dtSec * 0.12;
+
+      if (Math.abs(token.x - centerX) > halfW * 0.74) {
+        token.vx *= 0.97;
+      }
+
+      if (token.y + token.r * 0.35 >= funnel.y + funnel.h) {
+        bbCollectToken(token, side, layout);
+      }
+      return true;
+    }
+
+    function bbCollidePlatform(token, layout, dtSec) {
+      const p = layout.platform;
+      const angle = bbState.tilt * layout.maxAngle;
+      const cosA = Math.cos(angle);
+      const sinA = Math.sin(angle);
+      const topLocalY = -p.h / 2;
+      const x1 = p.x + cosA * (-p.w / 2) - sinA * topLocalY;
+      const y1 = p.y + sinA * (-p.w / 2) + cosA * topLocalY;
+      const x2 = p.x + cosA * (p.w / 2) - sinA * topLocalY;
+      const y2 = p.y + sinA * (p.w / 2) + cosA * topLocalY;
+
+      const beforeVx = token.vx;
+      const beforeVy = token.vy;
+      const hit = bbSegmentCollision(token, x1, y1, x2, y2, {
+        restitution: 0.70,
+        tangentKeep: 0.995,
+        minBounce: 10 * layout.s,
+        slop: 0.16 * layout.s
+      });
+
+      if (!hit) return;
+
+      const localVx = cosA * token.vx + sinA * token.vy;
+      const localVy = -sinA * token.vx + cosA * token.vy;
+      let adjustedLocalVx = localVx;
+      let adjustedLocalVy = localVy;
+
+      const incomingBefore = -sinA * beforeVx + cosA * beforeVy;
+      const impact = Math.max(0, incomingBefore);
+      if (impact > 62 * layout.s && bbState.now - (bbState.lastTableSoundMs || 0) > 70) {
+        bbState.lastTableSoundMs = bbState.now;
+        soundTableHit(bbClamp(impact / Math.max(1, 380 * layout.s), 0.16, 1));
+      }
+      const contactLocalX = bbClamp(cosA * (token.x - p.x) + sinA * (token.y - p.y), -p.w / 2, p.w / 2);
+      const edgeAmount = bbClamp(Math.abs(contactLocalX) / Math.max(1, p.w / 2), 0, 1);
+      const activeTilt = !!bbState.activeTiltInput;
+      const angularVelocity = activeTilt ? (bbState.tiltVelocity || 0) * layout.maxAngle : 0;
+      const risingSurfaceSpeed = Math.max(0, -angularVelocity * contactLocalX);
+      const pumpKick = activeTilt
+        ? bbClamp(Math.abs(bbState.tiltVelocity || 0) * 7.0 * layout.s + risingSurfaceSpeed * (0.55 + edgeAmount * 0.75), 0, 240 * layout.s)
+        : 0;
+
+      if (impact < 24 * layout.s && Math.abs(localVy) < 38 * layout.s && pumpKick < 8 * layout.s) {
+        adjustedLocalVy = Math.min(adjustedLocalVy, 0);
+        token.settledFrames = (token.settledFrames || 0) + 1;
+      } else if (pumpKick > 0 && incomingBefore > -55 * layout.s) {
+        adjustedLocalVy -= pumpKick;
+        // When the lowered side is flipped upward, carry the ball outward too.
+        adjustedLocalVx += Math.sign(contactLocalX || adjustedLocalVx || 1) * bbClamp(risingSurfaceSpeed * 0.25 + edgeAmount * 22 * layout.s, 0, 95 * layout.s);
+        token.settledFrames = 0;
+      }
+
+      // Rolling acceleration should come from slope, not from a hidden motor.
+      // On a flat table the tangent speed should gradually die down.
+      if (Math.abs(angle) > 0.010) {
+        adjustedLocalVx += Math.sin(angle) * layout.gravity * dtSec * 0.68;
+      } else {
+        adjustedLocalVx *= Math.pow(0.935, dtSec * 60);
+      }
+
+      // Only active player input can add table-motion energy. Passive settling should not accelerate balls.
+      if (activeTilt && Math.abs(bbState.tiltVelocity || 0) > 0.035) {
+        adjustedLocalVx += (bbState.tiltVelocity || 0) * layout.s * 1.15;
+      }
+
+      // Edge release: if the ball is leaving the tip with speed, give it air instead of recapturing it.
+      if (edgeAmount > 0.82 && Math.sign(adjustedLocalVx || contactLocalX) === Math.sign(contactLocalX)) {
+        adjustedLocalVy -= bbClamp(Math.abs(adjustedLocalVx) * 0.10 + edgeAmount * 14 * layout.s, 0, 65 * layout.s);
+      }
+
+      token.vx = cosA * adjustedLocalVx - sinA * adjustedLocalVy;
+      token.vy = sinA * adjustedLocalVx + cosA * adjustedLocalVy;
+      token.spin += (adjustedLocalVx / Math.max(1, token.r)) * 0.024;
+      token.lastTableHit = 5;
+    }
+
+    function bbIntegrateActiveToken(token, dtSec, layout) {
+      token.vy += layout.gravity * dtSec * token.kind.mass;
+      token.vx *= Math.pow(0.9995, dtSec * 60);
+      token.x += token.vx * dtSec;
+      token.y += token.vy * dtSec;
+      token.rotation += token.spin * dtSec + (token.vx / Math.max(1, token.r)) * dtSec * 0.70;
+
+      // No side walls: balls may be flung offscreen instead of bouncing back.
+
+      bbCollidePlatform(token, layout, dtSec);
+      bbCollideFunnelWalls(token, layout.leftFunnel, layout);
+      bbCollideFunnelWalls(token, layout.rightFunnel, layout);
+    }
+
+    function bbUpdateTokenPhysics(token, dtSec, layout) {
+      token.ageMs += dtSec * 1000;
+
+      if (token.status === "collected") {
+        token.animMs += dtSec * 1000;
+        const t = bbClamp(token.animMs / 260, 0, 1);
+        const eased = 1 - Math.pow(1 - t, 3);
+        token.x = token.startX + (token.targetX - token.startX) * eased;
+        token.y = token.startY + (token.targetY - token.startY) * eased;
+        token.r = token.startR * (1 - eased * 0.72);
+        token.alpha = 1 - t * 0.82;
+        token.rotation += token.spin * dtSec + 7 * dtSec;
+        return;
+      }
+
+      if (token.status === "missed") {
+        token.animMs += dtSec * 1000;
+        token.vy += layout.gravity * dtSec * 0.4;
+        token.x += token.vx * dtSec;
+        token.y += token.vy * dtSec;
+        token.rotation += token.spin * dtSec;
+        token.alpha = bbClamp(1 - token.animMs / 500, 0, 1);
+        return;
+      }
+
+      const steps = Math.max(1, Math.ceil(dtSec / (layout.mobile ? 0.010 : 0.008)));
+      const subDt = dtSec / steps;
+      for (let i = 0; i < steps && token.status === "active"; i += 1) {
+        bbIntegrateActiveToken(token, subDt, layout);
+      }
+      token.lastTableHit = Math.max(0, token.lastTableHit - 1);
+
+      const inLeft = bbHandleFunnel(token, layout.leftFunnel, "left", dtSec, layout);
+      const inRight = token.status === "active" && bbHandleFunnel(token, layout.rightFunnel, "right", dtSec, layout);
+      if (token.status === "active" && !inLeft && !inRight && token.y - token.r > layout.leftFunnel.y + layout.leftFunnel.h + 24 * layout.s) {
+        bbMissToken(token, layout);
+      }
+
+      if (token.status === "active" && token.y > layout.h + token.r + 30 * layout.s) {
+        bbMissToken(token, layout);
+      }
+    }
+
+
+    function bbUpdateTokens(dtSec, layout) {
+      const now = bbState.now;
+      const difficulty = bbDifficultyStats();
+      bbState.difficultyLevel = difficulty.level;
+      bbState.spawnEveryMs = difficulty.spawnEveryMs;
+
+      let spawnSafety = 0;
+      while (now >= bbState.nextSpawnAt && spawnSafety < 4) {
+        bbSpawnToken();
+        bbSpawnClump(layout, difficulty);
+        bbState.nextSpawnAt += bbState.spawnEveryMs;
+        spawnSafety += 1;
+      }
+      if (spawnSafety >= 4) {
+        bbState.nextSpawnAt = now + bbState.spawnEveryMs;
+      }
+
+      bbState.tokens.forEach(token => bbUpdateTokenPhysics(token, dtSec, layout));
+      bbState.tokens = bbState.tokens.filter(token => {
+        if (token.status === "collected") return token.animMs < 310;
+        if (token.status === "missed") return token.animMs < 470;
+        return token.ageMs < 15000 && token.x > -layout.w * 0.85 && token.x < layout.w * 1.85;
+      });
+    }
+
+        function bbDrawFunnel(funnel, side, layout) {
+      const mouthCenter = funnel.x + funnel.topW / 2;
+      const topY = funnel.y;
+      const bottomY = funnel.y + funnel.h;
+      const neckLeft = mouthCenter - funnel.neckW / 2;
+      const neckRight = mouthCenter + funnel.neckW / 2;
+      const lipColor = side === "left" ? "rgba(37,99,235,0.80)" : "rgba(255,154,60,0.92)";
+
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.15)";
+      ctx.shadowBlur = 10 * layout.s;
+      ctx.shadowOffsetY = 4 * layout.s;
+      const bodyGradient = ctx.createLinearGradient(funnel.x, topY, funnel.x + funnel.topW, bottomY);
+      bodyGradient.addColorStop(0, "rgba(255,255,255,0.92)");
+      bodyGradient.addColorStop(1, "rgba(221,231,244,0.88)");
+      ctx.fillStyle = bodyGradient;
+      ctx.strokeStyle = "rgba(17,24,39,0.22)";
+      ctx.lineWidth = 2.5 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(funnel.x, topY);
+      ctx.lineTo(funnel.x + funnel.topW, topY);
+      ctx.lineTo(neckRight, bottomY);
+      ctx.lineTo(neckLeft, bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.strokeStyle = lipColor;
+      ctx.lineWidth = layout.mobile ? 4 * layout.s : 7 * layout.s;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(funnel.x + 5 * layout.s, topY + 2 * layout.s);
+      ctx.lineTo(funnel.x + funnel.topW - 5 * layout.s, topY + 2 * layout.s);
+      ctx.stroke();
+      ctx.fillStyle = "rgba(17,24,39,0.18)";
+      ctx.beginPath();
+      ctx.ellipse(mouthCenter, bottomY, funnel.neckW * 0.48, Math.max(3 * layout.s, funnel.neckW * 0.12), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    
+    function bbDrawTopFunnelFace(layout) {
+      const f = layout.dropFunnel;
+      ctx.save();
+      const frontGradient = ctx.createLinearGradient(f.x - f.topW / 2, f.y, f.x + f.topW / 2, f.y + f.h);
+      frontGradient.addColorStop(0, "#dbeafe");
+      frontGradient.addColorStop(0.52, "#ffffff");
+      frontGradient.addColorStop(1, "#c7d2e4");
+      ctx.fillStyle = frontGradient;
+      ctx.strokeStyle = "rgba(17,24,39,0.24)";
+      ctx.lineWidth = 2.5 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(f.x - f.topW / 2, f.y);
+      ctx.lineTo(f.x + f.topW / 2, f.y);
+      ctx.lineTo(f.x + f.bottomW / 2, f.y + f.h);
+      ctx.lineTo(f.x - f.bottomW / 2, f.y + f.h);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.strokeStyle = BB_BLUE;
+      ctx.lineWidth = layout.mobile ? 4 * layout.s : 7 * layout.s;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(f.x - f.topW / 2 + 5 * layout.s, f.y + 2 * layout.s);
+      ctx.lineTo(f.x + f.topW / 2 - 5 * layout.s, f.y + 2 * layout.s);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function bbDrawFunnelGlassFace(funnel, side, layout) {
+      const mouthCenter = funnel.x + funnel.topW / 2;
+      const topY = funnel.y;
+      const bottomY = funnel.y + funnel.h;
+      const neckLeft = mouthCenter - funnel.neckW / 2;
+      const neckRight = mouthCenter + funnel.neckW / 2;
+      const lipColor = side === "left" ? "rgba(37,99,235,0.72)" : "rgba(255,154,60,0.78)";
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.34)";
+      ctx.strokeStyle = "rgba(255,255,255,0.72)";
+      ctx.lineWidth = 1.5 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(funnel.x, topY);
+      ctx.lineTo(funnel.x + funnel.topW, topY);
+      ctx.lineTo(neckRight, bottomY);
+      ctx.lineTo(neckLeft, bottomY);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      const shine = ctx.createLinearGradient(funnel.x, topY, funnel.x + funnel.topW, bottomY);
+      shine.addColorStop(0, "rgba(255,255,255,0.48)");
+      shine.addColorStop(0.55, "rgba(255,255,255,0.10)");
+      shine.addColorStop(1, "rgba(255,255,255,0.30)");
+      ctx.fillStyle = shine;
+      ctx.beginPath();
+      ctx.moveTo(funnel.x + funnel.topW * 0.12, topY + 4 * layout.s);
+      ctx.lineTo(funnel.x + funnel.topW * 0.40, topY + 4 * layout.s);
+      ctx.lineTo(mouthCenter - funnel.neckW * 0.10, bottomY - 5 * layout.s);
+      ctx.lineTo(mouthCenter - funnel.neckW * 0.38, bottomY - 5 * layout.s);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = lipColor;
+      ctx.lineWidth = layout.mobile ? 4 * layout.s : 7 * layout.s;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(funnel.x + 5 * layout.s, topY + 2 * layout.s);
+      ctx.lineTo(funnel.x + funnel.topW - 5 * layout.s, topY + 2 * layout.s);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function bbDrawFunnelFaces(layout) {
+      bbDrawTopFunnelFace(layout);
+      bbDrawFunnelGlassFace(layout.leftFunnel, "left", layout);
+      bbDrawFunnelGlassFace(layout.rightFunnel, "right", layout);
+    }
+
+    function bbDrawCollectionGlow(funnel, side, layout) {
+      const pulse = side === "left" ? bbState.leftPulse : bbState.rightPulse;
+      if (pulse <= 0.01) return;
+      const cx = funnel.x + funnel.topW / 2;
+      const cy = funnel.y + funnel.h;
+      const accent = side === "left" ? BB_BLUE : "#f97316";
+      ctx.save();
+      ctx.globalAlpha = pulse * 0.68;
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, funnel.neckW * (0.55 + pulse * 0.35), Math.max(4 * layout.s, funnel.neckW * 0.16), 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function bbDrawChutePath(funnel, tank, side, layout) {
+      const startX = funnel.x + funnel.topW / 2;
+      const startY = funnel.y + funnel.h;
+      const endX = tank.x + tank.w / 2;
+      const endY = tank.y + tank.h * 0.20;
+      const bendY = startY + (layout.mobile ? 11 * layout.s : 24 * layout.s);
+      const railColor = side === "left" ? "rgba(37,99,235,0.60)" : "rgba(255,154,60,0.72)";
+
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.strokeStyle = "rgba(17,24,39,0.13)";
+      ctx.lineWidth = layout.mobile ? 9 * layout.s : 19 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.bezierCurveTo(startX, bendY, endX, bendY, endX, endY);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(255,255,255,0.86)";
+      ctx.lineWidth = layout.mobile ? 6 * layout.s : 14 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.bezierCurveTo(startX, bendY, endX, bendY, endX, endY);
+      ctx.stroke();
+      ctx.strokeStyle = railColor;
+      ctx.lineWidth = layout.mobile ? 2 * layout.s : 4 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+      ctx.bezierCurveTo(startX, bendY, endX, bendY, endX, endY);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+        function bbDrawChutes(layout) {
+      bbDrawChutePath(layout.leftFunnel, layout.leftTank, "left", layout);
+      bbDrawChutePath(layout.rightFunnel, layout.rightTank, "right", layout);
+      bbDrawFunnel(layout.leftFunnel, "left", layout);
+      bbDrawFunnel(layout.rightFunnel, "right", layout);
+      bbDrawCollectionGlow(layout.leftFunnel, "left", layout);
+      bbDrawCollectionGlow(layout.rightFunnel, "right", layout);
+    }
+
+    function bbDrawPlatform(layout) {
+      const p = layout.platform;
+      const angle = bbState.tilt * layout.maxAngle;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(angle);
+      ctx.shadowColor = "rgba(0,0,0,0.23)";
+      ctx.shadowBlur = 12 * layout.s;
+      ctx.shadowOffsetY = 5 * layout.s;
+      bbFillRoundRect(-p.w / 2, -p.h / 2, p.w, p.h, p.r, "#ffffff");
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(angle);
+      bbStrokeRoundRect(-p.w / 2, -p.h / 2, p.w, p.h, p.r, "rgba(17,24,39,0.32)", 3 * layout.s);
+      ctx.fillStyle = "rgba(37,99,235,0.14)";
+      bbRoundRect(-p.w / 2 + 8 * layout.s, -p.h / 2 + p.h * 0.25, p.w - 16 * layout.s, p.h * 0.20, 2 * layout.s);
+      ctx.fill();
+      ctx.restore();
+
+      const pivot = layout.pivot;
+      ctx.fillStyle = BB_INK;
+      ctx.beginPath();
+      ctx.arc(pivot.x, pivot.y, pivot.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = BB_GOLD;
+      ctx.beginPath();
+      ctx.arc(pivot.x, pivot.y, pivot.r * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+        function bbDrawReservoir(tank, label, beats, fillStyle, layout) {
+      const stats = bbBalanceStats();
+      const sideBias = tank.gauge === "heat" ? stats.balancePos : -stats.balancePos;
+      const needle = 0.5 + sideBias * 0.43;
+      const isHeat = tank.gauge === "heat";
+      const accent = isHeat ? "#f97316" : BB_BLUE;
+      const soft = isHeat ? "rgba(255,154,60,0.20)" : "rgba(37,99,235,0.16)";
+
+      const pulse = isHeat ? bbState.rightPulse : bbState.leftPulse;
+      if (pulse > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = pulse * 0.42;
+        bbFillRoundRect(tank.x - 4 * layout.s, tank.y - 4 * layout.s, tank.w + 8 * layout.s, tank.h + 8 * layout.s, layout.mobile ? 11 * layout.s : 22 * layout.s, accent);
+        ctx.restore();
+      }
+
+      bbFillRoundRect(tank.x, tank.y, tank.w, tank.h, layout.mobile ? 9 * layout.s : 18 * layout.s, "rgba(255,255,255,0.74)");
+      bbStrokeRoundRect(tank.x, tank.y, tank.w, tank.h, layout.mobile ? 9 * layout.s : 18 * layout.s, "rgba(17,24,39,0.22)", 2 * layout.s);
+
+      const labelY = tank.y + (layout.mobile ? 8.5 * layout.s : 22 * layout.s);
+      bbDrawText(label, tank.x + (layout.mobile ? 8 * layout.s : 16 * layout.s), labelY, {
+        font: `bold ${layout.mobile ? 8.5 * layout.s : 18 * layout.s}px Arial, sans-serif`,
+        align: "left",
+        fill: isHeat ? "#c2410c" : BB_BLUE
+      });
+      bbDrawText(bbFormatBeats(beats), tank.x + tank.w - (layout.mobile ? 8 * layout.s : 16 * layout.s), labelY, {
+        font: `bold ${layout.mobile ? 10 * layout.s : 23 * layout.s}px Arial, sans-serif`,
+        align: "right",
+        fill: "rgba(17,24,39,0.82)"
+      });
+
+      const pad = layout.mobile ? 8 * layout.s : 15 * layout.s;
+      const gaugeX = tank.x + pad;
+      const gaugeW = tank.w - pad * 2;
+      const gaugeH = layout.mobile ? 9 * layout.s : 16 * layout.s;
+      const gaugeY = tank.y + tank.h * (layout.mobile ? 0.58 : 0.64);
+
+      bbFillRoundRect(gaugeX, gaugeY, gaugeW, gaugeH, gaugeH / 2, "rgba(17,24,39,0.10)");
+      ctx.strokeStyle = "rgba(17,24,39,0.15)";
+      ctx.lineWidth = 1 * layout.s;
+      ctx.beginPath();
+      ctx.moveTo(gaugeX + gaugeW / 2, gaugeY - 2 * layout.s);
+      ctx.lineTo(gaugeX + gaugeW / 2, gaugeY + gaugeH + 2 * layout.s);
+      ctx.stroke();
+
+      const fillStart = gaugeX + gaugeW / 2;
+      const fillEnd = gaugeX + gaugeW * needle;
+      const fillX = Math.min(fillStart, fillEnd);
+      const fillWidth = Math.max(2 * layout.s, Math.abs(fillEnd - fillStart));
+      bbFillRoundRect(fillX, gaugeY + 2 * layout.s, fillWidth, gaugeH - 4 * layout.s, (gaugeH - 4 * layout.s) / 2, soft);
+
+      ctx.fillStyle = accent;
+      ctx.beginPath();
+      ctx.arc(fillEnd, gaugeY + gaugeH / 2, layout.mobile ? 5.5 * layout.s : 9 * layout.s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = BB_INK;
+      ctx.lineWidth = layout.mobile ? 1.3 * layout.s : 2 * layout.s;
+      ctx.stroke();
+    }
+
+    function bbDrawCenterDial(layout) {
+      const d = layout.centerDial;
+      if (layout.mobile) return;
+      ctx.save();
+      ctx.shadowColor = "rgba(0,0,0,0.12)";
+      ctx.shadowBlur = 13 * layout.s;
+      ctx.shadowOffsetY = 5 * layout.s;
+      ctx.fillStyle = "rgba(255,255,255,0.86)";
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = "rgba(17,24,39,0.18)";
+      ctx.lineWidth = 3 * layout.s;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
+      ctx.stroke();
+      const stats = bbBalanceStats();
+      const balancePos = stats.balancePos;
+      ctx.save();
+      ctx.translate(d.x, d.y);
+      ctx.rotate(balancePos * 0.85);
+      ctx.strokeStyle = Math.abs(balancePos) > 0.65 ? BB_DANGER : BB_BLUE;
+      ctx.lineWidth = 4 * layout.s;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(0, 5 * layout.s);
+      ctx.lineTo(0, -20 * layout.s);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+        function bbDrawFooter(layout) {
+      if (bbState.eventMs <= 0) return;
+      const y = layout.mobile ? layout.h - 7 * layout.s : layout.h - 14 * layout.s;
+      const fontSize = layout.mobile ? 9 * layout.s : 13 * layout.s;
+      bbDrawText(bbState.eventText, layout.centerX, y, { font: `${fontSize}px Arial, sans-serif`, fill: "rgba(17,24,39,0.62)" });
+    }
+
+        function bbDrawStaticScene() {
+      const layout = bbLayout();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      bbDrawBackground(layout);
+      bbDrawHud(layout);
+      bbDrawTube(layout);
+      bbDrawChutes(layout);
+      bbDrawPlatform(layout);
+      bbState.tokens.forEach(token => bbDrawToken(token));
+      bbDrawBursts();
+      bbDrawFunnelFaces(layout);
+      bbDrawReservoir(layout.leftTank, "COLD", bbState.leftBeats, "rgba(37,99,235,0.45)", layout);
+      bbDrawReservoir(layout.rightTank, "HOT", bbState.rightBeats, "rgba(249,115,22,0.72)", layout);
+      bbDrawCenterDial(layout);
+      bbDrawPopups();
+      // Footer text intentionally hidden for cleaner playfield.
+    }
+
+    function gameInit() {
+      bbRegisterHelp();
+      bbState = bbFreshState();
+      bbSetStatus("");
+      setScore(0);
+    }
+
+        function gameUpdate() {
+      if (!bbState) return;
+      const layout = bbLayout();
+      bbState.now = performance.now();
+      bbState.elapsedMs = bbState.now - bbState.startedAt;
+      const dtSec = bbClamp((bbState.now - bbState.lastMs) / 1000, 0, 0.045);
+      bbState.lastMs = bbState.now;
+      bbSetTiltFromInputs();
+      const previousTilt = bbState.tilt || 0;
+      bbState.tilt = bbEase(bbState.tilt, bbState.targetTilt, 0.22);
+
+      // When the controls are released, let the table settle cleanly at flat.
+      // This prevents tiny easing leftovers from acting like a hidden motor.
+      if (!bbState.activeTiltInput && Math.abs(bbState.targetTilt) < 0.001 && Math.abs(bbState.tilt) < 0.004) {
+        bbState.tilt = 0;
+      }
+
+      bbState.tiltVelocity = dtSec > 0 ? (bbState.tilt - previousTilt) / dtSec : 0;
+      if (!bbState.activeTiltInput && Math.abs(bbState.tilt) < 0.004) {
+        bbState.tiltVelocity = 0;
+      }
+
+      bbState.leftPulse = Math.max(0, bbState.leftPulse - dtSec * 2.6);
+      bbState.rightPulse = Math.max(0, bbState.rightPulse - dtSec * 2.6);
+      bbState.missPulse = Math.max(0, bbState.missPulse - dtSec * 2.4);
+      bbState.balancePulse = Math.max(0, bbState.balancePulse - dtSec * 2.2);
+      bbState.eventMs = Math.max(0, bbState.eventMs - dtSec * 1000);
+
+      bbUpdateTokens(dtSec, layout);
+      bbApplyDangerAndScore(dtSec);
+      if (!running) return;
+      bbUpdatePopups(dtSec);
+      bbUpdateBursts(dtSec);
+    }
+
+    function gameDraw() {
+      if (!bbState) return;
+      bbDrawStaticScene();
+    }
+
+
+    function bbSetStatus(text) {
+      // Status is drawn inside the playfield HUD now.
+      setMessage("");
+    }
+
+    function gameInput(action) {
+      if (!bbState) return;
+      bbState.lastInput = action;
+      if (action === "left") {
+        bbState.dpadTilt = -0.8;
+        bbState.dpadFrames = 14;
+      }
+      if (action === "right") {
+        bbState.dpadTilt = 0.8;
+        bbState.dpadFrames = 14;
+      }
+      if (action === "a" || action === "b" || action === "x" || action === "y") {
+        bbSetStatus("USE THE LEFT STICK OR D-PAD TO TILT");
+      }
+      if (action === "select") bbSetStatus("WIDE FUNNELS CAN STILL MISS");
+    }
+
+    function gameStop() {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!bbState) return;
+      bbState.targetTilt = 0;
+      bbState.dpadTilt = 0;
+      bbState.dpadFrames = 0;
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      setFirstTimeHelpVersion,
+      exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
