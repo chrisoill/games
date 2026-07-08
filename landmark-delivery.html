@@ -1,0 +1,2870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Landmark Delivery Mobile Step 2</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100%;
+      background: #111;
+      font-family: Arial, sans-serif;
+    }
+
+    #appFrame {
+      width: 100%;
+      aspect-ratio: 390 / 670;
+      position: relative;
+      overflow: hidden;
+      background: #202020;
+    }
+
+    #appStage {
+      width: 390px;
+      height: 670px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: top left;
+      transform: scale(var(--app-scale, 1));
+      overflow: hidden;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      touch-action: auto;
+      color: white;
+    }
+
+    #appStage *:not(input):not(textarea) {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      touch-action: none;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    input,
+    select {
+      font-size: 16px;
+      padding: 8px;
+      border-radius: 10px;
+      border: 2px solid #111;
+      box-sizing: border-box;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       PLAYER MENU
+       ========================= */
+
+    #menuScreen {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      padding: 13px 16px 14px;
+      overflow: visible;
+      text-align: center;
+      z-index: 20;
+      touch-action: pan-y;
+    }
+
+    #menuScreen h1 {
+      margin: 4px 0 9px;
+      font-size: 28px;
+    }
+
+    #leaderboardBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #leaderboardBox h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+    }
+
+    #leaderboardList {
+      text-align: left;
+      max-width: 230px;
+      margin: 0 auto;
+      font-size: 15px;
+    }
+
+    #playerPickerBox {
+      margin: 0 auto 9px;
+      padding: 9px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      max-width: 350px;
+    }
+
+    #playerSearchInput {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    #playerSelect {
+      width: 100%;
+      height: 120px;
+      background: #f8fbff;
+      color: #111827;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      border: 2px solid #111;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .playerOption {
+      padding: 10px;
+      border-bottom: 1px solid rgba(17,24,39,0.12);
+      font-size: 16px;
+      line-height: 1.2;
+      background: #f8fbff;
+      color: #111827;
+    }
+
+    .playerOption:last-child {
+      border-bottom: 0;
+    }
+
+    .playerOption.selected {
+      background: #ffe08a;
+      font-weight: bold;
+    }
+
+    .playerOption.disabled {
+      color: rgba(17,24,39,0.55);
+      text-align: center;
+      font-style: italic;
+    }
+
+    #selectedPlayerActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 7px;
+    }
+
+    #selectedPlayerActions button,
+    #addPlayerBtn,
+    #startGameBtn,
+    #exitPageBtn {
+      min-height: 38px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    #resetSelectedPlayerBtn {
+      background: #fff3bf;
+    }
+
+    #removeSelectedPlayerBtn {
+      background: #ffd6d6;
+    }
+
+    #addPlayerRow {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 7px;
+      margin: 0 auto 8px;
+      max-width: 350px;
+    }
+
+    #newPlayerName {
+      width: 100%;
+    }
+
+    #selectedPlayerText {
+      margin: 7px 0;
+      font-size: 15px;
+      opacity: 0.9;
+    }
+
+    #startGameBtn {
+      background: #dff3ff;
+      min-width: 150px;
+    }
+
+    #exitPageBtn {
+      min-width: 110px;
+    }
+
+    /* =========================
+       GAME / EMULATOR
+       ========================= */
+
+    #gameScreen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      background: linear-gradient(180deg, #2f2f2f, #191919);
+      z-index: 10;
+      touch-action: auto;
+    }
+
+    #screen {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 390px;
+      height: 219px;
+      overflow: hidden;
+      background: #0b1420;
+      border: 1px solid #2b2b2b;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.05),
+        0 1px 3px rgba(0,0,0,0.45);
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 219px;
+      display: block;
+      background: #f7fbff;
+      image-rendering: auto;
+    }
+
+    #gameOverBox {
+      display: none;
+      position: absolute;
+      left: 34px;
+      right: 34px;
+      top: 66px;
+      padding: 14px 12px;
+      background: rgba(16, 24, 39, 0.93);
+      border: 3px solid white;
+      border-radius: 16px;
+      color: white;
+      text-align: center;
+      z-index: 8;
+    }
+
+    #gameOverBox h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+    }
+
+    #gameOverScore {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    #gameOverBox button {
+      border: 2px solid #111;
+      border-radius: 12px;
+      background: white;
+      color: #111827;
+      padding: 8px 12px;
+      margin: 3px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    #lcd {
+      position: absolute;
+      left: 0;
+      top: 219px;
+      width: 390px;
+      height: 48px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
+        #17251c;
+      border-top: 3px solid #0c0c0c;
+      border-bottom: 3px solid #0c0c0c;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.04),
+        inset 0 0 14px rgba(0,0,0,0.35);
+      color: #b7ff9e;
+      font-family: "Courier New", monospace;
+      text-shadow: 0 0 7px rgba(183,255,158,0.35);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      grid-template-rows: 1fr 1fr;
+      align-items: center;
+      padding: 5px 16px;
+      pointer-events: none;
+    }
+
+    #lcdMessage {
+      grid-column: 1 / 3;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #lcdScore {
+      font-size: 12px;
+    }
+
+    #lcdBest {
+      font-size: 13px;
+      text-align: right;
+    }
+
+    #controls {
+      position: absolute;
+      left: 0;
+      top: 267px;
+      width: 390px;
+      height: 400px;
+      background: linear-gradient(180deg, #303030, #181818);
+      touch-action: auto;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #controls *,
+    #screen,
+    #gameCanvas {
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* D-PAD */
+
+    #dpad {
+      position: absolute;
+      left: 17px;
+      top: 19px;
+      width: 150px;
+      height: 150px;
+      touch-action: manipulation;
+    }
+
+    .dpadBtn {
+      position: absolute;
+      width: 50px;
+      height: 50px;
+      border: none;
+      background: #111;
+      color: rgba(255,255,255,0.86);
+      font-family: Arial, sans-serif;
+      font-weight: bold;
+      font-size: 22px;
+      line-height: 50px;
+      text-align: center;
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.08),
+        0 7px 13px rgba(0,0,0,0.45);
+    }
+
+    .dpadBtn.pressed,
+    .dpadBtn:active {
+      filter: brightness(1.35);
+      transform: scale(0.94);
+    }
+
+    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
+    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
+    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
+    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+
+    /* FACE BUTTONS */
+
+    #faceButtons {
+      position: absolute;
+      right: 18px;
+      top: 20px;
+      width: 150px;
+      height: 150px;
+    }
+
+    .faceBtn {
+      position: absolute;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      background: radial-gradient(circle at 30% 30%, #ff82ad, #9d003d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.15),
+        0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    .faceBtn.pressed,
+    .faceBtn:active {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+    }
+
+    #buttonX { left: 46px; top: 0; }
+    #buttonY { left: 0; top: 46px; }
+    #buttonA { left: 92px; top: 46px; }
+    #buttonB { left: 46px; top: 92px; }
+
+    /* JOYSTICKS */
+
+    .joystickPad {
+      position: absolute;
+      width: 112px;
+      height: 112px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.035);
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
+      touch-action: none;
+    }
+
+    #leftJoystickPad {
+      left: 36px;
+      top: 188px;
+    }
+
+    #rightJoystickPad {
+      right: 37px;
+      top: 188px;
+    }
+
+    .joystickBase {
+      position: absolute;
+      left: 11px;
+      top: 11px;
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #3f3f3f, #161616);
+      box-shadow:
+        inset 0 0 0 3px rgba(255,255,255,0.08),
+        0 9px 18px rgba(0,0,0,0.45);
+      pointer-events: none;
+    }
+
+    .joystickKnob {
+      position: absolute;
+      left: 56px;
+      top: 56px;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #777, #202020);
+      transform: translate(-50%, -50%);
+      box-shadow: 0 8px 18px rgba(0,0,0,0.55);
+      pointer-events: none;
+    }
+
+    /* START / SELECT */
+
+    #systemButtons {
+      position: absolute;
+      left: 50%;
+      top: 326px;
+      width: 164px;
+      height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .systemBtn {
+      width: 76px;
+      height: 32px;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
+    }
+
+    .systemBtn.pressed,
+    .systemBtn:active {
+      transform: scale(0.96);
+      filter: brightness(1.2);
+    }
+
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 76px;
+      height: 76px;
+      left: 37px !important;
+      top: 37px !important;
+      border-radius: 22px;
+      padding: 0 8px;
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: normal;
+    }
+
+    #systemButtons.singleSystem {
+      width: 92px;
+    }
+
+    #systemButtons.singleSystem .systemBtn {
+      width: 92px;
+    }
+
+    /* =========================
+       EXPANDABLE SHELL MENU
+       ========================= */
+
+    #shellMenu {
+      display: none;
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.62);
+      padding: 22px 14px;
+      color: white;
+    }
+
+    #shellMenu.open {
+      display: block;
+    }
+
+    #shellMenuPanel {
+      width: 100%;
+      max-height: 100%;
+      overflow: hidden;
+      background: #101827;
+      border: 3px solid white;
+      border-radius: 18px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.45);
+      display: grid;
+      grid-template-rows: auto auto 1fr;
+    }
+
+    #shellMenuHeader {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 12px 7px;
+    }
+
+    #shellMenuHeader h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    #shellMenuCloseBtn {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 26px;
+      font-weight: bold;
+      line-height: 1;
+    }
+
+    #shellMenuTabs {
+      display: flex;
+      gap: 7px;
+      padding: 0 12px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .shellMenuTab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 14px;
+      font-weight: bold;
+      white-space: nowrap;
+    }
+
+    .shellMenuTab.active {
+      background: #ffe08a;
+    }
+
+    #shellMenuBody {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 14px 14px;
+      text-align: left;
+      font-size: 15px;
+      line-height: 1.38;
+      touch-action: pan-y;
+    }
+
+    .pauseMenuActions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .pauseActionBtn {
+      min-height: 42px;
+      border-radius: 12px;
+      border: 2px solid #111;
+      background: white;
+      color: #111827;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .pauseActionBtn.saveExit {
+      background: #dff3ff;
+    }
+
+    .pauseActionBtn.noSaveExit {
+      background: #ffd6d6;
+    }
+
+    .pauseActionBtn.resumeGame {
+      background: #fff3bf;
+    }
+
+    #shellMenuBody h3 {
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #shellMenuBody ul {
+      margin-top: 8px;
+      padding-left: 21px;
+    }
+
+    #shellMenuBody code {
+      background: rgba(255,255,255,0.12);
+      padding: 2px 5px;
+      border-radius: 6px;
+    }
+
+  </style>
+</head>
+
+<body>
+  <main id="appFrame">
+    <section id="appStage">
+      <div id="menuScreen">
+        <h1>Choose Player</h1>
+
+        <div id="leaderboardBox">
+          <h2>Leaderboard</h2>
+          <ol id="leaderboardList"></ol>
+        </div>
+
+        <div id="playerPickerBox">
+          <input id="playerSearchInput" placeholder="Search players..." autocomplete="off" />
+          <div id="playerSelect" role="listbox" aria-label="Choose player"></div>
+
+          <div id="selectedPlayerActions">
+            <button id="resetSelectedPlayerBtn">Reset</button>
+            <button id="removeSelectedPlayerBtn">Remove</button>
+          </div>
+        </div>
+
+        <div id="addPlayerRow">
+          <input id="newPlayerName" placeholder="New player name" />
+          <button id="addPlayerBtn">Add Player</button>
+        </div>
+
+        <p id="selectedPlayerText">No player selected</p>
+        <button id="startGameBtn">Start Game</button>
+      </div>
+
+      <div id="gameScreen">
+        <div id="screen">
+          <canvas id="gameCanvas" width="390" height="219"></canvas>
+
+          <div id="gameOverBox">
+            <h1>Game Over</h1>
+            <p id="gameOverScore"></p>
+            <button id="playAgainBtn">Play Again</button>
+            <button id="backToMenuBtn">Player Menu</button>
+          </div>
+        </div>
+
+        <div id="lcd">
+          <div id="lcdMessage">READY</div>
+          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
+        </div>
+
+        <div id="controls">
+          <div id="dpad">
+            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+            <button id="dpadCenter" class="dpadBtn"></button>
+            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          </div>
+
+          <div id="faceButtons">
+            <button id="buttonX" class="faceBtn" data-action="x">X</button>
+            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+            <button id="buttonA" class="faceBtn" data-action="a">A</button>
+            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          </div>
+
+          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+            <div class="joystickBase"></div>
+            <div id="leftJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+            <div class="joystickBase"></div>
+            <div id="rightJoystickKnob" class="joystickKnob"></div>
+          </div>
+
+          <div id="systemButtons">
+            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+            <button id="startButton" class="systemBtn" data-action="start">START</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="shellMenu" aria-hidden="true">
+        <div id="shellMenuPanel" role="dialog" aria-modal="true" aria-label="Pause panel">
+          <div id="shellMenuHeader">
+            <h2>Pause</h2>
+            <button id="shellMenuCloseBtn" type="button" aria-label="Close panel">×</button>
+          </div>
+          <div id="shellMenuTabs" role="tablist" aria-label="Pause panel tabs"></div>
+          <div id="shellMenuBody"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const DESIGN_WIDTH = 390;
+    const DESIGN_HEIGHT = 670;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
+    const STORAGE_KEY = "landmarkDeliveryPlayers_v1";
+    const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
+    const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
+    const SCORE_LABEL = "Score";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "howToPlay_v1";
+    let firstTimeHelpVersion = "landmarkDelivery_howToPlay_v1";
+
+    const appFrame = document.getElementById("appFrame");
+    const appStage = document.getElementById("appStage");
+
+    const menuScreen = document.getElementById("menuScreen");
+    const gameScreen = document.getElementById("gameScreen");
+
+    const leaderboardList = document.getElementById("leaderboardList");
+    const playerSearchInput = document.getElementById("playerSearchInput");
+    const playerSelect = document.getElementById("playerSelect");
+    playerSelect.addEventListener("touchmove", event => event.stopPropagation(), { passive: true });
+    const resetSelectedPlayerBtn = document.getElementById("resetSelectedPlayerBtn");
+    const removeSelectedPlayerBtn = document.getElementById("removeSelectedPlayerBtn");
+    const newPlayerName = document.getElementById("newPlayerName");
+    const addPlayerBtn = document.getElementById("addPlayerBtn");
+    const startGameBtn = document.getElementById("startGameBtn");
+    const selectedPlayerText = document.getElementById("selectedPlayerText");
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const lcdMessage = document.getElementById("lcdMessage");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+
+    const gameOverBox = document.getElementById("gameOverBox");
+    const gameOverScore = document.getElementById("gameOverScore");
+    const playAgainBtn = document.getElementById("playAgainBtn");
+    const backToMenuBtn = document.getElementById("backToMenuBtn");
+
+    const leftJoystickPad = document.getElementById("leftJoystickPad");
+    const rightJoystickPad = document.getElementById("rightJoystickPad");
+    const leftJoystickKnob = document.getElementById("leftJoystickKnob");
+    const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+    const dpad = document.getElementById("dpad");
+    const faceButtons = document.getElementById("faceButtons");
+    const systemButtons = document.getElementById("systemButtons");
+
+    const shellMenu = document.getElementById("shellMenu");
+    const shellMenuTabsEl = document.getElementById("shellMenuTabs");
+    const shellMenuBody = document.getElementById("shellMenuBody");
+    const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
+
+    let appScale = 1;
+    let players = {};
+    let selectedPlayer = null;
+    let score = 0;
+    let running = false;
+    let loopId = null;
+    let audioCtx = null;
+    let shellMenuWasRunning = false;
+    let wixStorageAnswered = false;
+
+    const sticks = {
+      left: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: leftJoystickPad,
+        knob: leftJoystickKnob
+      },
+      right: {
+        active: false,
+        pointerId: null,
+        x: 0,
+        y: 0,
+        maxDistance: 34,
+        pad: rightJoystickPad,
+        knob: rightJoystickKnob
+      }
+    };
+
+
+    /*
+      EXPANDABLE SHELL MENU
+      Add game-specific tabs with:
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      Update default tabs with:
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+    */
+    const shellMenuTabs = [
+      {
+        id: "pause",
+        label: "Pause",
+        html: `
+          <h3>Pause</h3>
+          <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
+          <div class="pauseMenuActions">
+            <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Score &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
+          </div>
+        `
+      },
+      {
+        id: "controls",
+        label: "Controls",
+        html: `
+          <h3>Controls</h3>
+          <ul>
+            <li><strong>Move:</strong> D-pad ↑/↓.</li>
+            <li><strong>Tap:</strong> move one staff step.</li>
+            <li><strong>Hold:</strong> move quickly.</li>
+            <li><strong>Action:</strong> PICK UP / DELIVER button.</li>
+            <li><strong>START:</strong> pause and open this menu.</li>
+          </ul>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <ul>
+            <li><strong>Find the shop:</strong> F foods come from Frank. G foods come from Gus.</li>
+            <li><strong>Pick up:</strong> move to the right shop and press Pick Up.</li>
+            <li><strong>Deliver:</strong> use the C-landmark address in the food box, then press Deliver.</li>
+            <li><strong>Stay fresh:</strong> freshness drops right away. Deliver before it spoils to score points.</li>
+            <li><strong>Game over:</strong> spoiled food means you’re fired.</li>
+          </ul>
+        `
+      }
+    ];
+
+    let activeShellMenuTab = "pause";
+
+    function preventBrowserHoldGesture(event) {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      event.preventDefault();
+    }
+
+    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
+    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
+    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function renderShellMenuTabs(activeId = activeShellMenuTab) {
+      const fallbackTab = shellMenuTabs[0]?.id || "";
+      activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
+
+      shellMenuTabsEl.innerHTML = "";
+      shellMenuBody.innerHTML = "";
+
+      shellMenuTabs.forEach(tab => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "shellMenuTab" + (tab.id === activeShellMenuTab ? " active" : "");
+        btn.textContent = tab.label;
+        btn.setAttribute("role", "tab");
+        btn.setAttribute("aria-selected", tab.id === activeShellMenuTab ? "true" : "false");
+        btn.addEventListener("click", () => renderShellMenuTabs(tab.id));
+        shellMenuTabsEl.appendChild(btn);
+      });
+
+      const activeTab = shellMenuTabs.find(tab => tab.id === activeShellMenuTab);
+      if (activeTab) shellMenuBody.innerHTML = activeTab.html;
+    }
+
+    function registerShellMenuTab(id, label, htmlContent) {
+      const tabId = String(id || "").trim();
+      if (!tabId) return;
+
+      const existing = shellMenuTabs.find(tab => tab.id === tabId);
+      const tabData = {
+        id: tabId,
+        label: String(label || tabId),
+        html: String(htmlContent || "")
+      };
+
+      if (existing) {
+        existing.label = tabData.label;
+        existing.html = tabData.html;
+      } else {
+        shellMenuTabs.push(tabData);
+      }
+
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function updateShellMenuTab(id, htmlContent) {
+      const existing = shellMenuTabs.find(tab => tab.id === id);
+      if (!existing) return;
+      existing.html = String(htmlContent || "");
+      renderShellMenuTabs(activeShellMenuTab);
+    }
+
+    function openShellMenu(tabId = "controls") {
+      shellMenuWasRunning = running;
+
+      if (running) {
+        running = false;
+        if (loopId) {
+          cancelAnimationFrame(loopId);
+          loopId = null;
+        }
+      }
+
+      renderShellMenuTabs(tabId);
+      shellMenu.classList.add("open");
+      shellMenu.setAttribute("aria-hidden", "false");
+    }
+
+    function closeShellMenu(options = {}) {
+      const shouldResume = options.resume !== false;
+      shellMenu.classList.remove("open");
+      shellMenu.setAttribute("aria-hidden", "true");
+
+      if (
+        shouldResume &&
+        shellMenuWasRunning &&
+        gameScreen.style.display === "block" &&
+        gameOverBox.style.display !== "block"
+      ) {
+        running = true;
+        loop();
+      }
+
+      shellMenuWasRunning = false;
+    }
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function shouldShowFirstTimeHelp() {
+      // Guest is a shared/new-visitor account, so it should open How to Play every time.
+      if (isGuestPlayerName()) return true;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      // Do not mark Guest as done. The next Guest player should still see How to Play.
+      if (isGuestPlayerName()) return;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function maybeOpenFirstTimeHelp() {
+      if (!shouldShowFirstTimeHelp()) return;
+      markFirstTimeHelpSeen();
+      openShellMenu("instructions");
+    }
+
+    /*
+      DEFAULT MOBILE EMULATOR CONTROLS
+      Keep the template's full controller visible by default. Some games may only
+      need one joystick/button, but do that inside the individual game module with
+      MobileArcadeShell.configureControls({...}) instead of changing the template.
+
+      Example future game-specific override:
+      MobileArcadeShell.configureControls({
+        showDpad: false,
+        showLeftJoystick: true,
+        showRightJoystick: false,
+        faceButtons: ["a"],
+        systemButtons: ["start"],
+        labels: { a: "REEL", start: "MENU" }
+      });
+    */
+    const defaultMobileControlConfig = {
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: ["a", "b", "x", "y"],
+      systemButtons: ["select", "start"],
+      labels: {
+        a: "A",
+        b: "B",
+        x: "X",
+        y: "Y",
+        select: "SELECT",
+        start: "START"
+      }
+    };
+
+    function setVisible(element, visible) {
+      if (!element) return;
+      element.classList.toggle("hidden", !visible);
+    }
+
+    function configureMobileControls(options = {}) {
+      const config = {
+        ...defaultMobileControlConfig,
+        ...options,
+        labels: {
+          ...defaultMobileControlConfig.labels,
+          ...(options.labels || {})
+        }
+      };
+
+      const visibleFaceButtons = new Set((config.faceButtons || []).map(action => String(action).toLowerCase()));
+      const visibleSystemButtons = new Set((config.systemButtons || []).map(action => String(action).toLowerCase()));
+
+      setVisible(dpad, config.showDpad !== false);
+      setVisible(leftJoystickPad, config.showLeftJoystick !== false);
+      setVisible(rightJoystickPad, config.showRightJoystick === true);
+
+      const faceButtonMap = {
+        a: document.getElementById("buttonA"),
+        b: document.getElementById("buttonB"),
+        x: document.getElementById("buttonX"),
+        y: document.getElementById("buttonY")
+      };
+
+      Object.entries(faceButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleFaceButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+        button.classList.toggle("singleAction", isVisible && visibleFaceButtons.size === 1);
+      });
+
+      if (faceButtons) {
+        faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
+      }
+
+      const systemButtonMap = {
+        select: document.getElementById("selectButton"),
+        start: document.getElementById("startButton")
+      };
+
+      Object.entries(systemButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleSystemButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+      });
+
+      if (systemButtons) {
+        systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
+      }
+
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
+    function saveCurrentScoreForSelectedPlayer() {
+      if (!selectedPlayer) return;
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+    }
+
+    function exitToPlayerMenu(options = {}) {
+      const shouldSave = options.save === true;
+
+      if (shouldSave) {
+        saveCurrentScoreForSelectedPlayer();
+      }
+
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    shellMenuBody.addEventListener("click", event => {
+      const actionButton = event.target.closest("[data-pause-action]");
+      if (!actionButton) return;
+
+      const action = actionButton.dataset.pauseAction;
+
+      if (action === "resume") {
+        closeShellMenu();
+      }
+
+      if (action === "exit-no-save") {
+        exitToPlayerMenu({ save: false });
+      }
+
+      if (action === "save-exit") {
+        exitToPlayerMenu({ save: true });
+      }
+    });
+
+    shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
+
+    shellMenu.addEventListener("click", event => {
+      if (event.target === shellMenu) closeShellMenu();
+    });
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && shellMenu.classList.contains("open")) {
+        event.preventDefault();
+        closeShellMenu();
+      }
+    });
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function scaleAppToFrame() {
+      const frameWidth = appFrame.clientWidth;
+      appScale = frameWidth / DESIGN_WIDTH;
+      document.documentElement.style.setProperty("--app-scale", appScale);
+    }
+
+    function setMessage(text) {
+      lcdMessage.textContent = text;
+    }
+
+    function setScore(value) {
+      score = Math.max(0, Math.floor(value));
+      scoreEl.textContent = score;
+    }
+
+    function addScore(amount) {
+      setScore(score + amount);
+    }
+
+    function getSavePayload() {
+      return {
+        v: 1,
+        selectedPlayer,
+        players
+      };
+    }
+
+    function cleanPlayers(rawPlayers) {
+      const cleaned = {};
+
+      Object.entries(rawPlayers || {}).forEach(([name, data]) => {
+        const cleanName = String(name || "").trim();
+        if (!cleanName) return;
+
+        const isObjectData = data && typeof data === "object" && !Array.isArray(data);
+        const best = isObjectData
+          ? Number(data.best || 0)
+          : Number(data || 0);
+
+        cleaned[cleanName] = {
+          ...(isObjectData ? data : {}),
+          best: Math.max(0, Math.floor(best || 0))
+        };
+      });
+
+      return cleaned;
+    }
+
+    function normalizeSavedData(savedData) {
+      /*
+        Supports both:
+        1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
+        2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
+        Either way, this template stores only each player's best score.
+      */
+      if (!savedData || typeof savedData !== "object") {
+        return { players: {}, selectedPlayer: null };
+      }
+
+      if (
+        savedData.players &&
+        typeof savedData.players === "object" &&
+        !Array.isArray(savedData.players)
+      ) {
+        return {
+          players: cleanPlayers(savedData.players),
+          selectedPlayer: savedData.selectedPlayer || null
+        };
+      }
+
+      return {
+        players: cleanPlayers(savedData),
+        selectedPlayer: null
+      };
+    }
+
+    function applySavedData(savedData) {
+      const normalized = normalizeSavedData(savedData);
+
+      players = normalized.players || {};
+      selectedPlayer = normalized.selectedPlayer || selectedPlayer || null;
+
+      if (selectedPlayer && !players[selectedPlayer]) {
+        selectedPlayer = null;
+      }
+
+      renderPlayers();
+      renderLeaderboard();
+    }
+
+    function loadPlayersFromLocalStorage() {
+      try {
+        const savedText = localStorage.getItem(STORAGE_KEY);
+        const savedData = savedText ? JSON.parse(savedText) : {};
+        applySavedData(savedData);
+      } catch (err) {
+        players = {};
+        selectedPlayer = null;
+        renderPlayers();
+        renderLeaderboard();
+      }
+    }
+
+    function sendStorageMessageToWix(type, payload = {}) {
+      if (!window.parent || window.parent === window) {
+        return false;
+      }
+
+      window.parent.postMessage({
+        source: STORAGE_MESSAGE_SOURCE,
+        type,
+        storageKey: STORAGE_KEY,
+        ...payload
+      }, "*");
+
+      return true;
+    }
+
+    function loadPlayers() {
+      wixStorageAnswered = false;
+      const askedWixParent = sendStorageMessageToWix("ARCADE_STORAGE_LOAD");
+
+      /*
+        In Wix on iPhone Safari, the parent page should answer and provide
+        Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
+        this fallback keeps the old desktop/localStorage behavior working.
+      */
+      if (askedWixParent) {
+        setTimeout(() => {
+          if (!wixStorageAnswered) {
+            loadPlayersFromLocalStorage();
+          }
+        }, 600);
+      } else {
+        loadPlayersFromLocalStorage();
+      }
+    }
+
+    function savePlayers() {
+      const payload = getSavePayload();
+
+      /*
+        Keep the original browser localStorage path for desktop/non-Wix tests.
+        On iPhone Safari inside Wix, this may not persist, so we also send
+        the same payload to the Wix parent page.
+      */
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      } catch (err) {}
+
+      sendStorageMessageToWix("ARCADE_STORAGE_SAVE", { payload });
+    }
+
+    window.addEventListener("message", event => {
+      const data = event.data;
+
+      if (!data || typeof data !== "object") return;
+      if (data.source !== WIX_STORAGE_MESSAGE_SOURCE) return;
+      if (data.storageKey !== STORAGE_KEY) return;
+
+      if (data.type === "ARCADE_STORAGE_DATA") {
+        wixStorageAnswered = true;
+        applySavedData(data.payload || {});
+      }
+    });
+
+    function renderLeaderboard() {
+      leaderboardList.innerHTML = "";
+
+      const ranked = Object.entries(players)
+        .sort((a, b) => (b[1].best || 0) - (a[1].best || 0))
+        .slice(0, 5);
+
+      if (ranked.length === 0) {
+        leaderboardList.innerHTML = "<li>No scores yet</li>";
+        return;
+      }
+
+      ranked.forEach(([name, data]) => {
+        const li = document.createElement("li");
+        li.textContent = `${name}: ${data.best || 0}`;
+        leaderboardList.appendChild(li);
+      });
+    }
+
+    function resetRemoveConfirmButton() {
+      removeSelectedPlayerBtn.dataset.confirming = "no";
+      removeSelectedPlayerBtn.textContent = "Remove";
+      removeSelectedPlayerBtn.style.background = "";
+    }
+
+    function updateSelectedPlayerUI() {
+      const hasSelection = selectedPlayer && players[selectedPlayer];
+
+      selectedPlayerText.textContent = hasSelection
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        : "No player selected";
+
+      resetSelectedPlayerBtn.disabled = !hasSelection;
+      removeSelectedPlayerBtn.disabled = !hasSelection;
+    }
+
+    function renderPlayers() {
+      playerSelect.innerHTML = "";
+
+      const filter = playerSearchInput.value.trim().toLowerCase();
+
+      const names = Object.keys(players).sort((a, b) => {
+        return a.localeCompare(b, undefined, { sensitivity: "base" });
+      });
+
+      const filteredNames = names.filter(name => name.toLowerCase().includes(filter));
+
+      if (filteredNames.length === 0) {
+        const emptyRow = document.createElement("div");
+        emptyRow.className = "playerOption disabled";
+        emptyRow.textContent = names.length === 0 ? "No saved players yet" : "No matching players";
+        playerSelect.appendChild(emptyRow);
+      } else {
+        filteredNames.forEach(name => {
+          const row = document.createElement("div");
+          row.className = "playerOption" + (name === selectedPlayer ? " selected" : "");
+          row.dataset.playerName = name;
+          row.setAttribute("role", "option");
+          row.setAttribute("aria-selected", name === selectedPlayer ? "true" : "false");
+          row.textContent = `${name} — Best: ${players[name].best || 0}`;
+
+          row.addEventListener("click", () => {
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          });
+
+          row.addEventListener("touchend", event => {
+            event.preventDefault();
+            selectedPlayer = name;
+            resetRemoveConfirmButton();
+            savePlayers();
+            renderPlayers();
+          }, { passive: false });
+
+          playerSelect.appendChild(row);
+        });
+      }
+
+      updateSelectedPlayerUI();
+    }
+
+    playerSearchInput.addEventListener("input", () => {
+      resetRemoveConfirmButton();
+      renderPlayers();
+    });
+
+    // Player rows are handled directly inside renderPlayers().
+
+    resetSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      players[selectedPlayer].best = 0;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    removeSelectedPlayerBtn.onclick = () => {
+      if (!selectedPlayer || !players[selectedPlayer]) return;
+
+      const nameToRemove = selectedPlayer;
+
+      if (removeSelectedPlayerBtn.dataset.confirming !== "yes") {
+        removeSelectedPlayerBtn.dataset.confirming = "yes";
+        removeSelectedPlayerBtn.textContent = "Confirm";
+        removeSelectedPlayerBtn.style.background = "#ff9f9f";
+
+        setTimeout(() => {
+          if (
+            removeSelectedPlayerBtn.dataset.confirming === "yes" &&
+            selectedPlayer === nameToRemove
+          ) {
+            resetRemoveConfirmButton();
+          }
+        }, 2500);
+
+        return;
+      }
+
+      delete players[nameToRemove];
+      selectedPlayer = null;
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    addPlayerBtn.onclick = () => {
+      const name = newPlayerName.value.trim();
+      if (!name) return;
+
+      if (!players[name]) {
+        players[name] = { best: 0 };
+      }
+
+      selectedPlayer = name;
+      newPlayerName.value = "";
+      playerSearchInput.value = "";
+
+      savePlayers();
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+      soundWin();
+    };
+
+    newPlayerName.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        addPlayerBtn.click();
+      }
+    });
+
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0 };
+      }
+
+      savePlayers();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+      maybeOpenFirstTimeHelp();
+    };
+
+    playAgainBtn.onclick = () => {
+      startGame();
+      maybeOpenFirstTimeHelp();
+    };
+
+    backToMenuBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
+    };
+
+    function joystickPointFromEvent(event, stick) {
+      const rect = stick.pad.getBoundingClientRect();
+
+      return {
+        x: (event.clientX - rect.left) / appScale,
+        y: (event.clientY - rect.top) / appScale
+      };
+    }
+
+    function setJoystickFromEvent(event, stick) {
+      const point = joystickPointFromEvent(event, stick);
+
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+
+      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
+      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
+
+      const dx = limitedX - centerX;
+      const dy = limitedY - centerY;
+
+      stick.x = dx / stick.maxDistance;
+      stick.y = dy / stick.maxDistance;
+
+      stick.knob.style.left = `${centerX + dx}px`;
+      stick.knob.style.top = `${centerY + dy}px`;
+    }
+
+    function resetJoystick(stick) {
+      stick.active = false;
+      stick.pointerId = null;
+      stick.x = 0;
+      stick.y = 0;
+
+      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
+      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    }
+
+    function bindJoystick(stick) {
+      stick.pad.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        stick.active = true;
+        stick.pointerId = event.pointerId;
+
+        stick.pad.setPointerCapture(event.pointerId);
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointermove", event => {
+        if (!stick.active || event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+        setJoystickFromEvent(event, stick);
+      });
+
+      stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerId !== stick.pointerId) return;
+
+        event.preventDefault();
+
+        if (stick.pad.hasPointerCapture(event.pointerId)) {
+          stick.pad.releasePointerCapture(event.pointerId);
+        }
+
+        resetJoystick(stick);
+      });
+
+      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+    }
+
+    bindJoystick(sticks.left);
+    bindJoystick(sticks.right);
+
+    const HELD_MOVE_START_MS = 210;
+    const HELD_MOVE_REPEAT_MS = 72;
+    const heldMoveButtons = new Map();
+
+    function pressButton(button) {
+      button.classList.add("pressed");
+      setTimeout(() => button.classList.remove("pressed"), 120);
+    }
+
+    function startHeldMoveButton(button, action) {
+      if (heldMoveButtons.has(button)) return;
+
+      button.classList.add("pressed");
+      handleInput(action);
+
+      const holdData = {
+        timeoutId: null,
+        intervalId: null
+      };
+
+      holdData.timeoutId = setTimeout(() => {
+        holdData.intervalId = setInterval(() => {
+          if (!running || shellMenu.classList.contains("open")) {
+            stopHeldMoveButton(button);
+            return;
+          }
+
+          handleInput(action);
+        }, HELD_MOVE_REPEAT_MS);
+      }, HELD_MOVE_START_MS);
+
+      heldMoveButtons.set(button, holdData);
+    }
+
+    function stopHeldMoveButton(button) {
+      const holdData = heldMoveButtons.get(button);
+      if (!holdData) return;
+
+      clearTimeout(holdData.timeoutId);
+      clearInterval(holdData.intervalId);
+      heldMoveButtons.delete(button);
+      button.classList.remove("pressed");
+    }
+
+    function stopAllHeldMoveButtons() {
+      Array.from(heldMoveButtons.keys()).forEach(stopHeldMoveButton);
+    }
+
+    function bindButton(button) {
+      const action = button.dataset.action;
+      if (!action) return;
+
+      button.addEventListener("pointerdown", event => {
+        event.preventDefault();
+
+        if (action === "up" || action === "down") {
+          try {
+            button.setPointerCapture(event.pointerId);
+          } catch (err) {}
+
+          startHeldMoveButton(button, action);
+          return;
+        }
+
+        pressButton(button);
+        handleInput(action);
+      });
+
+      ["pointerup", "pointercancel", "pointerleave"].forEach(eventName => {
+        button.addEventListener(eventName, event => {
+          if (action !== "up" && action !== "down") return;
+          event.preventDefault();
+
+          try {
+            if (button.hasPointerCapture(event.pointerId)) {
+              button.releasePointerCapture(event.pointerId);
+            }
+          } catch (err) {}
+
+          stopHeldMoveButton(button);
+        });
+      });
+
+      button.addEventListener("contextmenu", event => event.preventDefault());
+    }
+
+    document.querySelectorAll("button[data-action]").forEach(bindButton);
+
+    function startGame() {
+      stopGame();
+
+      score = 0;
+      running = true;
+
+      scoreEl.textContent = score;
+      bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
+      gameOverBox.style.display = "none";
+
+      setMessage("READY");
+      gameInit();
+
+      loop();
+    }
+
+    function stopGame() {
+      running = false;
+
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+        loopId = null;
+      }
+
+      gameStop();
+    }
+
+    function loop() {
+      if (!running) return;
+
+      gameUpdate();
+      gameDraw();
+
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function endGame(reason = "Game Over") {
+      if (!running) return;
+
+      stopGame();
+      soundLose();
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverBox.style.display = "block";
+    }
+
+    function handleInput(action) {
+      if (action === "start") {
+        openShellMenu("pause");
+        return;
+      }
+
+      if (shellMenu.classList.contains("open")) return;
+      if (!running) return;
+
+      gameInput(action);
+    }
+
+    function getAudio() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+
+      if (audioCtx.state === "suspended") {
+        audioCtx.resume().catch(() => {});
+      }
+
+      return audioCtx;
+    }
+
+    function beep(freq, duration, type = "sine", volume = 0.08) {
+      const ac = getAudio();
+      if (!ac) return;
+
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+
+      osc.type = type;
+      osc.frequency.value = freq;
+
+      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+
+      osc.connect(gain);
+      gain.connect(ac.destination);
+
+      osc.start();
+      osc.stop(ac.currentTime + duration);
+    }
+
+    function soundPickup() {
+      beep(392, 0.055, "triangle", 0.045);
+      setTimeout(() => beep(523, 0.07, "triangle", 0.055), 55);
+    }
+
+    function soundDeliver() {
+      [523, 659, 784, 1046].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.09, "triangle", 0.055), i * 65);
+      });
+    }
+
+    function soundWrong() {
+      beep(196, 0.08, "square", 0.05);
+      setTimeout(() => beep(155, 0.11, "square", 0.04), 75);
+    }
+
+    function soundFired() {
+      [220, 175, 139, 104].forEach((n, i) => {
+        setTimeout(() => beep(n, 0.18, "sawtooth", 0.045), i * 115);
+      });
+    }
+
+    function soundCorrect() { soundPickup(); }
+    function soundWin() { soundDeliver(); }
+    function soundLose() { soundFired(); }
+
+    /*
+      GAME MODULE
+      Step 2: static grand staff city map.
+      Movement, order generation, freshness, and delivery logic come later.
+    */
+
+        const STAFF_NOTE_SEQUENCE = [
+      "C2", "D2", "E2", "F2", "G2", "A2", "B2",
+      "C3", "D3", "E3", "F3", "G3", "A3", "B3",
+      "C4", "D4", "E4", "F4", "G4", "A4", "B4",
+      "C5", "D5", "E5", "F5", "G5", "A5", "B5", "C6"
+    ];
+
+    // C landmarks are intentionally not highlighted. Players should know them.
+    // Step 6 adds freshness drain, freshness-based scoring, wrong-address penalties,
+    // and spoiled-order handling.
+
+    const SHOP_MARKERS = [
+      { id: "gus", note: "G4", title: "Gus’s Grub", shortTitle: "Gus", initial: "G", foods: ["Grapes", "Gumbo", "Granola", "Gnocchi", "Gelato", "Guac", "Garlic", "Gyoza", "Greens"] },
+      { id: "frank", note: "F3", title: "Frank’s Food", shortTitle: "Frank", initial: "F", foods: ["Fries", "Fruit", "Fudge", "Falafel", "Fish", "Flan", "Fajita", "Fritter", "Figs"] }
+    ];
+
+    const C_LANDMARKS = [
+      { note: "C2", label: "LOW C", tier: 3 },
+      { note: "C3", label: "BASS C", tier: 1 },
+      { note: "C4", label: "MIDDLE C", tier: 0 },
+      { note: "C5", label: "TREBLE C", tier: 1 },
+      { note: "C6", label: "HIGH C", tier: 3 }
+    ];
+
+    const INTERVAL_OFFSETS = [
+      { offset: 0, line1: "LANDMARK", tier: 0 },
+      { offset: 1, line1: "2ND ABOVE", tier: 1 },
+      { offset: -1, line1: "2ND BELOW", tier: 1 },
+      { offset: 2, line1: "3RD ABOVE", tier: 2 },
+      { offset: -2, line1: "3RD BELOW", tier: 2 },
+      // 4ths are needed so the full difficulty pool can reach every line and space
+      // between one C landmark and the next.
+      { offset: 3, line1: "4TH ABOVE", tier: 4 },
+      { offset: -3, line1: "4TH BELOW", tier: 4 }
+    ];
+
+    const FULL_COVERAGE_TIER = 4;
+
+    let courierIndex = STAFF_NOTE_SEQUENCE.indexOf("C4");
+    let currentOrder = null;
+    let deliveryPhase = "toPickup";
+    let completedDeliveries = 0;
+    let orderCounter = 0;
+    let freshnessPercent = 100;
+    let lastFreshnessUpdate = 0;
+
+    const FRESHNESS_BASE_DRAIN_PER_SECOND = 1.35;
+    const FRESHNESS_DRAIN_GROWTH_PER_DELIVERY = 0.45;
+    const WRONG_DELIVERY_PENALTY = 15;
+
+    function currentCourierNote() {
+      return STAFF_NOTE_SEQUENCE[courierIndex] || "C4";
+    }
+
+    function chooseShop() {
+      return SHOP_MARKERS[Math.floor(Math.random() * SHOP_MARKERS.length)];
+    }
+
+    function currentDifficultyTier() {
+      if (completedDeliveries < 3) return 1;
+      if (completedDeliveries < 8) return 2;
+      if (completedDeliveries < 14) return 3;
+      return 4;
+    }
+
+    function buildDestinationPool() {
+      const tier = currentDifficultyTier();
+      const pool = [];
+
+      C_LANDMARKS.forEach(landmark => {
+        if (landmark.tier > tier) return;
+
+        INTERVAL_OFFSETS.forEach(interval => {
+          if (interval.tier > tier) return;
+
+          const targetIndex = noteIndex(landmark.note) + interval.offset;
+          if (targetIndex < 0 || targetIndex >= STAFF_NOTE_SEQUENCE.length) return;
+
+          pool.push({
+            targetNote: STAFF_NOTE_SEQUENCE[targetIndex],
+            line1: interval.line1,
+            line2: landmark.label
+          });
+        });
+      });
+
+      if (tier >= FULL_COVERAGE_TIER) {
+        addMissingStaffPositions(pool);
+      }
+
+      return pool.length ? pool : [{ targetNote: "C4", line1: "LANDMARK", line2: "MIDDLE C" }];
+    }
+
+    function addMissingStaffPositions(pool) {
+      const covered = new Set(pool.map(destination => destination.targetNote));
+
+      STAFF_NOTE_SEQUENCE.forEach(note => {
+        if (covered.has(note)) return;
+
+        const fallback = closestCAddressForNote(note);
+        if (fallback) {
+          pool.push(fallback);
+          covered.add(note);
+        }
+      });
+    }
+
+    function closestCAddressForNote(note) {
+      const targetIndex = noteIndex(note);
+      let best = null;
+
+      C_LANDMARKS.forEach(landmark => {
+        const landmarkIndex = noteIndex(landmark.note);
+        const offset = targetIndex - landmarkIndex;
+        const interval = INTERVAL_OFFSETS.find(item => item.offset === offset);
+        if (!interval) return;
+
+        const distance = Math.abs(offset);
+        if (!best || distance < best.distance || (distance === best.distance && landmark.tier < best.landmarkTier)) {
+          best = {
+            distance,
+            landmarkTier: landmark.tier,
+            targetNote: note,
+            line1: interval.line1,
+            line2: landmark.label
+          };
+        }
+      });
+
+      return best ? { targetNote: best.targetNote, line1: best.line1, line2: best.line2 } : null;
+    }
+
+    function chooseDestination() {
+      const pool = buildDestinationPool();
+      return pool[Math.floor(Math.random() * pool.length)];
+    }
+
+    function makeOrder() {
+      const shop = chooseShop();
+      const item = shop.foods[Math.floor(Math.random() * shop.foods.length)];
+      const destination = chooseDestination();
+      orderCounter += 1;
+      return { shop, item, destination };
+    }
+
+  function setInstructionsText() {
+      updateShellMenuTab("instructions", `
+        <h3>How to Play</h3>
+        <ul>
+          <li><strong>Find the shop:</strong> F foods come from Frank. G foods come from Gus.</li>
+          <li><strong>Pick up:</strong> move to the right shop and press Pick Up.</li>
+          <li><strong>Deliver:</strong> use the C-landmark address in the food box, then press Deliver.</li>
+          <li><strong>Stay fresh:</strong> freshness drops right away. Deliver before it spoils to score points.</li>
+          <li><strong>Game over:</strong> spoiled food means you’re fired.</li>
+        </ul>
+      `);
+    }
+
+    function setActionButtonLabel(label) {
+      const button = document.getElementById("buttonA");
+      if (button) button.textContent = label;
+    }
+
+    function beginNextPickup(statusText = "") {
+      currentOrder = makeOrder();
+      deliveryPhase = "toPickup";
+      freshnessPercent = 100;
+      lastFreshnessUpdate = performance.now();
+      setActionButtonLabel("PICK UP");
+      setMessage(statusText || `${currentOrder.shop.initial} FOOD`);
+    }
+
+    function gameInit() {
+      courierIndex = STAFF_NOTE_SEQUENCE.indexOf("C4");
+      completedDeliveries = 0;
+      orderCounter = 0;
+      freshnessPercent = 100;
+      lastFreshnessUpdate = performance.now();
+      setScore(0);
+      setInstructionsText();
+      configureMobileControls({
+        showDpad: true,
+        showLeftJoystick: false,
+        showRightJoystick: false,
+        faceButtons: ["a"],
+        systemButtons: ["start"],
+        labels: {
+          a: "PICK UP",
+          start: "MENU"
+        }
+      });
+      beginNextPickup();
+    }
+
+    function currentFreshnessDrainPerSecond() {
+      return FRESHNESS_BASE_DRAIN_PER_SECOND + completedDeliveries * FRESHNESS_DRAIN_GROWTH_PER_DELIVERY;
+    }
+
+    function gameUpdate() {
+      const now = performance.now();
+
+      if (shellMenu && shellMenu.classList.contains("open")) {
+        lastFreshnessUpdate = now;
+        return;
+      }
+
+      if (!currentOrder || deliveryPhase === "fired") {
+        lastFreshnessUpdate = now;
+        return;
+      }
+
+      const elapsedSeconds = Math.max(0, (now - lastFreshnessUpdate) / 1000);
+      lastFreshnessUpdate = now;
+      if (elapsedSeconds <= 0) return;
+
+      freshnessPercent = clamp(freshnessPercent - currentFreshnessDrainPerSecond() * elapsedSeconds, 0, 100);
+
+      if (freshnessPercent <= 0) {
+        handleSpoiledOrder();
+      }
+    }
+
+    function clamp(value, min, max) {
+      return Math.max(min, Math.min(max, value));
+    }
+
+    function noteIndex(note) {
+      return STAFF_NOTE_SEQUENCE.indexOf(note);
+    }
+
+    function getMapLayout() {
+      return {
+        staffLeft: 86,
+        staffRight: 286,
+        yTop: 32,
+        yBottom: 205,
+        freshnessX: 334,
+        shopX: 44,
+        courierX: 197
+      };
+    }
+
+    function noteY(note, layout) {
+      const index = noteIndex(note);
+      const maxIndex = STAFF_NOTE_SEQUENCE.length - 1;
+      if (index < 0) return layout.yBottom;
+      return layout.yBottom - (index / maxIndex) * (layout.yBottom - layout.yTop);
+    }
+
+    function roundedRect(x, y, w, h, r) {
+      const radius = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + w - radius, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+      ctx.lineTo(x + w, y + h - radius);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+      ctx.lineTo(x + radius, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function fillRoundedRect(x, y, w, h, r, fillStyle) {
+      ctx.fillStyle = fillStyle;
+      roundedRect(x, y, w, h, r);
+      ctx.fill();
+    }
+
+    function strokeRoundedRect(x, y, w, h, r, strokeStyle, lineWidth = 2) {
+      ctx.strokeStyle = strokeStyle;
+      ctx.lineWidth = lineWidth;
+      roundedRect(x, y, w, h, r);
+      ctx.stroke();
+    }
+
+    function drawStaffLines(layout) {
+      const trebleLines = ["E4", "G4", "B4", "D5", "F5"];
+      const bassLines = ["G2", "B2", "D3", "F3", "A3"];
+
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.7;
+      ctx.lineCap = "round";
+
+      [trebleLines, bassLines].forEach(lines => {
+        lines.forEach(note => {
+          const y = noteY(note, layout);
+          ctx.beginPath();
+          ctx.moveTo(layout.staffLeft, y);
+          ctx.lineTo(layout.staffRight, y);
+          ctx.stroke();
+        });
+      });
+
+      ["C2", "E2", "C4", "A5", "C6"].forEach(note => {
+        const y = noteY(note, layout);
+        ctx.strokeStyle = "#111827";
+        ctx.lineWidth = 1.7;
+        ctx.beginPath();
+        ctx.moveTo(layout.courierX - 18, y);
+        ctx.lineTo(layout.courierX + 18, y);
+        ctx.stroke();
+      });
+    }
+
+    function drawCLandmarks(layout) {
+      // Intentionally empty: players should know the C landmarks without visual labels.
+    }
+
+    function drawShopMarker(shop, layout) {
+      const y = noteY(shop.note, layout);
+      const bodyW = 72;
+      const bodyH = 18;
+      const roofH = 12;
+      const x = layout.shopX - bodyW / 2;
+      const bodyTop = y - bodyH / 2;
+      const roofTop = bodyTop - roofH;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.15;
+      ctx.beginPath();
+      ctx.moveTo(x, bodyTop);
+      ctx.lineTo(x + bodyW * 0.16, roofTop);
+      ctx.lineTo(x + bodyW * 0.84, roofTop);
+      ctx.lineTo(x + bodyW, bodyTop);
+      ctx.lineTo(x + bodyW, bodyTop + bodyH);
+      ctx.lineTo(x, bodyTop + bodyH);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = "#2563eb";
+      ctx.fillRect(x + 5, y - 1.5, bodyW - 10, 3);
+
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 8px Arial, sans-serif";
+      ctx.fillText(shop.title, x + bodyW / 2, roofTop + roofH * 0.78);
+    }
+
+    function drawCourier(layout) {
+      const y = noteY(currentCourierNote(), layout);
+      const x = layout.courierX;
+      const carrying = deliveryPhase === "carrying";
+
+      if (carrying && currentOrder) {
+        drawFoodIcon(currentOrder.item, x + 16, y - 6, 0.18);
+      }
+
+      fillRoundedRect(x - 14, y - 7, 28, 14, 5.5, carrying ? "#dbeafe" : "#dff3ff");
+      strokeRoundedRect(x - 14, y - 7, 28, 14, 5.5, "#111827", 1.1);
+
+      fillRoundedRect(x - 4, y - 12, 10, 7, 3, "#bfdbfe");
+      strokeRoundedRect(x - 4, y - 12, 10, 7, 3, "#111827", 0.9);
+
+      ctx.fillStyle = "#fef3c7";
+      ctx.beginPath();
+      ctx.arc(x + 14, y - 1, 2.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#111827";
+      ctx.beginPath();
+      ctx.arc(x - 8, y + 8, 3, 0, Math.PI * 2);
+      ctx.arc(x + 8, y + 8, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#2563eb";
+      ctx.font = "bold 6px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("LD", x - 1, y + 1);
+    }
+
+    function drawClefs(layout) {
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      ctx.font = "106px Georgia, 'Times New Roman', serif";
+      ctx.fillText("𝄞", layout.staffLeft + 24, noteY("B4", layout) + 5);
+
+      ctx.font = "64px Georgia, 'Times New Roman', serif";
+      ctx.fillText("𝄢", layout.staffLeft + 24, noteY("D3", layout) - 1);
+    }
+
+    function drawCenteredHighlightedWord(text, centerX, y, font, highlightColor, restColor) {
+      const cleanText = String(text || "").toUpperCase();
+      const first = cleanText.slice(0, 1);
+      const rest = cleanText.slice(1);
+
+      ctx.font = font;
+      const firstW = ctx.measureText(first).width;
+      const restW = ctx.measureText(rest).width;
+      const totalW = firstW + restW;
+      let x = centerX - totalW / 2;
+
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = highlightColor;
+      ctx.fillText(first, x, y);
+      x += firstW;
+      ctx.fillStyle = restColor;
+      ctx.fillText(rest, x, y);
+    }
+
+    function drawFoodIcon(item, x, y, scale = 1) {
+      const key = String(item || "").toLowerCase().replace(/[^a-z]/g, "");
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      ctx.lineWidth = 1.15;
+      ctx.strokeStyle = "#111827";
+
+      switch (key) {
+        case "grapes":
+          ctx.fillStyle = "#8b5cf6";
+          [[0, -9], [-8, -1], [8, -1], [-4, 8], [4, 8], [0, 16]].forEach(([cx, cy]) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          });
+          ctx.fillStyle = "#22c55e";
+          ctx.beginPath();
+          ctx.ellipse(7, -18, 9, 5, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          break;
+
+        case "gumbo":
+          ctx.fillStyle = "#f97316";
+          ctx.beginPath();
+          ctx.ellipse(0, 5, 20, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(-20, -2, 40, 9);
+          ctx.strokeRect(-20, -2, 40, 9);
+          ctx.strokeStyle = "#92400e";
+          ctx.beginPath();
+          ctx.moveTo(10, -8);
+          ctx.lineTo(24, -18);
+          ctx.stroke();
+          ctx.strokeStyle = "#111827";
+          break;
+
+        case "granola":
+          fillRoundedRect(-19, -11, 38, 22, 5, "#d6a15f");
+          strokeRoundedRect(-19, -11, 38, 22, 5, "#111827", 1.15);
+          ctx.fillStyle = "#7c2d12";
+          [[-10, -4], [3, -5], [10, 4], [-8, 7], [0, 3]].forEach(([cx, cy]) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          break;
+
+        case "gnocchi":
+          ctx.fillStyle = "#fef3c7";
+          [-13, 0, 13].forEach(cx => {
+            ctx.beginPath();
+            ctx.ellipse(cx, 0, 10, 7, -0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cx - 5, -1);
+            ctx.lineTo(cx + 5, 2);
+            ctx.stroke();
+          });
+          break;
+
+        case "gelato":
+          ctx.fillStyle = "#f9a8d4";
+          ctx.beginPath();
+          ctx.arc(0, -9, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#d6a15f";
+          ctx.beginPath();
+          ctx.moveTo(-13, 5);
+          ctx.lineTo(13, 5);
+          ctx.lineTo(0, 25);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          break;
+
+        case "guac":
+          ctx.fillStyle = "#c08457";
+          ctx.beginPath();
+          ctx.moveTo(-19, 3);
+          ctx.quadraticCurveTo(0, 19, 19, 3);
+          ctx.lineTo(15, 13);
+          ctx.quadraticCurveTo(0, 24, -15, 13);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#4ade80";
+          ctx.beginPath();
+          ctx.ellipse(0, 3, 14, 7, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#166534";
+          [[-5, 1], [2, -1], [8, 3]].forEach(([cx, cy]) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          break;
+
+        case "garlic":
+          ctx.fillStyle = "#fef3c7";
+          [-8, 0, 8].forEach(cx => {
+            ctx.beginPath();
+            ctx.ellipse(cx, 0, 8, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          });
+          ctx.fillStyle = "#22c55e";
+          ctx.fillRect(-2, -23, 4, 10);
+          break;
+
+        case "gyoza":
+          ctx.fillStyle = "#fde68a";
+          ctx.beginPath();
+          ctx.ellipse(0, 3, 21, 11, 0, Math.PI, 0);
+          ctx.lineTo(21, 3);
+          ctx.quadraticCurveTo(0, 18, -21, 3);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(17,24,39,0.45)";
+          [-10, -3, 4, 11].forEach(cx => {
+            ctx.beginPath();
+            ctx.moveTo(cx, 1);
+            ctx.lineTo(cx + 4, 10);
+            ctx.stroke();
+          });
+          ctx.strokeStyle = "#111827";
+          break;
+
+        case "greens":
+          ctx.fillStyle = "#4ade80";
+          [[-12, -3, -0.6], [-4, -11, 0.2], [6, -9, -0.25], [13, -1, 0.55], [0, 2, 0.1]].forEach(([cx, cy, rot]) => {
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, 8, 4.6, rot, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          });
+          ctx.strokeStyle = "#166534";
+          ctx.beginPath();
+          ctx.moveTo(-15, 12);
+          ctx.lineTo(15, 12);
+          ctx.stroke();
+          ctx.strokeStyle = "#111827";
+          break;
+
+        case "fries":
+          ctx.fillStyle = "#facc15";
+          [-11, -4, 3, 10].forEach((fx, n) => {
+            ctx.fillRect(fx, -21 + (n % 2) * 3, 5, 25);
+            ctx.strokeRect(fx, -21 + (n % 2) * 3, 5, 25);
+          });
+          ctx.fillStyle = "#ef4444";
+          ctx.beginPath();
+          ctx.moveTo(-18, -2);
+          ctx.lineTo(18, -2);
+          ctx.lineTo(13, 21);
+          ctx.lineTo(-13, 21);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          break;
+
+        case "fruit":
+          ctx.fillStyle = "#ef4444";
+          ctx.beginPath();
+          ctx.arc(0, 2, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#22c55e";
+          ctx.beginPath();
+          ctx.ellipse(8, -15, 10, 5, -0.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#111827";
+          ctx.fillRect(-1, -18, 3, 8);
+          break;
+
+        case "fudge":
+          fillRoundedRect(-17, -14, 34, 28, 5, "#7c2d12");
+          strokeRoundedRect(-17, -14, 34, 28, 5, "#111827", 1.15);
+          ctx.fillStyle = "#fed7aa";
+          ctx.fillRect(-10, -6, 20, 3);
+          ctx.fillRect(-8, 5, 16, 3);
+          break;
+
+        case "falafel":
+          ctx.fillStyle = "#b7791f";
+          [-12, 0, 12].forEach(cx => {
+            ctx.beginPath();
+            ctx.arc(cx, 0, 9, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          });
+          ctx.fillStyle = "#fef3c7";
+          [[-15, -2], [-1, 3], [10, -3]].forEach(([cx, cy]) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          break;
+
+        case "fish":
+          ctx.fillStyle = "#93c5fd";
+          ctx.beginPath();
+          ctx.ellipse(-3, 0, 18, 10, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(13, 0);
+          ctx.lineTo(27, -10);
+          ctx.lineTo(27, 10);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#111827";
+          ctx.beginPath();
+          ctx.arc(-10, -2, 2, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+
+        case "flan":
+          ctx.fillStyle = "#fcd34d";
+          ctx.beginPath();
+          ctx.moveTo(-18, -7);
+          ctx.lineTo(18, -7);
+          ctx.lineTo(13, 13);
+          ctx.lineTo(-13, 13);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#92400e";
+          ctx.fillRect(-14, -12, 28, 5);
+          break;
+
+        case "fajita":
+          ctx.fillStyle = "#fde68a";
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 21, 11, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.strokeStyle = "#ef4444";
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(-12, -2);
+          ctx.lineTo(12, 4);
+          ctx.stroke();
+          ctx.strokeStyle = "#22c55e";
+          ctx.beginPath();
+          ctx.moveTo(-10, 5);
+          ctx.lineTo(10, -4);
+          ctx.stroke();
+          ctx.strokeStyle = "#111827";
+          ctx.lineWidth = 1.15;
+          break;
+
+        case "fritter":
+          ctx.fillStyle = "#d97706";
+          ctx.beginPath();
+          ctx.arc(0, 0, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#fef3c7";
+          [[-6, -4], [5, 1], [0, 8]].forEach(([cx, cy]) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          break;
+
+        case "figs":
+          ctx.fillStyle = "#7c3aed";
+          [[-8, 1], [8, 1]].forEach(cx => {
+            ctx.beginPath();
+            ctx.moveTo(cx, -14);
+            ctx.quadraticCurveTo(cx + 10, -2, cx, 15);
+            ctx.quadraticCurveTo(cx - 10, -2, cx, -14);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+          });
+          ctx.fillStyle = "#f9a8d4";
+          [[-8, 1], [8, 1]].forEach(cx => {
+            ctx.beginPath();
+            ctx.arc(cx, 2, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+          });
+          break;
+
+        default:
+          fillRoundedRect(-16, -14, 32, 28, 6, "#e5e7eb");
+          strokeRoundedRect(-16, -14, 32, 28, 6, "#111827", 1.15);
+          ctx.fillStyle = "#111827";
+          ctx.font = "bold 18px Arial, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("?", 0, 1);
+          break;
+      }
+
+      ctx.restore();
+    }
+
+    function drawFoodPanel(layout) {
+      const panelW = 58;
+      const panelH = 46;
+      const x = layout.freshnessX - 22;
+      const y = 18;
+
+      fillRoundedRect(x, y, panelW, panelH, 6, "rgba(255,255,255,0.88)");
+      strokeRoundedRect(x, y, panelW, panelH, 6, "#111827", 1.1);
+
+      if (!currentOrder) return;
+
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (deliveryPhase === "toPickup") {
+        drawCenteredHighlightedWord(currentOrder.item, x + panelW / 2, y + 22, "bold 9px Arial, sans-serif", "#2563eb", "#111827");
+        return;
+      }
+
+      ctx.fillStyle = "#111827";
+      ctx.font = "bold 9px Arial, sans-serif";
+      ctx.fillText(currentOrder.destination.line1, x + panelW / 2, y + 18);
+      ctx.font = "bold 7px Arial, sans-serif";
+      ctx.fillText(currentOrder.destination.line2, x + panelW / 2, y + 28);
+    }
+
+    function drawFreshnessBar(layout) {
+      const x = layout.freshnessX;
+      const y = 78;
+      const w = 18;
+      const h = 118;
+
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 8px Arial, sans-serif";
+      ctx.fillText("FRESH", x + w / 2, y - 8);
+      ctx.fillText("SPOILED", x + w / 2, y + h + 8);
+
+      fillRoundedRect(x, y, w, h, 7, "rgba(255,255,255,0.78)");
+      strokeRoundedRect(x, y, w, h, 7, "#111827", 1.2);
+
+      const fillH = h - 6;
+      const fillY = y + 3;
+      const gradient = ctx.createLinearGradient(0, fillY, 0, fillY + fillH);
+      gradient.addColorStop(0, "#6ee7b7");
+      gradient.addColorStop(1, "#fca5a5");
+      fillRoundedRect(x + 3, fillY, w - 6, fillH, 5, gradient);
+
+      ctx.strokeStyle = "rgba(17,24,39,0.25)";
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i += 1) {
+        const tickY = y + (h / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(x + 5, tickY);
+        ctx.lineTo(x + w - 5, tickY);
+        ctx.stroke();
+      }
+
+      const markerY = fillY + (1 - freshnessPercent / 100) * fillH;
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 0.8;
+      ctx.beginPath();
+      ctx.arc(x + w / 2, markerY, 9, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+      drawFoodIcon(currentOrder ? currentOrder.item : "Fries", x + w / 2, markerY, 0.27);
+    }
+
+    function drawMapTitle() {
+      const headerText = deliveryPhase === "fired" ? "You're Fired!" : (deliveryPhase === "toPickup" ? "PICK UP" : "DELIVER");
+
+      ctx.fillStyle = "#101827";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = "bold 16px Arial, sans-serif";
+      ctx.fillText(headerText, canvas.width / 2, 12);
+    }
+
+    function gameDraw() {
+      const layout = getMapLayout();
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#f7fbff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, "#eef6ff");
+      gradient.addColorStop(1, "#fff7df");
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      drawMapTitle();
+      drawStaffLines(layout);
+      drawClefs(layout);
+      SHOP_MARKERS.forEach(shop => drawShopMarker(shop, layout));
+      drawFoodPanel(layout);
+      drawFreshnessBar(layout);
+      drawCourier(layout);
+
+    }
+
+    function updateStep6Prompt() {
+      if (!currentOrder || deliveryPhase === "fired") return;
+
+      if (deliveryPhase === "toPickup") {
+        setMessage(`${currentOrder.shop.initial} FOOD`);
+        return;
+      }
+
+      setMessage(currentOrder.destination.line1);
+    }
+
+    function moveCourier(direction) {
+      const oldIndex = courierIndex;
+      courierIndex = clamp(courierIndex + direction, 0, STAFF_NOTE_SEQUENCE.length - 1);
+
+      if (courierIndex === oldIndex) {
+        setMessage(direction > 0 ? "TOP" : "BOTTOM");
+        soundWrong();
+        return;
+      }
+
+      updateStep6Prompt();
+    }
+
+    function awardDeliveryPoints() {
+      const points = Math.max(0, Math.ceil(freshnessPercent));
+      addScore(points);
+      return points;
+    }
+
+    function handleSpoiledOrder() {
+      if (!currentOrder || deliveryPhase === "fired") return;
+
+      freshnessPercent = 0;
+      deliveryPhase = "fired";
+      stopAllHeldMoveButtons();
+      setActionButtonLabel("FIRED");
+      setMessage("YOU'RE FIRED");
+      gameDraw();
+      endGame("You're Fired!");
+    }
+
+    function applyWrongDeliveryPenalty() {
+      freshnessPercent = clamp(freshnessPercent - WRONG_DELIVERY_PENALTY, 0, 100);
+
+      if (freshnessPercent <= 0) {
+        handleSpoiledOrder();
+        return true;
+      }
+
+      return false;
+    }
+
+    function handleActionButton() {
+      if (deliveryPhase === "fired") return;
+
+      if (!currentOrder) {
+        beginNextPickup();
+        return;
+      }
+
+      const note = currentCourierNote();
+
+      if (deliveryPhase === "toPickup") {
+        if (note === currentOrder.shop.note) {
+          deliveryPhase = "carrying";
+          lastFreshnessUpdate = performance.now();
+          setActionButtonLabel("DELIVER");
+          setMessage("ADDRESS");
+          soundPickup();
+          return;
+        }
+
+        setMessage(`${currentOrder.shop.initial} FOOD`);
+        soundWrong();
+        return;
+      }
+
+      if (deliveryPhase === "carrying") {
+        if (note === currentOrder.destination.targetNote) {
+          completedDeliveries += 1;
+          const points = awardDeliveryPoints();
+          soundDeliver();
+          beginNextPickup(`+${points} PTS`);
+          return;
+        }
+
+        const spoiled = applyWrongDeliveryPenalty();
+        if (!spoiled) {
+          setMessage(`-${WRONG_DELIVERY_PENALTY} FRESH`);
+          soundWrong();
+        }
+      }
+    }
+
+    function gameInput(action) {
+      if (action === "up") {
+        moveCourier(1);
+        return;
+      }
+
+      if (action === "down") {
+        moveCourier(-1);
+        return;
+      }
+
+      if (action === "a") {
+        handleActionButton();
+        return;
+      }
+
+      if (action === "b") {
+        endGame("Step 6 freshness check ended.");
+      }
+    }
+
+    function gameStop() {
+      stopAllHeldMoveButtons();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
+    const resizeObserver = new ResizeObserver(() => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+      if (!running) gameDraw();
+    });
+
+    resizeObserver.observe(appFrame);
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) gameDraw();
+      }, 250);
+    });
+
+    window.MobileArcadeShell = {
+      canvas,
+      ctx,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab,
+      configureControls: configureMobileControls,
+      setFirstTimeHelpVersion
+    };
+
+    scaleAppToFrame();
+    loadPlayers();
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    configureMobileControls();
+    gameInit();
+    gameDraw();
+  </script>
+</body>
+</html>
