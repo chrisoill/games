@@ -2257,23 +2257,29 @@
       bass: new Path2D(CLEF_PATHS.bass)
     };
 
-    const CLEF_CONFIG = {
-      treble: { anchorNote: "G4", x: 92, yOffset: 12, scale: 0.0500 },
-      bass: { anchorNote: "F3", x: 92, yOffset: 32, scale: 0.0500 }
+    const CLEF_GLYPH_ANCHORS = {
+      treble: { x: 407, y: 498 },
+      bass: { x: 687, y: 644 }
     };
 
-    function drawPathClef(path, config, layout) {
+    const CLEF_CONFIG = {
+      treble: { anchorNote: "G4", x: 112, yOffset: -13, scale: 0.0500 },
+      bass: { anchorNote: "F3", x: 126, yOffset: 0, scale: 0.0500 }
+    };
+
+    function drawPathClef(path, config, glyphAnchor, layout) {
       ctx.save();
       ctx.translate(config.x, noteY(config.anchorNote, layout) + config.yOffset);
       ctx.scale(config.scale, -config.scale);
+      ctx.translate(-glyphAnchor.x, -glyphAnchor.y);
       ctx.fillStyle = "#111827";
       ctx.fill(path);
       ctx.restore();
     }
 
     function drawClefs(layout) {
-      drawPathClef(CLEF_PATH_OBJECTS.treble, CLEF_CONFIG.treble, layout);
-      drawPathClef(CLEF_PATH_OBJECTS.bass, CLEF_CONFIG.bass, layout);
+      drawPathClef(CLEF_PATH_OBJECTS.treble, CLEF_CONFIG.treble, CLEF_GLYPH_ANCHORS.treble, layout);
+      drawPathClef(CLEF_PATH_OBJECTS.bass, CLEF_CONFIG.bass, CLEF_GLYPH_ANCHORS.bass, layout);
     }
 
     function drawCenteredHighlightedWord(text, centerX, y, font, highlightColor, restColor) {
