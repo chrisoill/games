@@ -774,6 +774,8 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
+    const GAME_CANVAS_LOGICAL_WIDTH = 390;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 219;
 
     /*
       Change STORAGE_KEY for each separate arcade game if you want each game
@@ -806,6 +808,27 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameCanvasPixelScale = 1;
+
+    function scaleGameCanvasBackingStore() {
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const stageScale = Math.max(1, appScale || 1);
+      const targetScale = Math.min(4, dpr * stageScale);
+      const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
+      const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      canvas.style.width = GAME_CANVAS_LOGICAL_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_LOGICAL_HEIGHT + "px";
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
     const scoreEl = document.getElementById("score");
@@ -1222,6 +1245,7 @@
       const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -2691,21 +2715,22 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.font = "bold 16px Arial, sans-serif";
-      ctx.fillText(headerText, canvas.width / 2, 12);
+      ctx.fillText(headerText, GAME_CANVAS_LOGICAL_WIDTH / 2, 12);
     }
 
     function gameDraw() {
       const layout = getMapLayout();
+      scaleGameCanvasBackingStore();
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
       ctx.fillStyle = "#f7fbff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
 
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CANVAS_LOGICAL_HEIGHT);
       gradient.addColorStop(0, "#eef6ff");
       gradient.addColorStop(1, "#fff7df");
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
 
       drawMapTitle();
       drawStaffLines(layout);
