@@ -18,6 +18,8 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
@@ -41,7 +43,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -64,6 +67,19 @@
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #appFrame,
+    #menuScreen,
+    #screen,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
     }
 
     input,
@@ -223,8 +239,11 @@
       min-width: 110px;
     }
 
+
     /* =========================
-       GAME / EMULATOR
+       GAME / MOBILE CONTROLLER
+       The game world uses Rhythm Snake's desktop 600 x 600 coordinates.
+       The square desktop world is reduced proportionally to fit the 390px mobile shell.
        ========================= */
 
     #gameScreen {
@@ -233,7 +252,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: none;
+      overflow: hidden;
     }
 
     #screen {
@@ -241,19 +261,31 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 390px;
       overflow: hidden;
       background: #0b1420;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: none;
+    }
+
+    /* Overlay the old mobile-style frame on top of the canvas.
+       Because it does not participate in layout, the 600 x 600 game world
+       keeps exactly the same displayed size and aspect ratio. */
+    #screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      pointer-events: none;
     }
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 390px;
       display: block;
+      touch-action: none;
       background: #f7fbff;
       image-rendering: auto;
     }
@@ -261,9 +293,9 @@
     #gameOverBox {
       display: none;
       position: absolute;
-      left: 34px;
-      right: 34px;
-      top: 35px;
+      left: 38px;
+      right: 38px;
+      top: 60px;
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -297,9 +329,9 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 390px;
       width: 390px;
-      height: 48px;
+      height: 58px;
       background:
         linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.02)),
         #17251c;
@@ -312,39 +344,60 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: 1fr auto;
-      grid-template-rows: 1fr 1fr;
+      grid-template-columns: 1fr auto auto;
+      grid-template-rows: 34px 18px;
+      column-gap: 12px;
       align-items: center;
-      padding: 5px 16px;
+      padding: 3px 12px;
       pointer-events: none;
     }
 
     #lcdMessage {
-      grid-column: 1 / 3;
-      font-size: 14px;
+      grid-column: 1 / 4;
+      font-size: 19px;
+      line-height: 30px;
       font-weight: bold;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
+    #lcdPlayer,
+    #lcdScore,
+    #lcdBest {
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
     #lcdScore {
-      font-size: 12px;
+      text-align: center;
     }
 
     #lcdBest {
-      font-size: 13px;
       text-align: right;
     }
 
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 448px;
       width: 390px;
-      height: 400px;
+      height: 222px;
+      /*
+        FULL-SIZE CONTROLLER DEFAULT:
+        All controller hardware below uses the original mobile dimensions.
+        Fit complete control sets by compressing shell padding and row gaps,
+        not by shrinking the controls themselves.
+      */
+      padding: 3px 14px 8px;
       background: linear-gradient(180deg, #303030, #181818);
-      touch-action: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: stretch;
+      gap: 2px;
+      overflow: hidden;
+      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -360,15 +413,36 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .controlRow {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 40px;
+      flex: 0 0 auto;
+    }
+
+    #primaryControlsRow {
+      min-height: 150px;
+    }
+
+    #stickControlsRow {
+      min-height: 112px;
+      gap: 94px;
+    }
+
+    #systemControlsRow {
+      min-height: 34px;
+    }
+
     /* D-PAD */
 
     #dpad {
-      position: absolute;
-      left: 17px;
-      top: 19px;
+      position: relative;
       width: 150px;
       height: 150px;
-      touch-action: manipulation;
+      flex: 0 0 150px;
+      touch-action: none;
     }
 
     .dpadBtn {
@@ -403,11 +477,10 @@
     /* FACE BUTTONS */
 
     #faceButtons {
-      position: absolute;
-      right: 18px;
-      top: 20px;
+      position: relative;
       width: 150px;
       height: 150px;
+      flex: 0 0 150px;
     }
 
     .faceBtn {
@@ -436,26 +509,29 @@
     #buttonA { left: 92px; top: 46px; }
     #buttonB { left: 46px; top: 92px; }
 
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 76px;
+      height: 76px;
+      left: 37px !important;
+      top: 37px !important;
+      border-radius: 22px;
+      padding: 0 8px;
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: normal;
+    }
+
     /* JOYSTICKS */
 
     .joystickPad {
-      position: absolute;
+      position: relative;
       width: 112px;
       height: 112px;
+      flex: 0 0 112px;
       border-radius: 18px;
       background: rgba(255,255,255,0.035);
       box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
       touch-action: none;
-    }
-
-    #leftJoystickPad {
-      left: 36px;
-      top: 188px;
-    }
-
-    #rightJoystickPad {
-      right: 37px;
-      top: 188px;
     }
 
     .joystickBase {
@@ -488,19 +564,15 @@
     /* START / SELECT */
 
     #systemButtons {
-      position: absolute;
-      left: 50%;
-      top: 326px;
-      width: 164px;
-      height: 34px;
-      transform: translateX(-50%);
+      min-height: 34px;
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 12px;
     }
 
     .systemBtn {
-      width: 76px;
+      width: 82px;
       height: 32px;
       border-radius: 999px;
       border: none;
@@ -518,21 +590,8 @@
       filter: brightness(1.2);
     }
 
-    /* Rhythm Snake uses only turning controls and the menu button.
-       Keep the full emulator layout in the template, but hide unused controls here. */
-    #faceButtons,
-    #rightJoystickPad,
-    #selectButton {
-      display: none;
-    }
-
-    #systemButtons {
-      width: 96px;
-    }
-
-    #startButton {
-      width: 96px;
-      letter-spacing: 0.6px;
+    #systemButtons.singleSystem .systemBtn {
+      width: 104px;
     }
 
     /* =========================
@@ -671,11 +730,6 @@
       border-radius: 6px;
     }
 
-
-    #gameCanvas {
-      background: #0b1420;
-      touch-action: none;
-    }
   </style>
 </head>
 
@@ -709,9 +763,10 @@
         <button id="startGameBtn">Start Game</button>
       </div>
 
+
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="600" height="600"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -723,39 +778,46 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdPlayer">PLAYER: <span id="playerName">—</span></div>
+          <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
 
         <div id="controls">
-          <div id="dpad">
-            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
-            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
-            <button id="dpadCenter" class="dpadBtn"></button>
-            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
-            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          <div id="primaryControlsRow" class="controlRow">
+            <div id="dpad">
+              <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+              <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+              <button id="dpadCenter" class="dpadBtn"></button>
+              <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+              <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+            </div>
+
+            <div id="faceButtons">
+              <button id="buttonX" class="faceBtn" data-action="x">X</button>
+              <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+              <button id="buttonA" class="faceBtn" data-action="a">A</button>
+              <button id="buttonB" class="faceBtn" data-action="b">B</button>
+            </div>
           </div>
 
-          <div id="faceButtons">
-            <button id="buttonX" class="faceBtn" data-action="x">X</button>
-            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
-            <button id="buttonA" class="faceBtn" data-action="a">A</button>
-            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          <div id="stickControlsRow" class="controlRow">
+            <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+              <div class="joystickBase"></div>
+              <div id="leftJoystickKnob" class="joystickKnob"></div>
+            </div>
+
+            <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+              <div class="joystickBase"></div>
+              <div id="rightJoystickKnob" class="joystickKnob"></div>
+            </div>
           </div>
 
-          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
-            <div class="joystickBase"></div>
-            <div id="leftJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
-            <div class="joystickBase"></div>
-            <div id="rightJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="systemButtons">
-            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
-            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          <div id="systemControlsRow" class="controlRow">
+            <div id="systemButtons">
+              <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+              <button id="startButton" class="systemBtn" data-action="start">START</button>
+            </div>
           </div>
         </div>
       </div>
@@ -777,6 +839,18 @@
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
 
+    // These match Rhythm Snake's desktop canvas exactly.
+    const GAME_CANVAS_LOGICAL_WIDTH = 600;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 600;
+
+    // The desktop square world is displayed proportionally inside the mobile shell.
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
     /*
       Change STORAGE_KEY for each separate arcade game if you want each game
       to keep its own local player list/leaderboard.
@@ -786,6 +860,8 @@
     const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Score";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "rhythmSnakeHowToPlay_v1";
+    let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
 
     const appFrame = document.getElementById("appFrame");
     const appStage = document.getElementById("appStage");
@@ -806,28 +882,66 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    const CANVAS_LOGICAL_WIDTH = 390;
-    const CANVAS_LOGICAL_HEIGHT = 219;
-    const CANVAS_PIXEL_RATIO = Math.max(2, Math.min(3, Math.ceil(window.devicePixelRatio || 2)));
+    let gameCanvasPixelScale = 1;
 
-    function configureCanvasResolution() {
-      const targetWidth = CANVAS_LOGICAL_WIDTH * CANVAS_PIXEL_RATIO;
-      const targetHeight = CANVAS_LOGICAL_HEIGHT * CANVAS_PIXEL_RATIO;
+    function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
+      const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
+      const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
 
       if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
         canvas.width = targetWidth;
         canvas.height = targetHeight;
       }
 
-      canvas.style.width = `${CANVAS_LOGICAL_WIDTH}px`;
-      canvas.style.height = `${CANVAS_LOGICAL_HEIGHT}px`;
-      ctx.setTransform(CANVAS_PIXEL_RATIO, 0, 0, CANVAS_PIXEL_RATIO, 0, 0);
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
       ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
     }
 
     const lcdMessage = document.getElementById("lcdMessage");
+    const playerNameEl = document.getElementById("playerName");
+    const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
+
+    // Desktop game modules commonly write to questionBox.
+    // On mobile, that same content appears in the compact LCD message row.
+    const questionBox = lcdMessage;
+    scoreLabelEl.textContent = String(SCORE_LABEL || "Score").toUpperCase();
 
     const gameOverBox = document.getElementById("gameOverBox");
     const gameOverScore = document.getElementById("gameOverScore");
@@ -838,6 +952,12 @@
     const rightJoystickPad = document.getElementById("rightJoystickPad");
     const leftJoystickKnob = document.getElementById("leftJoystickKnob");
     const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+    const primaryControlsRow = document.getElementById("primaryControlsRow");
+    const stickControlsRow = document.getElementById("stickControlsRow");
+    const systemControlsRow = document.getElementById("systemControlsRow");
+    const dpad = document.getElementById("dpad");
+    const faceButtons = document.getElementById("faceButtons");
+    const systemButtons = document.getElementById("systemButtons");
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
@@ -850,6 +970,8 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
@@ -889,27 +1011,12 @@
         label: "Pause",
         html: `
           <h3>Pause</h3>
-          <p>Need a break? You can resume, save this score and return to the player menu, or leave without saving this run.</p>
+          <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
           <div class="pauseMenuActions">
             <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
-            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Score &amp; Exit</button>
             <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
           </div>
-        `
-      },
-      {
-        id: "instructions",
-        label: "How to Play",
-        html: `
-          <h3>How to Play</h3>
-          <p>Rhythm Snake is like the classic snake game, but every snack is a rhythm answer.</p>
-          <ul>
-            <li>Look at the rhythm equation in the green LCD message.</li>
-            <li>Steer the snake into the rhythm symbol that makes the equation true.</li>
-            <li>A correct rhythm gives you 1 point and shows a new equation.</li>
-            <li>The run ends if you eat the wrong rhythm, hit the wall, or run into your own tail.</li>
-          </ul>
-          <p><strong>Tip:</strong> Think first, then turn. The snake keeps moving.</p>
         `
       },
       {
@@ -918,11 +1025,27 @@
         html: `
           <h3>Controls</h3>
           <ul>
-            <li><strong>D-pad:</strong> Tap ▲ ◄ ► ▼ to turn the snake.</li>
-            <li><strong>Left joystick:</strong> Push toward the direction you want to turn.</li>
-            <li><strong>MENU:</strong> Pause, resume, read How to Play, or exit.</li>
+            <li><strong>Left joystick / D-pad:</strong> Movement when the game uses movement.</li>
+            <li><strong>Right joystick:</strong> Directional aiming and firing when the game uses twin-stick controls.</li>
+            <li><strong>A / B / X / Y:</strong> Game action buttons. Each game should explain what these do.</li>
+            <li><strong>START:</strong> Pause / open this menu.</li>
+            <li><strong>SELECT:</strong> Extra game/system action when a game uses it.</li>
           </ul>
-          <p>There is no jump, fire, or action button in Rhythm Snake. Just steer.</p>
+          <p>The template exposes every mobile control by default. Each game should hide unused controls; the remaining rows recenter automatically.</p>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <p>This is the quick-start screen for new players.</p>
+          <ul>
+            <li>Read the goal of the game.</li>
+            <li>Check which buttons actually matter.</li>
+            <li>Tap START any time you need help again.</li>
+          </ul>
+          <p>Each game should replace this with short, concrete instructions.</p>
         `
       }
     ];
@@ -989,7 +1112,7 @@
       renderShellMenuTabs(activeShellMenuTab);
     }
 
-    function openShellMenu(tabId = "instructions") {
+    function openShellMenu(tabId = "controls") {
       shellMenuWasRunning = running;
 
       if (running) {
@@ -1017,11 +1140,164 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        scheduleGameLoop();
       }
 
       shellMenuWasRunning = false;
     }
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function shouldShowFirstTimeHelp() {
+      // Guest is a shared/new-visitor account, so it should open How to Play every time.
+      if (isGuestPlayerName()) return true;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      // Do not mark Guest as done. The next Guest player should still see How to Play.
+      if (isGuestPlayerName()) return;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function maybeOpenFirstTimeHelp() {
+      if (!shouldShowFirstTimeHelp()) return;
+      markFirstTimeHelpSeen();
+      openShellMenu("instructions");
+    }
+
+    /*
+      DEFAULT MOBILE CONTROLS
+      The template includes the full control inventory, but the layout now reflows.
+      Individual games should hide anything they do not use with
+      MobileArcadeShell.configureControls({...}) rather than resizing the game world.
+
+      Example future game-specific override:
+      MobileArcadeShell.configureControls({
+        showDpad: false,
+        showLeftJoystick: true,
+        showRightJoystick: false,
+        faceButtons: ["a"],
+        systemButtons: ["start"],
+        labels: { a: "REEL", start: "MENU" }
+      });
+    */
+    const defaultMobileControlConfig = {
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: ["a", "b", "x", "y"],
+      systemButtons: ["select", "start"],
+      labels: {
+        a: "A",
+        b: "B",
+        x: "X",
+        y: "Y",
+        select: "SELECT",
+        start: "START"
+      }
+    };
+
+    function setVisible(element, visible) {
+      if (!element) return;
+      element.classList.toggle("hidden", !visible);
+    }
+
+    function configureMobileControls(options = {}) {
+      const config = {
+        ...defaultMobileControlConfig,
+        ...options,
+        labels: {
+          ...defaultMobileControlConfig.labels,
+          ...(options.labels || {})
+        }
+      };
+
+      const showDpad = config.showDpad !== false;
+      const showLeftJoystick = config.showLeftJoystick !== false;
+      const showRightJoystick = config.showRightJoystick === true;
+      const visibleFaceButtons = new Set(
+        (config.faceButtons || []).map(action => String(action).toLowerCase())
+      );
+      const visibleSystemButtons = new Set(
+        (config.systemButtons || []).map(action => String(action).toLowerCase())
+      );
+
+      setVisible(dpad, showDpad);
+      setVisible(leftJoystickPad, showLeftJoystick);
+      setVisible(rightJoystickPad, showRightJoystick);
+      setVisible(faceButtons, visibleFaceButtons.size > 0);
+      setVisible(systemButtons, visibleSystemButtons.size > 0);
+
+      const faceButtonMap = {
+        a: document.getElementById("buttonA"),
+        b: document.getElementById("buttonB"),
+        x: document.getElementById("buttonX"),
+        y: document.getElementById("buttonY")
+      };
+
+      Object.entries(faceButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleFaceButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+        button.classList.toggle("singleAction", isVisible && visibleFaceButtons.size === 1);
+      });
+
+      faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
+
+      const systemButtonMap = {
+        select: document.getElementById("selectButton"),
+        start: document.getElementById("startButton")
+      };
+
+      Object.entries(systemButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleSystemButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+      });
+
+      systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
+
+      // Empty rows disappear entirely. Remaining rows automatically redistribute
+      // themselves vertically, so game-specific control sets stay centered.
+      setVisible(primaryControlsRow, showDpad || visibleFaceButtons.size > 0);
+      setVisible(stickControlsRow, showLeftJoystick || showRightJoystick);
+      setVisible(systemControlsRow, visibleSystemButtons.size > 0);
+
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
 
     function saveCurrentScoreForSelectedPlayer() {
       if (!selectedPlayer) return;
@@ -1096,6 +1372,7 @@
       const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1109,43 +1386,6 @@
 
     function addScore(amount) {
       setScore(score + amount);
-    }
-
-    // First-time-player help rule:
-    // Named players see How to Play once per version. Guest sees it every time.
-    const FIRST_TIME_HELP_VERSION = "rhythmSnakeHowToPlay_v1";
-
-    function isGuestPlayer(name = selectedPlayer) {
-      return String(name || "").trim().toLowerCase() === "guest";
-    }
-
-    function ensureSelectedPlayerRecord() {
-      if (!selectedPlayer) return null;
-      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
-        players[selectedPlayer] = { best: 0 };
-      }
-      return players[selectedPlayer];
-    }
-
-    function shouldShowFirstTimeHelp() {
-      const playerData = ensureSelectedPlayerRecord();
-      if (!playerData) return false;
-      if (isGuestPlayer()) return true;
-      return playerData.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
-    }
-
-    function markFirstTimeHelpSeen() {
-      if (isGuestPlayer()) return;
-      const playerData = ensureSelectedPlayerRecord();
-      if (!playerData) return;
-      playerData.helpSeenVersion = FIRST_TIME_HELP_VERSION;
-      savePlayers();
-    }
-
-    function maybeOpenFirstTimeHowToPlay() {
-      if (!shouldShowFirstTimeHelp()) return;
-      markFirstTimeHelpSeen();
-      openShellMenu("instructions");
     }
 
     function getSavePayload() {
@@ -1163,16 +1403,14 @@
         const cleanName = String(name || "").trim();
         if (!cleanName) return;
 
-        const best = data && typeof data === "object"
+        const isObjectData = data && typeof data === "object" && !Array.isArray(data);
+        const best = isObjectData
           ? Number(data.best || 0)
           : Number(data || 0);
-        const helpSeenVersion = data && typeof data === "object"
-          ? String(data.helpSeenVersion || "")
-          : "";
 
         cleaned[cleanName] = {
-          best: Math.max(0, Math.floor(best || 0)),
-          helpSeenVersion
+          ...(isObjectData ? data : {}),
+          best: Math.max(0, Math.floor(best || 0))
         };
       });
 
@@ -1467,9 +1705,13 @@
       menuScreen.style.display = "none";
       gameScreen.style.display = "block";
       startGame();
+      maybeOpenFirstTimeHelp();
     };
 
-    playAgainBtn.onclick = () => startGame();
+    playAgainBtn.onclick = () => {
+      startGame();
+      maybeOpenFirstTimeHelp();
+    };
 
     backToMenuBtn.onclick = () => {
       closeShellMenu({ resume: false });
@@ -1496,13 +1738,17 @@
 
       const centerX = stick.pad.offsetWidth / 2;
       const centerY = stick.pad.offsetHeight / 2;
+      const rawDx = point.x - centerX;
+      const rawDy = point.y - centerY;
+      const rawDistance = Math.hypot(rawDx, rawDy);
+      const limitedDistance = Math.min(stick.maxDistance, rawDistance);
+      const directionX = rawDistance > 0 ? rawDx / rawDistance : 0;
+      const directionY = rawDistance > 0 ? rawDy / rawDistance : 0;
+      const dx = directionX * limitedDistance;
+      const dy = directionY * limitedDistance;
 
-      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
-      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
-
-      const dx = limitedX - centerX;
-      const dy = limitedY - centerY;
-
+      // Normalized analog values in the range -1 through 1.
+      // Game modules can read MobileArcadeShell.sticks.left/right continuously.
       stick.x = dx / stick.maxDistance;
       stick.y = dy / stick.maxDistance;
 
@@ -1582,15 +1828,16 @@
       score = 0;
       running = true;
 
+      playerNameEl.textContent = selectedPlayer || "Guest";
       scoreEl.textContent = score;
       bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
-      maybeOpenFirstTimeHowToPlay();
+      scheduleGameLoop();
     }
 
     function stopGame() {
@@ -1601,13 +1848,39 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
       if (!running) return;
 
-      gameUpdate();
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+      }
+
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+      if (!running) return;
+
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
+
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
       gameDraw();
 
       loopId = requestAnimationFrame(loop);
@@ -1646,6 +1919,110 @@
 
       gameInput(action);
     }
+
+    function canvasPointFromClient(clientX, clientY, originalEvent) {
+      const rect = canvas.getBoundingClientRect();
+
+      return {
+        x: (clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height),
+        originalEvent
+      };
+    }
+
+    let activeCanvasPointerId = null;
+
+    canvas.addEventListener("pointerdown", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+
+      event.preventDefault();
+      activeCanvasPointerId = event.pointerId;
+
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch (err) {}
+
+      if (typeof gamePointer === "function") {
+        gamePointer(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+    });
+
+    canvas.addEventListener("pointermove", event => {
+      if (
+        !running ||
+        activeCanvasPointerId === null ||
+        event.pointerId !== activeCanvasPointerId
+      ) return;
+
+      event.preventDefault();
+
+      if (typeof gamePointerMove === "function") {
+        gamePointerMove(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+    });
+
+    function finishCanvasPointer(event) {
+      if (
+        activeCanvasPointerId === null ||
+        event.pointerId !== activeCanvasPointerId
+      ) return;
+
+      event.preventDefault();
+
+      if (typeof gamePointerUp === "function") {
+        gamePointerUp(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+
+      try {
+        if (canvas.hasPointerCapture(event.pointerId)) {
+          canvas.releasePointerCapture(event.pointerId);
+        }
+      } catch (err) {}
+
+      activeCanvasPointerId = null;
+    }
+
+    canvas.addEventListener("pointerup", finishCanvasPointer);
+    canvas.addEventListener("pointercancel", finishCanvasPointer);
+
+    document.addEventListener("keydown", event => {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+      if (shellMenu.classList.contains("open")) return;
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+
+      if (event.key === "ArrowUp" || key === "w") {
+        event.preventDefault();
+        handleInput("up");
+      }
+
+      if (event.key === "ArrowDown" || key === "s") {
+        event.preventDefault();
+        handleInput("down");
+      }
+
+      if (event.key === "ArrowLeft" || key === "a") {
+        event.preventDefault();
+        handleInput("left");
+      }
+
+      if (event.key === "ArrowRight" || key === "d") {
+        event.preventDefault();
+        handleInput("right");
+      }
+
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        handleInput("a");
+      }
+
+      if (key === "m") {
+        event.preventDefault();
+        openShellMenu("instructions");
+      }
+    });
 
     function getAudio() {
       if (!audioCtx) {
@@ -1699,37 +2076,71 @@
     }
 
     /*
-      GAME MODULE — RHYTHM SNAKE MOBILE ROUGH DRAFT
-      Uses the mobile emulator shell, Wix/Velo storage bridge, D-pad, and left joystick.
+      COMPATIBLE SHELL API
+      MobileArcadeShell is the native mobile name.
+      ArcadeShell is an alias so desktop game-module code can be reused without
+      renaming its shell calls.
     */
+    const mobileShellApi = {
+      root: appStage,
+      canvas,
+      ctx,
+      questionBox,
+      gameWidth: GAME_CANVAS_LOGICAL_WIDTH,
+      gameHeight: GAME_CANVAS_LOGICAL_HEIGHT,
+      getCanvasSize: getGameCanvasSize,
+      scaleGameCanvasBackingStore,
+      resetGameCanvasTransform,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      returnToPlayerMenu: exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab,
+      configureControls: configureMobileControls,
+      setFirstTimeHelpVersion
+    };
+
+    window.MobileArcadeShell = mobileShellApi;
+    window.ArcadeShell = mobileShellApi;
+
+    /* =========================
+       GAME MODULE — RHYTHM SNAKE
+
+       The old mobile playfield has been discarded. This is the desktop
+       600 x 600 game world, rendered proportionally at high resolution.
+
+       Mobile controls preserved from the previous mobile version:
+       - Full-size D-pad for discrete turns
+       - Full-size left joystick for directional turns
+       - MENU in the established system-button position
+       ========================= */
 
     const BACKING_TRACK_URL = "https://static.wixstatic.com/mp3/8e8c0c_8b6b8e66a3c14b0ba1882d1be7eb3375.wav";
-    const MUSIC_FONT = null; // Rhythm icons are drawn manually so mobile browsers do not need music-symbol fonts.
-
-    const RS_FIELD_OUTER_X = 10;
-    const RS_FIELD_OUTER_Y = 5;
-    const RS_FIELD_OUTER_SIZE = 210;
-    const RS_FIELD_PAD = 8;
-    const RS_FIELD_SIZE = RS_FIELD_OUTER_SIZE - RS_FIELD_PAD * 2;
-    const RS_FIELD_X = RS_FIELD_OUTER_X + RS_FIELD_PAD;
-    const RS_FIELD_Y = RS_FIELD_OUTER_Y + RS_FIELD_PAD;
-    const RS_TILE_COUNT = 21;
-    const RS_STEP_MS = 135;
+    const MUSIC_FONT = "bold 30px 'Arial Unicode MS', 'Noto Music', 'Segoe UI Symbol', Arial, sans-serif";
+    const RHYTHM_SNAKE_STEP_MS = 115;
+    const tileCount = 30;
 
     let snake = [];
     let direction = { x: 1, y: 0 };
     let nextDirection = { x: 1, y: 0 };
     let foods = [];
-    let stepAccumulator = 0;
-    let lastFrameTime = 0;
-    let currentQuestionText = "";
-    let currentQuestionOption = null;
-    let allQuestionOptions = [];
-    let leftStickLastInput = 0;
+    let snakeStepAccumulator = 0;
     let leftStickLastDirection = "";
+    let leftStickLastInput = 0;
 
-    // Backing-track audio. Web Audio gives tighter, gapless looping than normal <audio>.
-    // The hidden HTMLAudio fallback keeps the game from going silent if Wix/browser decoding is blocked.
     let backingBuffer = null;
     let backingSource = null;
     let backingGain = null;
@@ -1739,46 +2150,108 @@
     const fallbackBackingTrack = new Audio();
     fallbackBackingTrack.src = BACKING_TRACK_URL;
     fallbackBackingTrack.loop = true;
-    fallbackBackingTrack.volume = 0.28;
+    fallbackBackingTrack.volume = 0.35;
 
     const rhythms = [
-      { value: 0.5, type: "eighthNote", label: "eighth note", short: "eighth" },
-      { value: 1, type: "quarterNote", label: "quarter note", short: "quarter" },
-      { value: 1, type: "quarterRest", label: "quarter rest", short: "qtr rest" },
-      { value: 1.5, type: "dottedQuarterNote", label: "dotted quarter", short: "dotted qtr" },
-      { value: 2, type: "halfNote", label: "half note", short: "half" },
-      { value: 2, type: "halfRest", label: "half rest", short: "half rest" },
-      { value: 3, type: "dottedHalfNote", label: "dotted half", short: "dotted half" },
-      { value: 4, type: "wholeNote", label: "whole note", short: "whole" },
-      { value: 4, type: "wholeRest", label: "whole rest", short: "whole rest" }
+      { symbol: "𝅘𝅥𝅮", value: 0.5, type: "note" },
+      { symbol: "𝅘𝅥", value: 1, type: "note" },
+      { symbol: "𝄽", value: 1, type: "quarterRest" },
+      { symbol: "𝅘𝅥.", value: 1.5, type: "note" },
+      { symbol: "𝅗𝅥", value: 2, type: "note" },
+      { symbol: "▰", value: 2, type: "halfRest" },
+      { symbol: "𝅗𝅥.", value: 3, type: "note" },
+      { symbol: "𝅝", value: 4, type: "note" },
+      { symbol: "▰", value: 4, type: "wholeRest" }
     ];
 
-    const components = rhythms.filter(r => [0.5, 1, 1.5, 2].includes(r.value));
-    const answerRhythms = rhythms.filter(r => [0.5, 1, 1.5, 2, 3, 4].includes(r.value));
+    const components = rhythms.filter(rhythm => [0.5, 1, 1.5, 2].includes(rhythm.value));
+    const answerRhythms = rhythms.filter(rhythm => [0.5, 1, 1.5, 2, 3, 4].includes(rhythm.value));
 
-    function rhythmText(r) {
-      if (!r) return "?";
-      return r.short || r.label || "?";
+    function renderRhythmHTML(rhythm) {
+      if (rhythm.type === "halfRest") {
+        return `<span style="display:inline-block;position:relative;width:32px;height:28px;vertical-align:middle;">
+          <span style="position:absolute;left:3px;right:3px;top:18px;border-top:3px solid currentColor;"></span>
+          <span style="position:absolute;left:9px;top:11px;width:14px;height:8px;background:currentColor;"></span>
+        </span>`;
+      }
+
+      if (rhythm.type === "wholeRest") {
+        return `<span style="display:inline-block;position:relative;width:32px;height:28px;vertical-align:middle;">
+          <span style="position:absolute;left:3px;right:3px;top:9px;border-top:3px solid currentColor;"></span>
+          <span style="position:absolute;left:9px;top:9px;width:14px;height:8px;background:currentColor;"></span>
+        </span>`;
+      }
+
+      return `<span style="font-family:'Arial Unicode MS','Noto Music','Segoe UI Symbol',Arial,sans-serif;font-weight:bold;">${rhythm.symbol}</span>`;
     }
 
     function buildAllQuestionOptions() {
       const options = [];
-      const operators = ["+", "-"];
+      const operators = ["+", "−"];
+
       components.forEach(left => {
         components.forEach(right => {
           operators.forEach(operator => {
-            const rawTotal = operator === "+" ? left.value + right.value : left.value - right.value;
+            const rawTotal = operator === "+"
+              ? left.value + right.value
+              : left.value - right.value;
+
             const total = Math.round(rawTotal * 2) / 2;
             if (total <= 0 || total > 4) return;
-            const answers = answerRhythms.filter(r => r.value === total);
-            answers.forEach(answer => options.push({ left, right, operator, answer }));
+
+            answerRhythms
+              .filter(answer => answer.value === total)
+              .forEach(answer => options.push({ left, right, operator, answer }));
           });
         });
       });
+
       return options;
     }
 
-    allQuestionOptions = buildAllQuestionOptions();
+    const allQuestionOptions = buildAllQuestionOptions();
+
+    MobileArcadeShell.updateMenuTab("instructions", `
+      <h3>How to Play</h3>
+      <p>Rhythm Snake is like the classic snake game, but every snack is a rhythm answer.</p>
+      <ul>
+        <li>Look at the rhythm equation in the green LCD message.</li>
+        <li>Steer the snake into the rhythm symbol that makes the equation true.</li>
+        <li>A correct rhythm gives you 1 point and shows a new equation.</li>
+        <li>The run ends if you eat the wrong rhythm, hit the wall, or run into your own tail.</li>
+      </ul>
+      <p><strong>Tip:</strong> Think first, then turn. The snake keeps moving.</p>
+    `);
+
+    MobileArcadeShell.updateMenuTab("controls", `
+      <h3>Controls</h3>
+      <ul>
+        <li><strong>D-pad:</strong> Tap ▲ ◄ ► ▼ to turn the snake.</li>
+        <li><strong>Left joystick:</strong> Push toward the direction you want to turn.</li>
+        <li><strong>MENU:</strong> Pause, resume, read How to Play, or exit.</li>
+      </ul>
+      <p>There is no jump, fire, or action button in Rhythm Snake. Just steer.</p>
+    `);
+
+    MobileArcadeShell.setFirstTimeHelpVersion("rhythmSnakeHowToPlay_v1");
+
+    function configureRhythmSnakeControls() {
+      MobileArcadeShell.configureControls({
+        showDpad: true,
+        showLeftJoystick: true,
+        showRightJoystick: false,
+        faceButtons: [],
+        systemButtons: ["start"],
+        labels: { start: "MENU" }
+      });
+
+      // Rhythm Snake uses both steering options. Put them in one centered row so
+      // the square desktop board can be as large as possible without dead space.
+      if (leftJoystickPad.parentElement !== primaryControlsRow) {
+        primaryControlsRow.appendChild(leftJoystickPad);
+      }
+      stickControlsRow.classList.add("hidden");
+    }
 
     async function loadBackingTrack() {
       if (!BACKING_TRACK_URL) return null;
@@ -1790,9 +2263,7 @@
 
         backingTrackLoading = fetch(BACKING_TRACK_URL)
           .then(response => {
-            if (!response.ok) {
-              throw new Error("Backing track failed to load.");
-            }
+            if (!response.ok) throw new Error("Backing track failed to load.");
             return response.arrayBuffer();
           })
           .then(arrayBuffer => ac.decodeAudioData(arrayBuffer))
@@ -1819,23 +2290,19 @@
 
       try {
         const buffer = await loadBackingTrack();
-        if (!buffer) return;
+        if (!buffer || gameScreen.style.display !== "block") return;
 
         usingFallbackBackingTrack = false;
-
         backingGain = ac.createGain();
-        backingGain.gain.value = 0.28;
+        backingGain.gain.value = 0.35;
         backingGain.connect(ac.destination);
 
         backingSource = ac.createBufferSource();
         backingSource.buffer = buffer;
         backingSource.loop = true;
         backingSource.connect(backingGain);
-
-        // Start very slightly in the future to avoid click/pop edge cases after restarts.
         backingSource.start(ac.currentTime + 0.03);
-      } catch (err) {
-        // Fallback: less perfect looping, but keeps music working if Web Audio decoding is blocked.
+      } catch (error) {
         usingFallbackBackingTrack = true;
         fallbackBackingTrack.currentTime = 0;
         fallbackBackingTrack.play().catch(() => {});
@@ -1844,13 +2311,13 @@
 
     function stopBackingTrack() {
       if (backingSource) {
-        try { backingSource.stop(); } catch (err) {}
-        try { backingSource.disconnect(); } catch (err) {}
+        try { backingSource.stop(); } catch (error) {}
+        try { backingSource.disconnect(); } catch (error) {}
         backingSource = null;
       }
 
       if (backingGain) {
-        try { backingGain.disconnect(); } catch (err) {}
+        try { backingGain.disconnect(); } catch (error) {}
         backingGain = null;
       }
 
@@ -1863,32 +2330,55 @@
 
     function makeQuestion() {
       const option = allQuestionOptions[Math.floor(Math.random() * allQuestionOptions.length)];
-      currentQuestionOption = option;
       const correct = option.answer;
+
       let wrong;
       do {
         wrong = answerRhythms[Math.floor(Math.random() * answerRhythms.length)];
       } while (wrong.value === correct.value);
-      currentQuestionText = `${rhythmText(option.left)} ${option.operator} ${rhythmText(option.right)} = ?`;
-      setMessage(currentQuestionText);
+
+      questionBox.innerHTML = `${renderRhythmHTML(option.left)} ${option.operator} ${renderRhythmHTML(option.right)} = ?`;
+
       foods = [
-        { x: 3, y: 3, rhythm: correct, correct: true },
-        { x: RS_TILE_COUNT - 4, y: RS_TILE_COUNT - 4, rhythm: wrong, correct: false }
+        { x: 5, y: 5, rhythm: correct, correct: true },
+        { x: 24, y: 24, rhythm: wrong, correct: false }
       ];
+
       placeFoodsSafely();
     }
 
     function placeFoodsSafely() {
+      const pad = 1;
+      const forbiddenRows = new Set(snake.map(part => part.y));
+      const forbiddenCols = new Set(snake.map(part => part.x));
       const used = new Set();
+
       foods.forEach(food => {
         let placed = false;
         let attempts = 0;
+
         while (!placed && attempts < 500) {
-          attempts++;
-          const x = Math.floor(Math.random() * (RS_TILE_COUNT - 2)) + 1;
-          const y = Math.floor(Math.random() * (RS_TILE_COUNT - 2)) + 1;
+          attempts += 1;
+          const x = Math.floor(Math.random() * (tileCount - pad * 2)) + pad;
+          const y = Math.floor(Math.random() * (tileCount - pad * 2)) + pad;
           const key = `${x},${y}`;
           const onSnake = snake.some(part => part.x === x && part.y === y);
+          const alignedWithSnake = forbiddenRows.has(y) || forbiddenCols.has(x);
+
+          if (!onSnake && !used.has(key) && !alignedWithSnake) {
+            food.x = x;
+            food.y = y;
+            used.add(key);
+            placed = true;
+          }
+        }
+
+        while (!placed) {
+          const x = Math.floor(Math.random() * (tileCount - pad * 2)) + pad;
+          const y = Math.floor(Math.random() * (tileCount - pad * 2)) + pad;
+          const key = `${x},${y}`;
+          const onSnake = snake.some(part => part.x === x && part.y === y);
+
           if (!onSnake && !used.has(key)) {
             food.x = x;
             food.y = y;
@@ -1900,411 +2390,205 @@
     }
 
     function gameInit() {
+      configureRhythmSnakeControls();
       setScore(0);
+
       snake = [
-        { x: 10, y: 10 },
-        { x: 9, y: 10 },
-        { x: 8, y: 10 }
+        { x: 15, y: 15 },
+        { x: 14, y: 15 },
+        { x: 13, y: 15 }
       ];
+
       direction = { x: 1, y: 0 };
       nextDirection = { x: 1, y: 0 };
-      stepAccumulator = 0;
-      lastFrameTime = performance.now();
-      leftStickLastInput = 0;
+      snakeStepAccumulator = 0;
       leftStickLastDirection = "";
-      makeQuestion();
-      if (running) startBackingTrack().catch(() => {});
-    }
+      leftStickLastInput = 0;
 
-    function gameUpdate() {
-      const now = performance.now();
-      const delta = Math.min(250, now - lastFrameTime);
-      lastFrameTime = now;
-      maybeSendLeftJoystickInput();
-      stepAccumulator += delta;
-      while (stepAccumulator >= RS_STEP_MS) {
-        updateSnakeStep();
-        stepAccumulator -= RS_STEP_MS;
+      makeQuestion();
+
+      if (gameScreen.style.display === "block") {
+        startBackingTrack();
       }
     }
 
     function updateSnakeStep() {
       direction = nextDirection;
+
       const head = {
         x: snake[0].x + direction.x,
         y: snake[0].y + direction.y
       };
+
       if (
-        head.x < 0 || head.x >= RS_TILE_COUNT ||
-        head.y < 0 || head.y >= RS_TILE_COUNT ||
+        head.x < 0 || head.x >= tileCount ||
+        head.y < 0 || head.y >= tileCount ||
         snake.some(part => part.x === head.x && part.y === head.y)
       ) {
         endGame("Crash!");
         return;
       }
+
       snake.unshift(head);
+
       const eatenIndex = foods.findIndex(food => food.x === head.x && food.y === head.y);
+
       if (eatenIndex >= 0) {
         const eaten = foods[eatenIndex];
+
         if (!eaten.correct) {
           endGame("Wrong rhythm!");
           return;
         }
+
         addScore(1);
         soundCorrect();
-        if (score > 0 && score % 5 === 0) soundWin();
+
+        if (score % 5 === 0) {
+          soundWin();
+        }
+
         makeQuestion();
       } else {
         snake.pop();
       }
     }
 
-    function gameDraw() {
-      configureCanvasResolution();
-      ctx.clearRect(0, 0, CANVAS_LOGICAL_WIDTH, CANVAS_LOGICAL_HEIGHT);
-      ctx.fillStyle = "#0b1420";
-      ctx.fillRect(0, 0, CANVAS_LOGICAL_WIDTH, CANVAS_LOGICAL_HEIGHT);
-      drawPlayField();
-      drawSidePanel();
-    }
-
-    function drawPlayField() {
-      const tileSize = RS_FIELD_SIZE / RS_TILE_COUNT;
-
-      // White breathing room around the grid keeps note stems from being clipped on edge tiles.
-      ctx.fillStyle = "#f7fbff";
-      roundRect(RS_FIELD_OUTER_X, RS_FIELD_OUTER_Y, RS_FIELD_OUTER_SIZE, RS_FIELD_OUTER_SIZE, 10);
-      ctx.fill();
-
-      ctx.fillStyle = "#f7fbff";
-      ctx.fillRect(RS_FIELD_X, RS_FIELD_Y, RS_FIELD_SIZE, RS_FIELD_SIZE);
-      ctx.strokeStyle = "#dbe7f5";
-      ctx.lineWidth = 1;
-      for (let i = 0; i <= RS_TILE_COUNT; i++) {
-        const pos = RS_FIELD_X + i * tileSize;
-        ctx.beginPath();
-        ctx.moveTo(pos, RS_FIELD_Y);
-        ctx.lineTo(pos, RS_FIELD_Y + RS_FIELD_SIZE);
-        ctx.stroke();
-        const y = RS_FIELD_Y + i * tileSize;
-        ctx.beginPath();
-        ctx.moveTo(RS_FIELD_X, y);
-        ctx.lineTo(RS_FIELD_X + RS_FIELD_SIZE, y);
-        ctx.stroke();
-      }
-      foods.forEach(food => drawRhythmSymbol(food, tileSize));
-      snake.forEach((part, index) => {
-        ctx.fillStyle = index === 0 ? "#111827" : "#2563eb";
-        roundRect(
-          RS_FIELD_X + part.x * tileSize + 1,
-          RS_FIELD_Y + part.y * tileSize + 1,
-          tileSize - 2,
-          tileSize - 2,
-          3
-        );
-        ctx.fill();
-      });
-
-      ctx.strokeStyle = "#dbe7f5";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(RS_FIELD_X, RS_FIELD_Y, RS_FIELD_SIZE, RS_FIELD_SIZE);
-
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 2;
-      roundRect(RS_FIELD_OUTER_X, RS_FIELD_OUTER_Y, RS_FIELD_OUTER_SIZE, RS_FIELD_OUTER_SIZE, 10);
-      ctx.stroke();
-    }
-
-    function drawSidePanel() {
-      const x = RS_FIELD_OUTER_X + RS_FIELD_OUTER_SIZE + 10;
-      const w = CANVAS_LOGICAL_WIDTH - x - 10;
-      ctx.fillStyle = "rgba(255,255,255,0.08)";
-      roundRect(x, RS_FIELD_OUTER_Y, w, RS_FIELD_OUTER_SIZE, 10);
-      ctx.fill();
-
-      ctx.fillStyle = "#f8fbff";
-      ctx.font = "bold 12px Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.fillText("RHYTHM", x + w / 2, RS_FIELD_OUTER_Y + 12);
-      ctx.fillText("SNAKE", x + w / 2, RS_FIELD_OUTER_Y + 28);
-
-      drawQuestionIcons(currentQuestionOption, x, RS_FIELD_OUTER_Y + 56, w);
-
-      ctx.font = "bold 10px Arial, sans-serif";
-      ctx.fillStyle = "#b7ff9e";
-      ctx.textBaseline = "top";
-      ctx.fillText("Use D-pad", x + w / 2, RS_FIELD_OUTER_Y + 154);
-      ctx.fillText("or left stick", x + w / 2, RS_FIELD_OUTER_Y + 168);
-    }
-
-    function drawQuestionIcons(option, panelX, panelY, panelW) {
-      ctx.save();
-      ctx.fillStyle = "#f8fbff";
-      ctx.strokeStyle = "#f8fbff";
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-
-      if (!option) {
-        ctx.font = "bold 22px Arial, sans-serif";
-        ctx.fillText("?", panelX + panelW / 2, panelY + 36);
-        ctx.restore();
-        return;
-      }
-
-      const centerX = panelX + panelW / 2;
-      const topY = panelY + 31;
-      const bottomY = panelY + 78;
-
-      drawRhythmIcon(option.left, centerX - 42, topY, 1.08, "panel");
-      ctx.font = "bold 22px Arial, sans-serif";
-      ctx.fillText(option.operator, centerX, topY + 1);
-      drawRhythmIcon(option.right, centerX + 42, topY, 1.08, "panel");
-
-      ctx.font = "bold 24px Arial, sans-serif";
-      ctx.fillText("=", centerX - 15, bottomY);
-      ctx.fillText("?", centerX + 18, bottomY);
-
-      ctx.restore();
-    }
-
-    function drawRhythmSymbol(food, tileSize) {
-      const cx = RS_FIELD_X + food.x * tileSize + tileSize / 2;
-      const cy = RS_FIELD_Y + food.y * tileSize + tileSize / 2;
-
-      ctx.save();
-      ctx.fillStyle = "#111827";
-      ctx.strokeStyle = "#111827";
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      // Grid icons are anchored by the notehead/rest center. Stems and flags are secondary.
-      drawRhythmIcon(food.rhythm, cx, cy, 1.0, "grid");
-
-      ctx.restore();
-    }
-
-    function drawRhythmIcon(rhythm, x, y, scale = 1, context = "grid") {
-      if (!rhythm) return;
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(scale, scale);
-
-      const isGrid = context === "grid";
-      ctx.lineWidth = isGrid ? 1.35 : 2.2;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      if (rhythm.type === "eighthNote") {
-        drawNoteHead(0, 0, true, isGrid);
-        drawStemFromNoteHead(0, 0, isGrid);
-        drawFlagFromStem(isGrid);
-      } else if (rhythm.type === "quarterNote") {
-        drawNoteHead(0, 0, true, isGrid);
-        drawStemFromNoteHead(0, 0, isGrid);
-      } else if (rhythm.type === "dottedQuarterNote") {
-        drawNoteHead(0, 0, true, isGrid);
-        drawStemFromNoteHead(0, 0, isGrid);
-        drawDot(isGrid ? 7.0 : 8.5, isGrid ? -0.2 : 0.0, isGrid ? 1.15 : 1.7);
-      } else if (rhythm.type === "halfNote") {
-        drawNoteHead(0, 0, false, isGrid);
-        drawStemFromNoteHead(0, 0, isGrid);
-      } else if (rhythm.type === "dottedHalfNote") {
-        drawNoteHead(0, 0, false, isGrid);
-        drawStemFromNoteHead(0, 0, isGrid);
-        drawDot(isGrid ? 7.0 : 8.5, isGrid ? -0.2 : 0.0, isGrid ? 1.15 : 1.7);
-      } else if (rhythm.type === "wholeNote") {
-        drawNoteHead(0, 0, false, isGrid, isGrid ? 4.6 : 6.4, isGrid ? 3.1 : 4.2);
-      } else if (rhythm.type === "quarterRest") {
-        drawQuarterRestIcon(isGrid);
-      } else if (rhythm.type === "halfRest") {
-        drawHalfRestIcon(isGrid);
-      } else if (rhythm.type === "wholeRest") {
-        drawWholeRestIcon(isGrid);
-      }
-
-      ctx.restore();
-    }
-
-    function drawNoteHead(x, y, filled, isGrid, rx, ry) {
-      const headRx = rx || (isGrid ? 4.1 : 5.8);
-      const headRy = ry || (isGrid ? 2.8 : 3.9);
-
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(-0.34);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, headRx, headRy, 0, 0, Math.PI * 2);
-      if (filled) {
-        ctx.fill();
-      } else {
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function drawStemFromNoteHead(x, y, isGrid) {
-      const stemX = x + (isGrid ? 3.6 : 5.0);
-      const stemTop = y - (isGrid ? 15.0 : 19.0);
-      const stemBottom = y - 0.5;
-
-      ctx.beginPath();
-      ctx.moveTo(stemX, stemBottom);
-      ctx.lineTo(stemX, stemTop);
-      ctx.stroke();
-    }
-
-    function drawFlagFromStem(isGrid) {
-      const stemX = isGrid ? 3.6 : 5.0;
-      const topY = -(isGrid ? 15.0 : 19.0);
-      const flagReach = isGrid ? 7.0 : 9.0;
-      const flagDrop = isGrid ? 8.0 : 10.5;
-
-      ctx.beginPath();
-      ctx.moveTo(stemX, topY);
-      ctx.bezierCurveTo(stemX + flagReach, topY + 1.0, stemX + flagReach, topY + flagDrop - 2.0, stemX + 1.4, topY + flagDrop);
-      ctx.stroke();
-    }
-
-    function drawDot(x, y, radius) {
-      ctx.beginPath();
-      ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    function drawQuarterRestIcon(isGrid) {
-      const s = isGrid ? 0.68 : 1.10;
-      ctx.save();
-      ctx.scale(s, s);
-
-      // Three ~38-degree zigzag segments, then a smooth semi-oval hook.
-      // On the grid, nudge the whole symbol slightly downward so the occupied square reads clearly.
-      const oldLineWidth = ctx.lineWidth;
-      ctx.lineWidth = oldLineWidth * (isGrid ? 1.02 : 1.14);
-
-      const yOffset = isGrid ? 1.4 : 0.4;
-      const angle = 38 * Math.PI / 180;
-      const seg = isGrid ? 6.2 : 8.8;
-      const dx = Math.cos(angle) * seg;
-      const dy = Math.sin(angle) * seg;
-
-      const p0 = { x: -2.4, y: -12.1 + yOffset };
-      const p1 = { x: p0.x + dx, y: p0.y + dy };
-      const p2 = { x: p1.x - dx, y: p1.y + dy };
-      const p3 = { x: p2.x + dx, y: p2.y + dy };
-
-      ctx.beginPath();
-      ctx.moveTo(p0.x, p0.y);
-      ctx.lineTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.lineTo(p3.x, p3.y);
-
-      // Smooth left-bulging semi-oval: no corners, no angled bottom.
-      const rx = isGrid ? 4.9 : 6.2;
-      const ry = isGrid ? 3.7 : 4.9;
-      const leftTip = { x: p3.x - rx * 1.15, y: p3.y + ry * 1.02 };
-      const end = { x: p3.x + 0.05, y: p3.y + ry * 1.98 };
-
-      ctx.bezierCurveTo(
-        p3.x - rx * 0.18, p3.y + ry * 0.18,
-        p3.x - rx * 1.02, p3.y + ry * 0.36,
-        leftTip.x, leftTip.y
-      );
-      ctx.bezierCurveTo(
-        p3.x - rx * 1.00, p3.y + ry * 1.72,
-        p3.x - rx * 0.12, p3.y + ry * 2.02,
-        end.x, end.y
-      );
-
-      ctx.stroke();
-
-      ctx.lineWidth = oldLineWidth;
-      ctx.restore();
-    }
-
-    function drawHalfRestIcon(isGrid) {
-      const staffY = isGrid ? 2.8 : 4.2;
-      const restW = isGrid ? 8.0 : 11.0;
-      const restH = isGrid ? 3.8 : 5.0;
-      ctx.beginPath();
-      ctx.moveTo(-restW, staffY);
-      ctx.lineTo(restW, staffY);
-      ctx.stroke();
-      ctx.fillRect(-restW * 0.55, staffY - restH, restW * 1.1, restH);
-    }
-
-    function drawWholeRestIcon(isGrid) {
-      const staffY = isGrid ? -2.8 : -4.2;
-      const restW = isGrid ? 8.0 : 11.0;
-      const restH = isGrid ? 3.8 : 5.0;
-      ctx.beginPath();
-      ctx.moveTo(-restW, staffY);
-      ctx.lineTo(restW, staffY);
-      ctx.stroke();
-      ctx.fillRect(-restW * 0.55, staffY, restW * 1.1, restH);
-    }
-
-    function roundRect(x, y, w, h, r) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
-
-    function wrapCanvasText(text, x, y, maxWidth, lineHeight) {
-      const words = String(text || "").split(/\s+/);
-      let line = "";
-      const lines = [];
-      words.forEach(word => {
-        const testLine = line ? `${line} ${word}` : word;
-        if (ctx.measureText(testLine).width > maxWidth && line) {
-          lines.push(line);
-          line = word;
-        } else {
-          line = testLine;
-        }
-      });
-      if (line) lines.push(line);
-      lines.slice(0, 5).forEach((drawLine, i) => {
-        ctx.fillText(drawLine, x + maxWidth / 2, y + i * lineHeight);
-      });
-    }
-
-    function setDirection(dir) {
-      if (dir === "up" && direction.y !== 1) nextDirection = { x: 0, y: -1 };
-      if (dir === "down" && direction.y !== -1) nextDirection = { x: 0, y: 1 };
-      if (dir === "left" && direction.x !== 1) nextDirection = { x: -1, y: 0 };
-      if (dir === "right" && direction.x !== -1) nextDirection = { x: 1, y: 0 };
-    }
-
     function joystickDirection() {
-      const ax = Math.abs(sticks.left.x);
-      const ay = Math.abs(sticks.left.y);
-      if (Math.max(ax, ay) < 0.52) return "";
-      return ax > ay ? (sticks.left.x < 0 ? "left" : "right") : (sticks.left.y < 0 ? "up" : "down");
+      const horizontal = Math.abs(sticks.left.x);
+      const vertical = Math.abs(sticks.left.y);
+      if (Math.max(horizontal, vertical) < 0.52) return "";
+
+      return horizontal > vertical
+        ? (sticks.left.x < 0 ? "left" : "right")
+        : (sticks.left.y < 0 ? "up" : "down");
     }
 
     function maybeSendLeftJoystickInput() {
-      const dir = joystickDirection();
-      if (!dir) {
+      const joystickTurn = joystickDirection();
+
+      if (!joystickTurn) {
         leftStickLastDirection = "";
         return;
       }
+
       const now = performance.now();
-      if (dir !== leftStickLastDirection || now - leftStickLastInput > 260) {
-        leftStickLastDirection = dir;
+      if (joystickTurn !== leftStickLastDirection || now - leftStickLastInput > 260) {
+        leftStickLastDirection = joystickTurn;
         leftStickLastInput = now;
-        setDirection(dir);
+        setDirection(joystickTurn);
+      }
+    }
+
+    function gameUpdate() {
+      maybeSendLeftJoystickInput();
+      snakeStepAccumulator += FIXED_GAME_STEP_MS;
+
+      if (snakeStepAccumulator >= RHYTHM_SNAKE_STEP_MS) {
+        snakeStepAccumulator -= RHYTHM_SNAKE_STEP_MS;
+        updateSnakeStep();
+      }
+    }
+
+    function gameDraw() {
+      const tileSize = GAME_CANVAS_LOGICAL_WIDTH / tileCount;
+
+      ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+      ctx.fillStyle = "#f7fbff";
+      ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+
+      ctx.strokeStyle = "#dbe7f5";
+      ctx.lineWidth = 1;
+
+      for (let index = 0; index <= tileCount; index += 1) {
+        ctx.beginPath();
+        ctx.moveTo(index * tileSize, 0);
+        ctx.lineTo(index * tileSize, GAME_CANVAS_LOGICAL_HEIGHT);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, index * tileSize);
+        ctx.lineTo(GAME_CANVAS_LOGICAL_WIDTH, index * tileSize);
+        ctx.stroke();
+      }
+
+      foods.forEach(food => drawRhythmSymbol(food, tileSize));
+
+      snake.forEach((part, index) => {
+        ctx.fillStyle = index === 0 ? "#111827" : "#2563eb";
+        roundRect(
+          part.x * tileSize + 2,
+          part.y * tileSize + 2,
+          tileSize - 4,
+          tileSize - 4,
+          6
+        );
+        ctx.fill();
+      });
+    }
+
+    function drawRhythmSymbol(food, tileSize) {
+      const centerX = food.x * tileSize + tileSize / 2;
+      const centerY = food.y * tileSize + tileSize / 2;
+      const noteYNudge = -7;
+
+      ctx.fillStyle = "#111827";
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2.4;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+
+      if (food.rhythm.type === "halfRest") {
+        ctx.beginPath();
+        ctx.moveTo(centerX - 9, centerY + 7);
+        ctx.lineTo(centerX + 9, centerY + 7);
+        ctx.stroke();
+        ctx.fillRect(centerX - 7, centerY, 14, 7);
+        return;
+      }
+
+      if (food.rhythm.type === "wholeRest") {
+        ctx.beginPath();
+        ctx.moveTo(centerX - 9, centerY - 7);
+        ctx.lineTo(centerX + 9, centerY - 7);
+        ctx.stroke();
+        ctx.fillRect(centerX - 7, centerY - 7, 14, 7);
+        return;
+      }
+
+      ctx.font = MUSIC_FONT;
+      ctx.fillText(food.rhythm.symbol, centerX, centerY + noteYNudge);
+    }
+
+    function roundRect(x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function setDirection(turn) {
+      if (turn === "up" && direction.y !== 1) {
+        nextDirection = { x: 0, y: -1 };
+      }
+
+      if (turn === "down" && direction.y !== -1) {
+        nextDirection = { x: 0, y: 1 };
+      }
+
+      if (turn === "left" && direction.x !== 1) {
+        nextDirection = { x: -1, y: 0 };
+      }
+
+      if (turn === "right" && direction.x !== -1) {
+        nextDirection = { x: 1, y: 0 };
       }
     }
 
@@ -2312,64 +2596,68 @@
       if (["up", "down", "left", "right"].includes(action)) {
         setDirection(action);
       }
-      if (action === "select") {
-        setMessage(currentQuestionText || "Find the right rhythm.");
-      }
     }
+
+    function gamePointer() {}
 
     function gameStop() {
       stopBackingTrack();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
+      leftStickLastDirection = "";
+      snakeStepAccumulator = 0;
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      scaleAppToFrame();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      if (!running) gameDraw();
-    });
+    let resizeObserver = null;
 
-    resizeObserver.observe(appFrame);
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      });
+
+      resizeObserver.observe(appFrame);
+    }
 
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
       }, 250);
     });
 
-    window.MobileArcadeShell = {
-      canvas,
-      ctx,
-      sticks,
-      setScore,
-      addScore,
-      setMessage,
-      endGame,
-      soundCorrect,
-      soundWin,
-      soundLose,
-      getAudio,
-      savePlayers,
-      loadPlayers,
-      openMenu: openShellMenu,
-      closeMenu: closeShellMenu,
-      exitToPlayerMenu,
-      saveCurrentScoreForSelectedPlayer,
-      registerMenuTab: registerShellMenuTab,
-      updateMenuTab: updateShellMenuTab,
-      maybeOpenFirstTimeHowToPlay
-    };
+    function shutDownMobileArcade() {
+      try {
+        stopGame();
+      } catch (err) {}
+
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
+      }
+
+      audioCtx = null;
+    }
+
+    window.addEventListener("pagehide", shutDownMobileArcade);
+
 
     scaleAppToFrame();
-    configureCanvasResolution();
     loadPlayers();
     resetJoystick(sticks.left);
     resetJoystick(sticks.right);
+    configureMobileControls();
     gameInit();
+    resetGameCanvasTransform();
     gameDraw();
   </script>
 </body>
