@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Interval Climber Mobile</title>
+  <title>Interval Climber Mobile — Flexible Portrait Layout</title>
 
   <style>
     * {
@@ -18,6 +18,8 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
@@ -41,7 +43,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -64,6 +67,21 @@
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #appFrame,
+    #menuScreen,
+    #gameScreen,
+    #screen,
+    #gameCanvas,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
     }
 
     input,
@@ -233,7 +251,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #screen {
@@ -241,36 +260,72 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 380px;
       overflow: hidden;
-      background: #0b1420;
+      background: linear-gradient(180deg, #36b7d8 0%, #8ce0e7 48%, #fff1c7 100%);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+      isolation: isolate;
+    }
+
+    /* Scenic side gutters let the portrait game stay proportional without
+       consuming the full phone width. The canvas covers the quiet center of
+       this mountain backdrop, leaving only the decorated 45px side rails. */
+    #screen::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 22px 42px, rgba(255,244,180,0.92) 0 14px, rgba(255,244,180,0.25) 15px 22px, transparent 23px),
+        linear-gradient(145deg, transparent 0 42%, rgba(122,162,184,0.82) 43% 56%, rgba(79,102,136,0.92) 57% 70%, rgba(67,59,110,0.98) 71% 100%) left bottom / 45px 315px no-repeat,
+        linear-gradient(215deg, transparent 0 38%, rgba(122,162,184,0.78) 39% 54%, rgba(79,102,136,0.90) 55% 69%, rgba(37,40,79,0.98) 70% 100%) right bottom / 45px 330px no-repeat,
+        repeating-linear-gradient(178deg, transparent 0 38px, rgba(255,255,255,0.16) 39px 41px, transparent 42px 76px);
+    }
+
+    /* The portrait game canvas keeps the desktop game's exact 600 x 760 ratio.
+       Its frame overlays the display, so the border does not alter sizing. */
+    #screen::after {
+      content: "";
+      position: absolute;
+      left: 45px;
+      top: 0;
+      width: 300px;
+      height: 380px;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+      pointer-events: none;
     }
 
     #gameCanvas {
-      width: 390px;
-      height: 219px;
+      position: relative;
+      z-index: 2;
+      width: 300px;
+      height: 380px;
+      margin: 0 auto;
       display: block;
       background: #f7fbff;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       image-rendering: auto;
     }
 
     #gameOverBox {
       display: none;
       position: absolute;
-      left: 34px;
-      right: 34px;
-      top: 35px;
-      padding: 18px 12px;
+      left: 58px;
+      right: 58px;
+      top: 113px;
+      padding: 20px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
       border-radius: 16px;
       color: white;
       text-align: center;
-      z-index: 8;
+      z-index: 40;
     }
 
     #gameOverBox h1 {
@@ -297,7 +352,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 380px;
       width: 390px;
       height: 48px;
       background:
@@ -340,15 +395,17 @@
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 428px;
       width: 390px;
-      height: 400px;
+      height: 242px;
       background: linear-gradient(180deg, #303030, #181818);
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
     }
 
     #controls *,
@@ -368,7 +425,7 @@
       top: 19px;
       width: 150px;
       height: 150px;
-      touch-action: manipulation;
+      touch-action: pan-y;
     }
 
     .dpadBtn {
@@ -657,17 +714,20 @@
 
     #gameCanvas {
       background: #0b1420;
-      touch-action: none;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
-    /* Interval Climber only: show only controls that do something in this game. */
-    #dpad {
-      left: 48px;
-      top: 34px;
-      width: 64px;
-      height: 116px;
-    }
+    /* Interval Climber keeps its mobile selection model:
+       left joystick or UP/DOWN highlights a ledge, JUMP confirms it, MENU pauses.
 
+       Canonical active-control arrangement for this game:
+       - full-size joystick on the left
+       - full-size JUMP button in the center
+       - full-size UP/DOWN selector on the right
+       - MENU centered below all three
+
+       Do not shrink these controls to make them fit. Reposition them instead. */
     #dpadLeft,
     #dpadCenter,
     #dpadRight,
@@ -679,10 +739,40 @@
       display: none !important;
     }
 
+    #leftJoystickPad {
+      left: 18px;
+      top: 33px;
+    }
+
+    #faceButtons {
+      left: 153px;
+      right: auto;
+      top: 51px;
+      width: 84px;
+      height: 82px;
+    }
+
+    #buttonA {
+      left: 4px;
+      top: 0;
+      width: 76px;
+      height: 76px;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    #dpad {
+      left: 288px;
+      top: 31px;
+      width: 64px;
+      height: 116px;
+    }
+
     #dpadUp,
     #dpadDown {
       left: 7px;
       width: 50px;
+      height: 50px;
       font-size: 13px;
       line-height: 50px;
     }
@@ -697,25 +787,9 @@
       border-radius: 6px 6px 14px 14px;
     }
 
-    #faceButtons {
-      right: 40px;
-      top: 47px;
-      width: 120px;
-      height: 92px;
-    }
-
-    #buttonA {
-      left: 22px;
-      top: 7px;
-      width: 76px;
-      height: 76px;
-      font-size: 14px;
-      line-height: 1;
-    }
-
     #systemButtons {
       width: 86px;
-      top: 326px;
+      top: 177px;
     }
 
     #startButton {
@@ -757,7 +831,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="600" height="760"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -854,6 +928,48 @@
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
+    const GAME_CANVAS_LOGICAL_WIDTH = 600;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 760;
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    let gameCanvasPixelScale = 1;
+
+    function scaleGameCanvasBackingStore() {
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || 377.368);
+      const cssHeight = Math.max(1, rect.height || 478);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(MAX_GAME_CANVAS_PIXEL_SCALE, Math.max(1, scaleX, scaleY));
+      const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
+      const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      resetGameCanvasTransform();
+    }
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
+    }
+
     const lcdMessage = document.getElementById("lcdMessage");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
@@ -879,6 +995,15 @@
     let score = 0;
     let running = false;
     let loopId = null;
+
+    // Match the desktop game's fixed 60 Hz update cadence exactly. Rendering may
+    // happen at 60, 90, or 120 Hz, but physics and scrolling always advance in
+    // the same 60 equal steps per second used by the desktop version.
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+    const MAX_LOOP_CATCHUP_MS = 100;
+    let loopLastTimestamp = 0;
+    let loopAccumulatorMs = 0;
+
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
@@ -1049,7 +1174,12 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        // Resume through requestAnimationFrame so the loop always receives a real
+        // timestamp. Calling loop() directly makes elapsed time NaN and freezes
+        // the game after the first-time help/pause panel closes.
+        loopLastTimestamp = performance.now();
+        loopAccumulatorMs = 0;
+        loopId = requestAnimationFrame(loop);
       }
 
       shellMenuWasRunning = false;
@@ -1128,6 +1258,7 @@
       const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1626,7 +1757,10 @@
       setMessage("READY");
       gameInit();
 
-      loop();
+      loopLastTimestamp = performance.now();
+      loopAccumulatorMs = 0;
+      gameDraw();
+      loopId = requestAnimationFrame(loop);
     }
 
     function stopGame() {
@@ -1637,15 +1771,28 @@
         loopId = null;
       }
 
+      loopLastTimestamp = 0;
+      loopAccumulatorMs = 0;
       gameStop();
     }
 
-    function loop() {
+    function loop(timestamp) {
       if (!running) return;
 
-      gameUpdate();
-      gameDraw();
+      const elapsedMs = Math.min(
+        MAX_LOOP_CATCHUP_MS,
+        Math.max(0, timestamp - loopLastTimestamp)
+      );
+      loopLastTimestamp = timestamp;
+      loopAccumulatorMs += elapsedMs;
 
+      while (loopAccumulatorMs >= FIXED_GAME_STEP_MS && running) {
+        gameUpdate();
+        loopAccumulatorMs -= FIXED_GAME_STEP_MS;
+      }
+
+      if (!running) return;
+      gameDraw();
       loopId = requestAnimationFrame(loop);
     }
 
@@ -1735,8 +1882,13 @@
     }
 
     /*
-      GAME MODULE — INTERVAL CLIMBER MOBILE ROUGH DRAFT
-      Uses the mobile emulator shell, Wix/Velo storage bridge, touchscreen, D-pad selector, and A button.
+      GAME MODULE — INTERVAL CLIMBER FLEXIBLE PORTRAIT VERSION
+
+      Hybrid conversion:
+      - Uses the desktop game's full 600 x 760 mountain proportions, artwork scale,
+        ledge scale, timing, and jump behavior.
+      - Preserves the mobile-only highlighted-ledge selector, UP/DOWN controls,
+        left joystick selection, JUMP button, direct tapping, Wix storage, and pause menu.
     */
 
     const IC_NOTES = ["C", "D", "E", "F", "G", "A", "B"];
@@ -1747,26 +1899,18 @@
       5: "5th",
       6: "6th",
       7: "7th",
-      8: "Octave",
-      9: "9th",
-      10: "10th",
-      11: "11th",
-      12: "12th",
-      13: "13th",
-      14: "14th",
-      15: "15th"
+      8: "Octave"
     };
 
-    const IC_ALPHA_ORDER = ["A", "B", "C", "D", "E", "F", "G"];
-    const IC_LEDGE_W = 28;
-    const IC_LEDGE_H = 8;
-    const IC_LEDGE_GAP = 9.0;
-    const IC_START_Y = 96;
-    const IC_TOTAL_VISIBLE_START = 24;
-    const IC_CLIMBER_SCALE = 0.55;
-    const IC_LANES = [62, 100, 138, 176, 214, 252, 290];
+    const IC_LEDGE_W = 86;
+    const IC_LEDGE_H = 34;
+    const IC_LEDGE_GAP = 58;
+    const IC_START_Y = GAME_CANVAS_LOGICAL_HEIGHT - 360;
+    const IC_TOTAL_VISIBLE_START = 18;
+    const IC_LANES = [54, 132, 224, 318, 410, 492];
+    const IC_FUTURE_LANES = [48, 116, 202, 296, 384, 474];
     const IC_CLOSE_NOTE_STEPS_TO_AVOID = 2;
-    const IC_DIRECTLY_ABOVE_GAP = IC_LEDGE_W + 4;
+    const IC_DIRECTLY_ABOVE_GAP = 90;
 
     let ledges = [];
     let currentLedge = null;
@@ -1774,44 +1918,41 @@
     let currentInterval = null;
     let heightFloat = 0;
     let ledgesClimbed = 0;
-    let scrollSpeed = 0.17;
+    let scrollSpeed = 0.48;
     let shakeFrames = 0;
     let climberX = 0;
     let climberY = 0;
     let jumpState = null;
     let fallingState = null;
-    let lastFrameTime = 0;
     let leftStickLastInput = 0;
     let leftStickLastDirection = "";
 
     function gameInit() {
-      score = 0;
+      setScore(0);
       heightFloat = 0;
       ledgesClimbed = 0;
-      scrollSpeed = 0.075;
+      scrollSpeed = 0.48;
       shakeFrames = 0;
       jumpState = null;
       fallingState = null;
-      lastFrameTime = performance.now();
+      leftStickLastInput = 0;
+      leftStickLastDirection = "";
       makeStartingMountain();
       chooseNextInterval();
-      setScore(0);
       bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
     }
 
     function makeStartingMountain() {
       ledges = [];
-      const startY = IC_START_Y;
 
       for (let i = 0; i < IC_TOTAL_VISIBLE_START; i++) {
         const noteIndex = i;
-        const letter = IC_NOTES[noteIndex % 7];
         ledges.push({
           id: cryptoId(),
           noteIndex,
-          letter,
-          x: randomLedgeX(i),
-          y: startY - i * IC_LEDGE_GAP,
+          letter: IC_NOTES[noteIndex % 7],
+          x: randomLedgeX(noteIndex, IC_LANES),
+          y: IC_START_Y - i * IC_LEDGE_GAP,
           w: IC_LEDGE_W,
           h: IC_LEDGE_H,
           broken: false
@@ -1825,116 +1966,115 @@
       climberY = startPos.y;
     }
 
-    function randomLedgeX(noteIndex) {
-      return randomXForNoteIndex(noteIndex);
-    }
+    function randomLedgeX(noteIndex, laneSet = IC_LANES) {
+      let possible = laneSet.slice();
 
-    function randomFutureX(noteIndex) {
-      return randomXForNoteIndex(noteIndex);
-    }
-
-    function randomXForNoteIndex(noteIndex) {
-      let possible = IC_LANES.slice();
-
-      // A 2nd or 3rd away means the next one or two ledges in note order.
-      // Do not let those nearby ledges sit directly above each other,
-      // because the climber can cover the target letter on mobile.
-      const closeLedges = ledges.filter(l => {
-        const diff = Math.abs(noteIndex - l.noteIndex);
+      const closeLedges = ledges.filter(ledge => {
+        const diff = Math.abs(noteIndex - ledge.noteIndex);
         return diff > 0 && diff <= IC_CLOSE_NOTE_STEPS_TO_AVOID;
       });
 
       const noDirectOverlap = possible.filter(x => {
-        return closeLedges.every(l => Math.abs(x - l.x) > IC_DIRECTLY_ABOVE_GAP);
+        return closeLedges.every(ledge => Math.abs(x - ledge.x) > IC_DIRECTLY_ABOVE_GAP);
       });
 
       if (noDirectOverlap.length > 0) {
         possible = noDirectOverlap;
       } else {
-        const previous = ledges.find(l => l.noteIndex === noteIndex - 1);
+        const previous = ledges.find(ledge => ledge.noteIndex === noteIndex - 1);
         if (previous) {
-          const noPreviousOverlap = IC_LANES.filter(x => Math.abs(x - previous.x) > IC_DIRECTLY_ABOVE_GAP);
+          const noPreviousOverlap = laneSet.filter(x => Math.abs(x - previous.x) > 70);
           if (noPreviousOverlap.length > 0) possible = noPreviousOverlap;
         }
       }
 
-      return possible[Math.floor(Math.random() * possible.length)] || IC_LANES[0];
+      return possible[Math.floor(Math.random() * possible.length)] || laneSet[0];
     }
 
     function extendMountainIfNeeded() {
-      let topMost = ledges.reduce((min, l) => Math.min(min, l.y), Infinity);
-      while (topMost > -150) {
-        const last = ledges.reduce((top, l) => l.y < top.y ? l : top, ledges[0]);
-        const nextIndex = last.noteIndex + 1;
+      let topMost = ledges.reduce((min, ledge) => Math.min(min, ledge.y), Infinity);
+
+      while (topMost > -160) {
+        const topLedge = ledges.reduce((top, ledge) => ledge.y < top.y ? ledge : top, ledges[0]);
+        const nextIndex = topLedge.noteIndex + 1;
+
         ledges.push({
           id: cryptoId(),
           noteIndex: nextIndex,
           letter: IC_NOTES[nextIndex % 7],
-          x: randomFutureX(nextIndex),
-          y: last.y - IC_LEDGE_GAP,
+          x: randomLedgeX(nextIndex, IC_FUTURE_LANES),
+          y: topLedge.y - IC_LEDGE_GAP,
           w: IC_LEDGE_W,
           h: IC_LEDGE_H,
           broken: false
         });
+
         topMost -= IC_LEDGE_GAP;
       }
-      ledges = ledges.filter(l => l.y < canvas.height + 70);
-      if (focusLedge && !ledges.includes(focusLedge)) focusLedge = currentLedge || nearestSelectableLedge();
+
+      ledges = ledges.filter(ledge => ledge.y < GAME_CANVAS_LOGICAL_HEIGHT + 140);
+      if (focusLedge && !ledges.includes(focusLedge)) {
+        focusLedge = currentLedge || nearestSelectableLedge();
+      }
     }
 
     function chooseNextInterval() {
       extendMountainIfNeeded();
-      const maxInterval = ledgesClimbed < 5 ? 5 : 8;
+
+      const maxInterval = ledgesClimbed < 5 ? 5 : ledgesClimbed < 14 ? 7 : 8;
       const possible = [];
+
       for (let size = 2; size <= maxInterval; size++) {
         const targetIndex = currentLedge.noteIndex + (size - 1);
-        if (ledges.some(l => l.noteIndex === targetIndex)) possible.push(size);
+        if (ledges.some(ledge => ledge.noteIndex === targetIndex)) possible.push(size);
       }
+
+      if (possible.length === 0) {
+        extendMountainIfNeeded();
+        possible.push(2, 3, 4);
+      }
+
       currentInterval = possible[Math.floor(Math.random() * possible.length)] || 2;
-      setMessage(`UP A ${IC_INTERVAL_NAMES[currentInterval].toUpperCase()}`);
       focusLedge = currentLedge || nearestSelectableLedge() || focusLedge;
+      setMessage(`UP A ${IC_INTERVAL_NAMES[currentInterval].toUpperCase()}`);
     }
 
     function getFocusableLedges() {
-      const minVisibleY = -120;
-      const maxVisibleY = canvas.height - 18;
       return ledges
-        .filter(l => {
-          if (l.broken) return false;
-          if (currentLedge && l.noteIndex < currentLedge.noteIndex) return false;
-          if (l === currentLedge) return true;
-          return l.y >= minVisibleY && l.y <= maxVisibleY;
+        .filter(ledge => {
+          if (ledge.broken) return false;
+          if (currentLedge && ledge.noteIndex < currentLedge.noteIndex) return false;
+          if (ledge === currentLedge) return true;
+          return ledge.y >= -80 && ledge.y <= GAME_CANVAS_LOGICAL_HEIGHT - 62;
         })
         .sort((a, b) => a.noteIndex - b.noteIndex);
     }
 
     function nearestSelectableLedge() {
-      const candidates = getFocusableLedges();
-      if (candidates.length === 0) return null;
-      return candidates[0];
+      return getFocusableLedges()[0] || null;
     }
 
     function gameUpdate() {
-      const now = performance.now();
-      const dt = Math.min(2.2, (now - lastFrameTime) / 16.6667);
-      lastFrameTime = now;
+      // These are the desktop game's original per-60-Hz-step values. Keep them
+      // unscaled so falling, scrolling, acceleration, score gain, and danger-zone
+      // timing remain exactly proportional to the original 600 x 760 game.
+      scrollSpeed += 0.00022;
+      ledges.forEach(ledge => { ledge.y += scrollSpeed; });
+      heightFloat += scrollSpeed;
 
-      scrollSpeed += 0.000020 * dt;
-      ledges.forEach(l => { l.y += scrollSpeed * dt; });
-      heightFloat += scrollSpeed * dt;
       const nextScore = Math.floor(heightFloat);
       if (nextScore !== score) setScore(nextScore);
 
-      updateClimberAnimation(dt);
+      updateClimberAnimation();
       extendMountainIfNeeded();
       maybeSendLeftJoystickInput();
 
-      if (!fallingState && currentLedge && currentLedge.y > canvas.height - 36) {
+      if (!fallingState && currentLedge && currentLedge.y > GAME_CANVAS_LOGICAL_HEIGHT - 72) {
         currentLedge.broken = true;
         beginFall("You fell!");
       }
 
-      if (fallingState && climberY > canvas.height + 50) {
+      if (fallingState && climberY > GAME_CANVAS_LOGICAL_HEIGHT + 95) {
         endGame(fallingState.reason);
         return;
       }
@@ -1943,8 +2083,10 @@
     }
 
     function gameDraw() {
-      const shakeX = shakeFrames > 0 ? (Math.random() * 6 - 3) : 0;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      resetGameCanvasTransform();
+      const shakeX = shakeFrames > 0 ? (Math.random() * 8 - 4) : 0;
+
+      ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
       ctx.save();
       ctx.translate(shakeX, 0);
       drawMountainBackground();
@@ -1956,30 +2098,43 @@
 
     function gamePointer(point) {
       if (!running || jumpState || fallingState) return;
-      const HIT_PAD_X = 14;
-      const HIT_PAD_TOP = 7;
-      const HIT_PAD_BOTTOM = 9;
+
+      const HIT_PAD_X = 20;
+      const HIT_PAD_TOP = 18;
+      const HIT_PAD_BOTTOM = 24;
       const clicked = ledges
-        .filter(l => !l.broken && point.x >= l.x - HIT_PAD_X && point.x <= l.x + l.w + HIT_PAD_X && point.y >= l.y - HIT_PAD_TOP && point.y <= l.y + l.h + HIT_PAD_BOTTOM)
+        .filter(ledge => {
+          if (ledge.broken) return false;
+          return (
+            point.x >= ledge.x - HIT_PAD_X &&
+            point.x <= ledge.x + ledge.w + HIT_PAD_X &&
+            point.y >= ledge.y - HIT_PAD_TOP &&
+            point.y <= ledge.y + ledge.h + HIT_PAD_BOTTOM
+          );
+        })
         .sort((a, b) => b.y - a.y)[0];
+
       if (clicked) attemptLedge(clicked);
     }
 
     canvas.addEventListener("pointerdown", event => {
       if (!running || shellMenu.classList.contains("open")) return;
-      event.preventDefault();
+      // Do not prevent touch defaults here. With touch-action: pan-y, a tap still
+      // selects a ledge, while a vertical drag scrolls the surrounding Wix page.
       const rect = canvas.getBoundingClientRect();
       gamePointer({
-        x: (event.clientX - rect.left) * (canvas.width / rect.width),
-        y: (event.clientY - rect.top) * (canvas.height / rect.height),
+        x: (event.clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (event.clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height),
         originalEvent: event
       });
     });
 
     function attemptLedge(ledge) {
       if (!ledge || jumpState || fallingState || !currentLedge) return;
+
       focusLedge = ledge;
       const targetIndex = currentLedge.noteIndex + (currentInterval - 1);
+
       if (ledge.noteIndex === targetIndex) {
         ledgesClimbed++;
         beginJumpTo(ledge, true);
@@ -1997,16 +2152,15 @@
       const candidates = getFocusableLedges();
       if (candidates.length === 0) return;
 
-      let index = candidates.findIndex(l => focusLedge && l.id === focusLedge.id);
+      let index = candidates.findIndex(ledge => focusLedge && ledge.id === focusLedge.id);
       if (index < 0) {
         focusLedge = currentLedge || candidates[0];
-        index = candidates.findIndex(l => focusLedge && l.id === focusLedge.id);
+        index = candidates.findIndex(ledge => focusLedge && ledge.id === focusLedge.id);
       }
 
       const step = direction === "up" ? 1 : -1;
       const nextIndex = (index + step + candidates.length) % candidates.length;
       focusLedge = candidates[nextIndex];
-
       setMessage(`SELECTED ${focusLedge.letter} | UP A ${IC_INTERVAL_NAMES[currentInterval].toUpperCase()}`);
     }
 
@@ -2017,75 +2171,81 @@
 
     function joystickDirection() {
       const stick = sticks.left;
-      const ay = Math.abs(stick.y);
-      if (ay < 0.52) return "";
+      if (Math.abs(stick.y) < 0.52) return "";
       return stick.y < 0 ? "up" : "down";
     }
 
     function maybeSendLeftJoystickInput() {
-      const dir = joystickDirection();
-      if (!dir) {
+      const direction = joystickDirection();
+      if (!direction) {
         leftStickLastDirection = "";
         return;
       }
+
       const now = performance.now();
-      if (dir !== leftStickLastDirection || now - leftStickLastInput > 220) {
-        leftStickLastDirection = dir;
+      if (direction !== leftStickLastDirection || now - leftStickLastInput > 220) {
+        leftStickLastDirection = direction;
         leftStickLastInput = now;
-        moveFocus(dir);
+        moveFocus(direction);
       }
     }
 
     function getClimberAnchor(ledge) {
       return {
-        x: ledge.x + ledge.w / 2 - 9 * IC_CLIMBER_SCALE,
-        y: ledge.y - 34 * IC_CLIMBER_SCALE
+        x: ledge.x + ledge.w / 2 - 17,
+        y: ledge.y - 68
       };
     }
 
     function beginJumpTo(targetLedge, isCorrect) {
       const from = { x: climberX, y: climberY };
       if (isCorrect) currentLedge = targetLedge;
-      const to = getClimberAnchor(targetLedge);
-      const dx = to.x - from.x;
-      const dy = to.y - from.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const duration = Math.max(140, Math.min(310, distance * 3.5));
+
+      const target = getClimberAnchor(targetLedge);
+      const dx = target.x - from.x;
+      const dy = target.y - from.y;
+      const distance = Math.hypot(dx, dy);
+
       jumpState = {
         target: targetLedge,
         fromX: from.x,
         fromY: from.y,
         startedAt: performance.now(),
-        duration,
-        arc: Math.max(9, Math.min(28, distance * 0.30)),
+        duration: Math.max(280, Math.min(560, distance * 2.2)),
+        arc: Math.max(34, Math.min(92, distance * 0.36)),
         isCorrect
       };
     }
 
     function updateClimberAnimation() {
       if (fallingState) {
-        fallingState.vy += 0.28;
+        fallingState.vy += 0.42;
         climberX += fallingState.vx;
         climberY += fallingState.vy;
         fallingState.spin += fallingState.spinSpeed;
         return;
       }
+
       if (!currentLedge) return;
+
       if (!jumpState) {
         const anchor = getClimberAnchor(currentLedge);
         climberX = anchor.x;
         climberY = anchor.y;
         return;
       }
-      const now = performance.now();
-      const t = Math.min(1, (now - jumpState.startedAt) / jumpState.duration);
-      const eased = t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) * (-2 * t + 2)) / 2;
+
+      const t = Math.min(1, (performance.now() - jumpState.startedAt) / jumpState.duration);
+      const eased = t < 0.5 ? 2 * t * t : 1 - ((-2 * t + 2) ** 2) / 2;
       const targetAnchor = getClimberAnchor(jumpState.target);
+
       climberX = jumpState.fromX + (targetAnchor.x - jumpState.fromX) * eased;
       climberY = jumpState.fromY + (targetAnchor.y - jumpState.fromY) * eased - Math.sin(Math.PI * t) * jumpState.arc;
+
       if (t >= 1) {
         climberX = targetAnchor.x;
         climberY = targetAnchor.y;
+
         if (!jumpState.isCorrect) {
           jumpState.target.broken = true;
           shakeFrames = 12;
@@ -2094,6 +2254,7 @@
           beginFall("Wrong ledge!");
           return;
         }
+
         jumpState = null;
         focusLedge = currentLedge;
       }
@@ -2104,157 +2265,191 @@
       jumpState = null;
       fallingState = {
         reason,
-        vx: Math.random() < 0.5 ? -0.8 : 0.8,
-        vy: -1.8,
+        vx: Math.random() < 0.5 ? -1.1 : 1.1,
+        vy: -2.6,
         spin: 0,
-        spinSpeed: Math.random() < 0.5 ? -0.15 : 0.15
+        spinSpeed: Math.random() < 0.5 ? -0.22 : 0.22
       };
     }
 
     function drawMountainBackground() {
-      const W = canvas.width;
-      const H = canvas.height;
+      const W = GAME_CANVAS_LOGICAL_WIDTH;
+      const H = GAME_CANVAS_LOGICAL_HEIGHT;
+
       ctx.fillStyle = "#7dd3fc";
       ctx.fillRect(0, 0, W, H);
+
       ctx.fillStyle = "#6b7280";
-      pixelPoly([[40,H],[75,150],[45,110],[96,40],[130,0],[190,0],[160,70],[210,120],[190,H]]);
+      pixelPoly([
+        [80, H], [120, 610], [70, 520], [150, 410], [120, 310],
+        [210, 190], [260, 70], [310, 0], [355, 0], [420, 120],
+        [500, 260], [470, 350], [560, 470], [520, H]
+      ]);
+
       ctx.fillStyle = "#4b5563";
-      pixelPoly([[0,H],[0,95],[46,40],[70,0],[122,0],[96,80],[130,135],[105,H]]);
+      pixelPoly([
+        [0, H], [0, 460], [64, 360], [38, 260], [110, 130],
+        [145, 0], [285, 0], [220, 165], [255, 280],
+        [200, 385], [240, 520], [160, H]
+      ]);
+
       ctx.fillStyle = "#374151";
-      pixelPoly([[W,H],[W,0],[290,0],[320,50],[303,100],[360,140],[330,H]]);
+      pixelPoly([
+        [W, H], [W, 0], [430, 0], [475, 125], [440, 260],
+        [522, 355], [485, 470], [545, 590], [510, H]
+      ]);
+
       ctx.fillStyle = "rgba(255,255,255,0.18)";
-      pixelPoly([[130,0],[160,0],[145,36],[120,68]]);
-      pixelPoly([[292,0],[318,0],[330,48],[308,76]]);
+      pixelPoly([[286, 0], [315, 0], [268, 110], [238, 165], [256, 74]]);
+      pixelPoly([[150, 0], [174, 0], [130, 122], [106, 162], [124, 62]]);
+      pixelPoly([[438, 0], [468, 0], [492, 92], [465, 142], [452, 54]]);
+
+      ctx.fillStyle = "rgba(17,24,39,0.18)";
+      for (let i = 0; i < 60; i++) {
+        ctx.fillRect((i * 79) % W, (i * 137) % H, 6, 6);
+      }
     }
 
     function pixelPoly(points) {
       ctx.beginPath();
       ctx.moveTo(points[0][0], points[0][1]);
-      points.slice(1).forEach(p => ctx.lineTo(p[0], p[1]));
+      points.slice(1).forEach(point => ctx.lineTo(point[0], point[1]));
       ctx.closePath();
       ctx.fill();
     }
 
     function drawLedges() {
-      ledges.forEach(l => {
-        if (l.broken) {
-          drawBrokenLedge(l);
+      ledges.forEach(ledge => {
+        if (ledge.broken) {
+          drawBrokenLedge(ledge);
           return;
         }
 
-        const isCurrent = currentLedge && l.id === currentLedge.id;
-        const isFocused = focusLedge && l.id === focusLedge.id;
-        const grassH = 2.5;
-
-        ctx.fillStyle = isCurrent ? "#111827" : "#7c4a21";
-        ctx.fillRect(l.x, l.y, l.w, l.h);
-
-        ctx.fillStyle = "#22c55e";
-        ctx.fillRect(l.x, l.y - grassH, l.w, grassH);
-
-        ctx.strokeStyle = "#111827";
-        ctx.lineWidth = 1.35;
-        ctx.strokeRect(l.x, l.y - grassH, l.w, l.h + grassH);
+        const isCurrent = currentLedge && ledge.id === currentLedge.id;
+        const isFocused = focusLedge && ledge.id === focusLedge.id;
 
         if (isFocused) {
-          const pulse = 0.5 + Math.sin(performance.now() / 135) * 0.5;
+          const pulse = 0.5 + Math.sin(performance.now() / 150) * 0.5;
           ctx.save();
-          ctx.strokeStyle = `rgba(255, 224, 138, ${0.72 + pulse * 0.25})`;
-          ctx.lineWidth = 1.45 + pulse * 0.75;
-          roundRect(l.x - 2.5, l.y - grassH - 2.5, l.w + 5, l.h + grassH + 5, 3.5);
+          ctx.fillStyle = `rgba(255, 224, 138, ${0.16 + pulse * 0.10})`;
+          roundRect(ledge.x - 11, ledge.y - 20, ledge.w + 22, ledge.h + 36, 13);
+          ctx.fill();
+          ctx.strokeStyle = `rgba(255, 239, 128, ${0.82 + pulse * 0.18})`;
+          ctx.lineWidth = 5 + pulse * 2;
           ctx.stroke();
           ctx.restore();
         }
 
-        ctx.font = "bold 10px Arial, sans-serif";
+        ctx.fillStyle = isCurrent ? "#111827" : "#7c4a21";
+        ctx.strokeStyle = "#111827";
+        ctx.lineWidth = 4;
+        ctx.fillRect(ledge.x, ledge.y, ledge.w, ledge.h);
+        ctx.strokeRect(ledge.x, ledge.y, ledge.w, ledge.h);
+
+        ctx.fillStyle = "#22c55e";
+        ctx.fillRect(ledge.x, ledge.y - 8, ledge.w, 8);
+        ctx.strokeRect(ledge.x, ledge.y - 8, ledge.w, 8);
+
+        ctx.fillStyle = "#3b2412";
+        ctx.fillRect(ledge.x + 8, ledge.y + ledge.h, ledge.w - 16, 7);
+
+        ctx.font = "bold 28px Arial, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 5;
         ctx.strokeStyle = "#111827";
         ctx.fillStyle = "white";
-        ctx.strokeText(l.letter, l.x + l.w / 2, l.y + l.h / 2 + 0.5);
-        ctx.fillText(l.letter, l.x + l.w / 2, l.y + l.h / 2 + 0.5);
+        ctx.strokeText(ledge.letter, ledge.x + ledge.w / 2, ledge.y + ledge.h / 2 + 1);
+        ctx.fillText(ledge.letter, ledge.x + ledge.w / 2, ledge.y + ledge.h / 2 + 1);
       });
     }
 
-    function drawBrokenLedge(l) {
+    function drawBrokenLedge(ledge) {
       ctx.fillStyle = "#5b3418";
-      ctx.fillRect(l.x, l.y + 3, l.w / 2 - 2, Math.max(4, l.h / 2));
-      ctx.fillRect(l.x + l.w / 2 + 3, l.y + 5, l.w / 2 - 3, Math.max(4, l.h / 2));
+      ctx.fillRect(ledge.x, ledge.y + 12, ledge.w / 2 - 4, ledge.h / 2);
+      ctx.fillRect(ledge.x + ledge.w / 2 + 6, ledge.y + 18, ledge.w / 2 - 6, ledge.h / 2);
     }
 
-    function roundRect(x, y, w, h, r) {
-      const radius = Math.max(0, Math.min(r, w / 2, h / 2));
+    function roundRect(x, y, w, h, radius) {
+      const r = Math.max(0, Math.min(radius, w / 2, h / 2));
       ctx.beginPath();
-      ctx.moveTo(x + radius, y);
-      ctx.lineTo(x + w - radius, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-      ctx.lineTo(x + w, y + h - radius);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-      ctx.lineTo(x + radius, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-      ctx.lineTo(x, y + radius);
-      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
       ctx.closePath();
     }
 
     function drawClimber() {
       if (!currentLedge && !fallingState) return;
+
       const cx = climberX;
-      const cy = climberY - 2;
+      const cy = climberY - 5;
       const jumping = !!jumpState;
       const falling = !!fallingState;
+
       ctx.save();
       if (falling) {
-        ctx.translate(cx + 9, cy + 18);
+        ctx.translate(cx + 18, cy + 34);
         ctx.rotate(fallingState.spin);
-        ctx.translate(-9, -18);
+        ctx.translate(-18, -34);
       } else {
         ctx.translate(cx, cy);
       }
-      ctx.scale(IC_CLIMBER_SCALE, IC_CLIMBER_SCALE);
+
       ctx.fillStyle = "#111827";
       if (jumping || falling) {
-        ctx.fillRect(2, 13, 5, 13);
-        ctx.fillRect(14, 11, 5, 14);
-        ctx.fillRect(2, 25, 7, 5);
-        ctx.fillRect(12, 25, 7, 5);
+        ctx.fillRect(5, 24, 8, 24);
+        ctx.fillRect(27, 20, 8, 26);
+        ctx.fillRect(5, 46, 10, 8);
+        ctx.fillRect(23, 46, 10, 8);
       } else {
-        ctx.fillRect(4, 24, 4, 11);
-        ctx.fillRect(11, 24, 4, 11);
-        ctx.fillRect(0, 13, 5, 13);
-        ctx.fillRect(14, 13, 5, 13);
+        ctx.fillRect(8, 46, 7, 22);
+        ctx.fillRect(21, 46, 7, 22);
+        ctx.fillRect(2, 24, 8, 24);
+        ctx.fillRect(26, 24, 8, 24);
       }
+
       ctx.fillStyle = "#ef4444";
-      ctx.fillRect(4, 12, 11, 14);
+      ctx.fillRect(8, 22, 20, 26);
       ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 2;
-      ctx.strokeRect(4, 12, 11, 14);
+      ctx.lineWidth = 4;
+      ctx.strokeRect(8, 22, 20, 26);
+
       ctx.fillStyle = "#f9c08a";
-      ctx.fillRect(5, 0, 10, 10);
-      ctx.strokeRect(5, 0, 10, 10);
+      ctx.fillRect(9, 0, 18, 18);
+      ctx.strokeRect(9, 0, 18, 18);
+
       ctx.fillStyle = "#111827";
-      ctx.fillRect(6, 1, 8, 3);
+      ctx.fillRect(11, 2, 14, 5);
       ctx.restore();
     }
 
     function drawBottomZone() {
-      const H = canvas.height;
+      const W = GAME_CANVAS_LOGICAL_WIDTH;
+      const H = GAME_CANVAS_LOGICAL_HEIGHT;
+
       ctx.fillStyle = "rgba(220, 38, 38, 0.86)";
-      ctx.fillRect(0, H - 20, canvas.width, 20);
+      ctx.fillRect(0, H - 44, W, 44);
       ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 5]);
+      ctx.lineWidth = 4;
+      ctx.setLineDash([14, 10]);
       ctx.beginPath();
-      ctx.moveTo(0, H - 20);
-      ctx.lineTo(canvas.width, H - 20);
+      ctx.moveTo(0, H - 44);
+      ctx.lineTo(W, H - 44);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.font = "bold 11px Arial, sans-serif";
+
+      ctx.font = "bold 22px Arial, sans-serif";
       ctx.fillStyle = "white";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText("DON'T FALL", canvas.width / 2, H - 10);
+      ctx.fillText("BOTTOM — DON'T FALL", W / 2, H - 22);
     }
 
     function cryptoId() {
@@ -2266,6 +2461,7 @@
       resetJoystick(sticks.right);
       jumpState = null;
       fallingState = null;
+      leftStickLastDirection = "";
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -2305,7 +2501,8 @@
       exitToPlayerMenu,
       saveCurrentScoreForSelectedPlayer,
       registerMenuTab: registerShellMenuTab,
-      updateMenuTab: updateShellMenuTab
+      updateMenuTab: updateShellMenuTab,
+      getGameCanvasSize
     };
 
     scaleAppToFrame();
