@@ -2129,7 +2129,8 @@
        ========================= */
 
     const BACKING_TRACK_URL = "https://static.wixstatic.com/mp3/8e8c0c_8b6b8e66a3c14b0ba1882d1be7eb3375.wav";
-    const MUSIC_FONT = "bold 30px 'Arial Unicode MS', 'Noto Music', 'Segoe UI Symbol', Arial, sans-serif";
+    // Rhythm symbols are drawn manually in both HTML and canvas.
+    // Do not replace them with music-font glyphs; mobile font loading is unreliable.
     const RHYTHM_SNAKE_STEP_MS = 115;
     const tileCount = 30;
 
@@ -2153,36 +2154,69 @@
     fallbackBackingTrack.volume = 0.35;
 
     const rhythms = [
-      { symbol: "𝅘𝅥𝅮", value: 0.5, type: "note" },
-      { symbol: "𝅘𝅥", value: 1, type: "note" },
-      { symbol: "𝄽", value: 1, type: "quarterRest" },
-      { symbol: "𝅘𝅥.", value: 1.5, type: "note" },
-      { symbol: "𝅗𝅥", value: 2, type: "note" },
-      { symbol: "▰", value: 2, type: "halfRest" },
-      { symbol: "𝅗𝅥.", value: 3, type: "note" },
-      { symbol: "𝅝", value: 4, type: "note" },
-      { symbol: "▰", value: 4, type: "wholeRest" }
+      { value: 0.5, type: "eighthNote", label: "eighth note" },
+      { value: 1, type: "quarterNote", label: "quarter note" },
+      { value: 1, type: "quarterRest", label: "quarter rest" },
+      { value: 1.5, type: "dottedQuarterNote", label: "dotted quarter note" },
+      { value: 2, type: "halfNote", label: "half note" },
+      { value: 2, type: "halfRest", label: "half rest" },
+      { value: 3, type: "dottedHalfNote", label: "dotted half note" },
+      { value: 4, type: "wholeNote", label: "whole note" },
+      { value: 4, type: "wholeRest", label: "whole rest" }
     ];
 
     const components = rhythms.filter(rhythm => [0.5, 1, 1.5, 2].includes(rhythm.value));
     const answerRhythms = rhythms.filter(rhythm => [0.5, 1, 1.5, 2, 3, 4].includes(rhythm.value));
 
     function renderRhythmHTML(rhythm) {
+      if (!rhythm) return "?";
+
+      const common = `
+        width="34" height="42" viewBox="-17 -23 34 42"
+        aria-label="${rhythm.label || "rhythm symbol"}"
+        role="img"
+        style="display:inline-block;width:34px;height:42px;vertical-align:-13px;overflow:visible;color:currentColor;"
+      `;
+
+      const filledHead = `<ellipse cx="0" cy="2" rx="6" ry="4" transform="rotate(-20 0 2)" fill="currentColor"/>`;
+      const hollowHead = `<ellipse cx="0" cy="2" rx="6" ry="4" transform="rotate(-20 0 2)" fill="none" stroke="currentColor" stroke-width="2.3"/>`;
+      const stem = `<path d="M5 2V-17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>`;
+      const flag = `<path d="M5-17C14-16 14-8 7-6" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>`;
+      const dot = `<circle cx="11" cy="2" r="1.9" fill="currentColor"/>`;
+
+      let artwork = "";
+
+      if (rhythm.type === "eighthNote") artwork = filledHead + stem + flag;
+      if (rhythm.type === "quarterNote") artwork = filledHead + stem;
+      if (rhythm.type === "dottedQuarterNote") artwork = filledHead + stem + dot;
+      if (rhythm.type === "halfNote") artwork = hollowHead + stem;
+      if (rhythm.type === "dottedHalfNote") artwork = hollowHead + stem + dot;
+      if (rhythm.type === "wholeNote") {
+        artwork = `<ellipse cx="0" cy="1" rx="7.3" ry="4.8" transform="rotate(-20 0 1)" fill="none" stroke="currentColor" stroke-width="2.3"/>`;
+      }
+      if (rhythm.type === "quarterRest") {
+        artwork = `
+          <path d="M-3-17L5-10L-3-3L5 4
+                   C4 6 0 7-4 10
+                   C-7 13-3 17 4 18"
+                fill="none" stroke="currentColor" stroke-width="2.7"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        `;
+      }
       if (rhythm.type === "halfRest") {
-        return `<span style="display:inline-block;position:relative;width:32px;height:28px;vertical-align:middle;">
-          <span style="position:absolute;left:3px;right:3px;top:18px;border-top:3px solid currentColor;"></span>
-          <span style="position:absolute;left:9px;top:11px;width:14px;height:8px;background:currentColor;"></span>
-        </span>`;
+        artwork = `
+          <path d="M-12 5H12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+          <rect x="-7" y="-2" width="14" height="7" fill="currentColor"/>
+        `;
       }
-
       if (rhythm.type === "wholeRest") {
-        return `<span style="display:inline-block;position:relative;width:32px;height:28px;vertical-align:middle;">
-          <span style="position:absolute;left:3px;right:3px;top:9px;border-top:3px solid currentColor;"></span>
-          <span style="position:absolute;left:9px;top:9px;width:14px;height:8px;background:currentColor;"></span>
-        </span>`;
+        artwork = `
+          <path d="M-12-5H12" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+          <rect x="-7" y="-5" width="14" height="7" fill="currentColor"/>
+        `;
       }
 
-      return `<span style="font-family:'Arial Unicode MS','Noto Music','Segoe UI Symbol',Arial,sans-serif;font-weight:bold;">${rhythm.symbol}</span>`;
+      return `<svg ${common}>${artwork}</svg>`;
     }
 
     function buildAllQuestionOptions() {
@@ -2530,34 +2564,184 @@
     function drawRhythmSymbol(food, tileSize) {
       const centerX = food.x * tileSize + tileSize / 2;
       const centerY = food.y * tileSize + tileSize / 2;
-      const noteYNudge = -7;
 
+      ctx.save();
       ctx.fillStyle = "#111827";
       ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 2.4;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
 
-      if (food.rhythm.type === "halfRest") {
-        ctx.beginPath();
-        ctx.moveTo(centerX - 9, centerY + 7);
-        ctx.lineTo(centerX + 9, centerY + 7);
-        ctx.stroke();
-        ctx.fillRect(centerX - 7, centerY, 14, 7);
-        return;
+      // These hand-drawn symbols intentionally replace music-font glyphs.
+      // Keep this path-based renderer for reliable iPhone/iPad/Wix display.
+      drawRhythmIcon(food.rhythm, centerX, centerY, 1, "grid");
+      ctx.restore();
+    }
+
+    function drawRhythmIcon(rhythm, x, y, scale = 1, context = "grid") {
+      if (!rhythm) return;
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+
+      const isGrid = context === "grid";
+      ctx.lineWidth = isGrid ? 1.35 : 2.2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      if (rhythm.type === "eighthNote") {
+        drawNoteHead(0, 0, true, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+        drawFlagFromStem(isGrid);
+      } else if (rhythm.type === "quarterNote") {
+        drawNoteHead(0, 0, true, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+      } else if (rhythm.type === "dottedQuarterNote") {
+        drawNoteHead(0, 0, true, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+        drawRhythmDot(isGrid ? 7 : 8.5, isGrid ? -0.2 : 0, isGrid ? 1.15 : 1.7);
+      } else if (rhythm.type === "halfNote") {
+        drawNoteHead(0, 0, false, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+      } else if (rhythm.type === "dottedHalfNote") {
+        drawNoteHead(0, 0, false, isGrid);
+        drawStemFromNoteHead(0, 0, isGrid);
+        drawRhythmDot(isGrid ? 7 : 8.5, isGrid ? -0.2 : 0, isGrid ? 1.15 : 1.7);
+      } else if (rhythm.type === "wholeNote") {
+        drawNoteHead(0, 0, false, isGrid, isGrid ? 4.6 : 6.4, isGrid ? 3.1 : 4.2);
+      } else if (rhythm.type === "quarterRest") {
+        drawQuarterRestIcon(isGrid);
+      } else if (rhythm.type === "halfRest") {
+        drawHalfRestIcon(isGrid);
+      } else if (rhythm.type === "wholeRest") {
+        drawWholeRestIcon(isGrid);
       }
 
-      if (food.rhythm.type === "wholeRest") {
-        ctx.beginPath();
-        ctx.moveTo(centerX - 9, centerY - 7);
-        ctx.lineTo(centerX + 9, centerY - 7);
-        ctx.stroke();
-        ctx.fillRect(centerX - 7, centerY - 7, 14, 7);
-        return;
-      }
+      ctx.restore();
+    }
 
-      ctx.font = MUSIC_FONT;
-      ctx.fillText(food.rhythm.symbol, centerX, centerY + noteYNudge);
+    function drawNoteHead(x, y, filled, isGrid, rx, ry) {
+      const headRx = rx || (isGrid ? 4.1 : 5.8);
+      const headRy = ry || (isGrid ? 2.8 : 3.9);
+
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(-0.34);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, headRx, headRy, 0, 0, Math.PI * 2);
+      if (filled) ctx.fill();
+      else ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawStemFromNoteHead(x, y, isGrid) {
+      const stemX = x + (isGrid ? 3.6 : 5);
+      const stemTop = y - (isGrid ? 15 : 19);
+      const stemBottom = y - 0.5;
+
+      ctx.beginPath();
+      ctx.moveTo(stemX, stemBottom);
+      ctx.lineTo(stemX, stemTop);
+      ctx.stroke();
+    }
+
+    function drawFlagFromStem(isGrid) {
+      const stemX = isGrid ? 3.6 : 5;
+      const topY = -(isGrid ? 15 : 19);
+      const flagReach = isGrid ? 7 : 9;
+      const flagDrop = isGrid ? 8 : 10.5;
+
+      ctx.beginPath();
+      ctx.moveTo(stemX, topY);
+      ctx.bezierCurveTo(
+        stemX + flagReach,
+        topY + 1,
+        stemX + flagReach,
+        topY + flagDrop - 2,
+        stemX + 1.4,
+        topY + flagDrop
+      );
+      ctx.stroke();
+    }
+
+    function drawRhythmDot(x, y, radius) {
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawQuarterRestIcon(isGrid) {
+      const scale = isGrid ? 0.68 : 1.1;
+      ctx.save();
+      ctx.scale(scale, scale);
+
+      const oldLineWidth = ctx.lineWidth;
+      ctx.lineWidth = oldLineWidth * (isGrid ? 1.02 : 1.14);
+
+      const yOffset = isGrid ? 1.4 : 0.4;
+      const angle = 38 * Math.PI / 180;
+      const segment = isGrid ? 6.2 : 8.8;
+      const dx = Math.cos(angle) * segment;
+      const dy = Math.sin(angle) * segment;
+
+      const p0 = { x: -2.4, y: -12.1 + yOffset };
+      const p1 = { x: p0.x + dx, y: p0.y + dy };
+      const p2 = { x: p1.x - dx, y: p1.y + dy };
+      const p3 = { x: p2.x + dx, y: p2.y + dy };
+
+      ctx.beginPath();
+      ctx.moveTo(p0.x, p0.y);
+      ctx.lineTo(p1.x, p1.y);
+      ctx.lineTo(p2.x, p2.y);
+      ctx.lineTo(p3.x, p3.y);
+
+      const rx = isGrid ? 4.9 : 6.2;
+      const ry = isGrid ? 3.7 : 4.9;
+      const leftTip = { x: p3.x - rx * 1.15, y: p3.y + ry * 1.02 };
+      const end = { x: p3.x + 0.05, y: p3.y + ry * 1.98 };
+
+      ctx.bezierCurveTo(
+        p3.x - rx * 0.18,
+        p3.y + ry * 0.18,
+        p3.x - rx * 1.02,
+        p3.y + ry * 0.36,
+        leftTip.x,
+        leftTip.y
+      );
+      ctx.bezierCurveTo(
+        p3.x - rx,
+        p3.y + ry * 1.72,
+        p3.x - rx * 0.12,
+        p3.y + ry * 2.02,
+        end.x,
+        end.y
+      );
+      ctx.stroke();
+
+      ctx.lineWidth = oldLineWidth;
+      ctx.restore();
+    }
+
+    function drawHalfRestIcon(isGrid) {
+      const staffY = isGrid ? 2.8 : 4.2;
+      const restWidth = isGrid ? 8 : 11;
+      const restHeight = isGrid ? 3.8 : 5;
+      ctx.beginPath();
+      ctx.moveTo(-restWidth, staffY);
+      ctx.lineTo(restWidth, staffY);
+      ctx.stroke();
+      ctx.fillRect(-restWidth * 0.55, staffY - restHeight, restWidth * 1.1, restHeight);
+    }
+
+    function drawWholeRestIcon(isGrid) {
+      const staffY = isGrid ? -2.8 : -4.2;
+      const restWidth = isGrid ? 8 : 11;
+      const restHeight = isGrid ? 3.8 : 5;
+      ctx.beginPath();
+      ctx.moveTo(-restWidth, staffY);
+      ctx.lineTo(restWidth, staffY);
+      ctx.stroke();
+      ctx.fillRect(-restWidth * 0.55, staffY, restWidth * 1.1, restHeight);
     }
 
     function roundRect(x, y, width, height, radius) {
