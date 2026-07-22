@@ -252,7 +252,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: none;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       overflow: hidden;
     }
 
@@ -265,7 +266,8 @@
       overflow: hidden;
       background: #0b1420;
       box-shadow: 0 1px 3px rgba(0,0,0,0.45);
-      touch-action: none;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     /* Overlay the old mobile-style frame on top of the canvas.
@@ -285,7 +287,8 @@
       width: 390px;
       height: 390px;
       display: block;
-      touch-action: none;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       background: #f7fbff;
       image-rendering: auto;
     }
@@ -397,7 +400,8 @@
       align-items: stretch;
       gap: 2px;
       overflow: hidden;
-      touch-action: none;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -442,7 +446,7 @@
       width: 150px;
       height: 150px;
       flex: 0 0 150px;
-      touch-action: none;
+      touch-action: pan-y;
     }
 
     .dpadBtn {
@@ -1935,7 +1939,10 @@
     canvas.addEventListener("pointerdown", event => {
       if (!running || shellMenu.classList.contains("open")) return;
 
-      event.preventDefault();
+      // Rhythm Snake is controlled only by the D-pad/joystick. Touches beginning
+      // on the game artwork must remain available for vertical Wix-page scrolling.
+      if (event.pointerType === "touch") return;
+
       activeCanvasPointerId = event.pointerId;
 
       try {
@@ -1954,8 +1961,6 @@
         event.pointerId !== activeCanvasPointerId
       ) return;
 
-      event.preventDefault();
-
       if (typeof gamePointerMove === "function") {
         gamePointerMove(canvasPointFromClient(event.clientX, event.clientY, event));
       }
@@ -1966,8 +1971,6 @@
         activeCanvasPointerId === null ||
         event.pointerId !== activeCanvasPointerId
       ) return;
-
-      event.preventDefault();
 
       if (typeof gamePointerUp === "function") {
         gamePointerUp(canvasPointFromClient(event.clientX, event.clientY, event));
