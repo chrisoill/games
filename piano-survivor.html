@@ -757,10 +757,34 @@
     }
 
     #controls {
-      background:
-        radial-gradient(circle at 25% 12%, rgba(255,224,138,0.08), transparent 22%),
-        linear-gradient(180deg, #303030, #181818);
+      padding: 10px 14px 15px;
+      background: linear-gradient(180deg, #2b2b2b, #1b1b1b);
+      justify-content: flex-start;
+      gap: 12px;
     }
+
+    #primaryControlsRow {
+      min-height: 132px;
+    }
+
+    #dpad {
+      width: 132px;
+      height: 132px;
+      flex-basis: 132px;
+    }
+
+    .dpadBtn {
+      width: 44px;
+      height: 44px;
+      line-height: 44px;
+      font-size: 20px;
+    }
+
+    #dpadUp { left: 44px; top: 0; }
+    #dpadLeft { left: 0; top: 44px; }
+    #dpadCenter { left: 44px; top: 44px; }
+    #dpadRight { left: 88px; top: 44px; }
+    #dpadDown { left: 44px; top: 88px; }
 
   </style>
 </head>
@@ -810,7 +834,7 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdPlayer">PLAYER: <span id="playerName">—</span></div>
+          <div id="lcdPlayer">HEALTH: <span id="healthValue">6/6</span></div>
           <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
@@ -965,7 +989,8 @@
     }
 
     const lcdMessage = document.getElementById("lcdMessage");
-    const playerNameEl = document.getElementById("playerName");
+    const playerNameEl = { textContent: "" };
+    const healthValueEl = document.getElementById("healthValue");
     const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
@@ -2212,11 +2237,12 @@
 
   function psCompactStatsLine() {
     const art = ps.articulation ? ps.articulation.symbol : "-";
-    return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
+    return `:|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
   }
 
   function psUpdateHud() {
     if (!ps) return;
+    if (healthValueEl) healthValueEl.textContent = `${ps.hp}/${ps.maxHp}`;
     if (ps.messageTimer > 0) {
       questionBox.textContent = ps.message;
     } else {
