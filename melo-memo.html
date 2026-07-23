@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+<!-- Clean rebuild: mobile template v3.4 + original desktop Melo Memo game module + original mobile controls/storage. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Melo Memo | Piano Arcade</title>
+  <title>Melo Memo Mobile</title>
 
   <style>
     * {
@@ -18,12 +19,13 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
       width: 100%;
       aspect-ratio: 390 / 670;
-      min-height: min(100vh, 670px);
       position: relative;
       overflow: hidden;
       background: #202020;
@@ -42,7 +44,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -65,6 +68,19 @@
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #appFrame,
+    #menuScreen,
+    #screen,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
     }
 
     input,
@@ -224,8 +240,11 @@
       min-width: 110px;
     }
 
+
     /* =========================
-       GAME / EMULATOR
+       GAME / MOBILE CONTROLLER
+       The game world uses the desktop template's full 720 x 520 coordinates.
+       Only the displayed canvas is reduced to fit the 390px mobile shell.
        ========================= */
 
     #gameScreen {
@@ -234,7 +253,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: none;
+      overflow: hidden;
     }
 
     #screen {
@@ -242,29 +262,41 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: none;
+    }
+
+    /* Overlay the old mobile-style frame on top of the canvas.
+       Because it does not participate in layout, the 720 x 520 game world
+       keeps exactly the same displayed size and aspect ratio. */
+    #screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      pointer-events: none;
     }
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
+      touch-action: none;
       background: #f7fbff;
-      image-rendering: pixelated;
+      image-rendering: auto;
     }
 
     #gameOverBox {
       display: none;
       position: absolute;
-      left: 34px;
-      right: 34px;
-      top: 35px;
+      left: 38px;
+      right: 38px;
+      top: 60px;
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -298,7 +330,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -313,15 +345,16 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       grid-template-rows: 1fr 1fr;
+      column-gap: 12px;
       align-items: center;
-      padding: 5px 16px;
+      padding: 5px 14px;
       pointer-events: none;
     }
 
     #lcdMessage {
-      grid-column: 1 / 3;
+      grid-column: 1 / 4;
       font-size: 14px;
       font-weight: bold;
       white-space: nowrap;
@@ -329,23 +362,42 @@
       text-overflow: ellipsis;
     }
 
-    #lcdScore {
+    #lcdPlayer,
+    #lcdScore,
+    #lcdBest {
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    #lcdScore {
+      text-align: center;
     }
 
     #lcdBest {
-      font-size: 13px;
       text-align: right;
     }
 
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
+      height: 340.333px;
+      /*
+        FULL-SIZE CONTROLLER DEFAULT:
+        All controller hardware below uses the original mobile dimensions.
+        Fit complete control sets by compressing shell padding and row gaps,
+        not by shrinking the controls themselves.
+      */
+      padding: 3px 14px 15px;
       background: linear-gradient(180deg, #303030, #181818);
-      touch-action: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: stretch;
+      gap: 2px;
+      overflow: hidden;
+      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -361,15 +413,36 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .controlRow {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 54px;
+      flex: 0 0 auto;
+    }
+
+    #primaryControlsRow {
+      min-height: 150px;
+    }
+
+    #stickControlsRow {
+      min-height: 112px;
+      gap: 94px;
+    }
+
+    #systemControlsRow {
+      min-height: 34px;
+    }
+
     /* D-PAD */
 
     #dpad {
-      position: absolute;
-      left: 17px;
-      top: 19px;
+      position: relative;
       width: 150px;
       height: 150px;
-      touch-action: manipulation;
+      flex: 0 0 150px;
+      touch-action: none;
     }
 
     .dpadBtn {
@@ -404,11 +477,10 @@
     /* FACE BUTTONS */
 
     #faceButtons {
-      position: absolute;
-      right: 18px;
-      top: 20px;
+      position: relative;
       width: 150px;
       height: 150px;
+      flex: 0 0 150px;
     }
 
     .faceBtn {
@@ -437,26 +509,29 @@
     #buttonA { left: 92px; top: 46px; }
     #buttonB { left: 46px; top: 92px; }
 
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 76px;
+      height: 76px;
+      left: 37px !important;
+      top: 37px !important;
+      border-radius: 22px;
+      padding: 0 8px;
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: normal;
+    }
+
     /* JOYSTICKS */
 
     .joystickPad {
-      position: absolute;
+      position: relative;
       width: 112px;
       height: 112px;
+      flex: 0 0 112px;
       border-radius: 18px;
       background: rgba(255,255,255,0.035);
       box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
       touch-action: none;
-    }
-
-    #leftJoystickPad {
-      left: 36px;
-      top: 188px;
-    }
-
-    #rightJoystickPad {
-      right: 37px;
-      top: 188px;
     }
 
     .joystickBase {
@@ -489,19 +564,15 @@
     /* START / SELECT */
 
     #systemButtons {
-      position: absolute;
-      left: 50%;
-      top: 326px;
-      width: 164px;
-      height: 34px;
-      transform: translateX(-50%);
+      min-height: 34px;
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 12px;
     }
 
     .systemBtn {
-      width: 76px;
+      width: 82px;
       height: 32px;
       border-radius: 999px;
       border: none;
@@ -517,6 +588,10 @@
     .systemBtn:active {
       transform: scale(0.96);
       filter: brightness(1.2);
+    }
+
+    #systemButtons.singleSystem .systemBtn {
+      width: 104px;
     }
 
     /* =========================
@@ -610,7 +685,6 @@
       touch-action: pan-y;
     }
 
-
     .pauseMenuActions {
       display: grid;
       grid-template-columns: 1fr;
@@ -656,26 +730,68 @@
       border-radius: 6px;
     }
 
-  
 
+    /* =========================
+       MELO MEMO MOBILE OVERRIDES
+       ========================= */
 
-    /* Melo Memo only: keep the controls that help the player repeat melodies. */
+    /* Empty shell and artwork surfaces remain available for Wix-page scrolling.
+       Actual buttons and piano keys still capture deliberate game input. */
+    #gameScreen,
+    #screen,
+    #gameCanvas,
+    #controls,
+    .controlRow {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
+    }
+
+    /* Preserve the established Melo Memo controls and their sizes:
+       LEFT / RIGHT on the left, PLAY on the right, MENU beneath. */
+    #controls {
+      display: block;
+      padding: 0;
+    }
+
+    #primaryControlsRow,
+    #stickControlsRow,
+    #systemControlsRow {
+      position: absolute;
+      inset: 0;
+      width: 390px;
+      min-height: 0;
+      display: block;
+      pointer-events: none;
+    }
+
+    #dpad,
+    #faceButtons,
+    #systemButtons {
+      pointer-events: auto;
+    }
+
+    #leftJoystickPad,
+    #rightJoystickPad {
+      display: none !important;
+    }
+
     #dpad {
+      position: absolute;
       left: 32px;
-      top: 52px;
+      top: 93px;
       width: 132px;
       height: 56px;
+      flex: none;
     }
 
     #dpadUp,
     #dpadDown,
-    #dpadCenter,
-    #buttonX,
-    #buttonY,
-    #buttonB,
-    #leftJoystickPad,
-    #rightJoystickPad,
-    #selectButton {
+    #dpadCenter {
       display: none !important;
     }
 
@@ -692,33 +808,41 @@
     #dpadLeft { left: 0; }
     #dpadRight { left: 74px; }
 
-    #faceButtons {
+    #faceButtons,
+    #faceButtons.singleFace {
+      position: absolute;
       right: 25px;
-      top: 38px;
+      top: 79px;
       width: 140px;
       height: 86px;
+      flex: none;
     }
 
-    #buttonA {
-      left: 19px;
-      top: 9px;
+    #faceButtons.singleFace .faceBtn.singleAction {
+      left: 19px !important;
+      top: 9px !important;
       width: 102px;
       height: 62px;
       border-radius: 999px;
+      padding: 0 8px;
       font-size: 13px;
+      line-height: 1;
       letter-spacing: 0.5px;
     }
 
+    #systemControlsRow {
+      top: auto;
+      bottom: 44px;
+      height: 34px;
+    }
+
     #systemButtons {
-      top: 326px;
-      width: 92px;
+      position: absolute;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      min-height: 34px;
     }
-
-    #startButton {
-      width: 88px;
-      font-size: 11px;
-    }
-
 
   </style>
 </head>
@@ -753,9 +877,10 @@
         <button id="startGameBtn">Start Game</button>
       </div>
 
+
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -767,39 +892,46 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdPlayer">PLAYER: <span id="playerName">—</span></div>
+          <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
 
         <div id="controls">
-          <div id="dpad">
-            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
-            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
-            <button id="dpadCenter" class="dpadBtn"></button>
-            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
-            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          <div id="primaryControlsRow" class="controlRow">
+            <div id="dpad">
+              <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+              <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+              <button id="dpadCenter" class="dpadBtn"></button>
+              <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+              <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+            </div>
+
+            <div id="faceButtons">
+              <button id="buttonX" class="faceBtn" data-action="x">X</button>
+              <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+              <button id="buttonA" class="faceBtn" data-action="a">A</button>
+              <button id="buttonB" class="faceBtn" data-action="b">B</button>
+            </div>
           </div>
 
-          <div id="faceButtons">
-            <button id="buttonX" class="faceBtn" data-action="x">X</button>
-            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
-            <button id="buttonA" class="faceBtn" data-action="a">PLAY</button>
-            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          <div id="stickControlsRow" class="controlRow">
+            <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+              <div class="joystickBase"></div>
+              <div id="leftJoystickKnob" class="joystickKnob"></div>
+            </div>
+
+            <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+              <div class="joystickBase"></div>
+              <div id="rightJoystickKnob" class="joystickKnob"></div>
+            </div>
           </div>
 
-          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
-            <div class="joystickBase"></div>
-            <div id="leftJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
-            <div class="joystickBase"></div>
-            <div id="rightJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="systemButtons">
-            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
-            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          <div id="systemControlsRow" class="controlRow">
+            <div id="systemButtons">
+              <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+              <button id="startButton" class="systemBtn" data-action="start">START</button>
+            </div>
           </div>
         </div>
       </div>
@@ -820,11 +952,30 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
+
+    // These must match the desktop template exactly.
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+
+    // The desktop world is displayed proportionally inside the mobile shell.
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
     const STORAGE_KEY = "memodyMobilePlayers_v1";
-    const FIRST_TIME_HELP_VERSION = "memodyMobileHowToPlay_v1";
     const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Doors";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "memodyMobileHowToPlay_v1";
+    let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
 
     const appFrame = document.getElementById("appFrame");
     const appStage = document.getElementById("appStage");
@@ -845,10 +996,66 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameCanvasPixelScale = 1;
+
+    function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
+      const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
+      const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
+    const playerNameEl = document.getElementById("playerName");
+    const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
+
+    // Desktop game modules commonly write to questionBox.
+    // On mobile, that same content appears in the compact LCD message row.
+    const questionBox = lcdMessage;
+    scoreLabelEl.textContent = String(SCORE_LABEL || "Score").toUpperCase();
 
     const gameOverBox = document.getElementById("gameOverBox");
     const gameOverScore = document.getElementById("gameOverScore");
@@ -859,6 +1066,12 @@
     const rightJoystickPad = document.getElementById("rightJoystickPad");
     const leftJoystickKnob = document.getElementById("leftJoystickKnob");
     const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+    const primaryControlsRow = document.getElementById("primaryControlsRow");
+    const stickControlsRow = document.getElementById("stickControlsRow");
+    const systemControlsRow = document.getElementById("systemControlsRow");
+    const dpad = document.getElementById("dpad");
+    const faceButtons = document.getElementById("faceButtons");
+    const systemButtons = document.getElementById("systemButtons");
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
@@ -871,9 +1084,10 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
-    let pendingStartAfterHelp = false;
     let wixStorageAnswered = false;
 
     const sticks = {
@@ -901,9 +1115,9 @@
     /*
       EXPANDABLE SHELL MENU
       Add game-specific tabs with:
-      registerShellMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
+      MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
       Update default tabs with:
-      updateShellMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
     */
     const shellMenuTabs = [
       {
@@ -911,11 +1125,11 @@
         label: "Pause",
         html: `
           <h3>Pause</h3>
-          <p>Return to the player menu. Choose whether this run should count toward the saved best score.</p>
+          <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
           <div class="pauseMenuActions">
-            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
-            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
             <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Score &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
           </div>
         `
       },
@@ -925,11 +1139,13 @@
         html: `
           <h3>Controls</h3>
           <ul>
-            <li><strong>Tap:</strong> Tap the piano keys on the game screen.</li>
-            <li><strong>D-pad:</strong> Move the glowing key selector.</li>
-            <li><strong>PLAY:</strong> Play the glowing selected key.</li>
-            <li><strong>MENU:</strong> Pause or open help.</li>
+            <li><strong>Left joystick / D-pad:</strong> Movement when the game uses movement.</li>
+            <li><strong>Right joystick:</strong> Directional aiming and firing when the game uses twin-stick controls.</li>
+            <li><strong>A / B / X / Y:</strong> Game action buttons. Each game should explain what these do.</li>
+            <li><strong>START:</strong> Pause / open this menu.</li>
+            <li><strong>SELECT:</strong> Extra game/system action when a game uses it.</li>
           </ul>
+          <p>The template exposes every mobile control by default. Each game should hide unused controls; the remaining rows recenter automatically.</p>
         `
       },
       {
@@ -937,30 +1153,18 @@
         label: "How to Play",
         html: `
           <h3>How to Play</h3>
+          <p>This is the quick-start screen for new players.</p>
           <ul>
-            <li>Watch and listen to the glowing key sequence.</li>
-            <li>Repeat the notes in the same order on the piano.</li>
-            <li>Correct melodies open a treasure door and add one more note.</li>
-            <li>A wrong note opens a monster door and ends the run.</li>
+            <li>Read the goal of the game.</li>
+            <li>Check which buttons actually matter.</li>
+            <li>Tap START any time you need help again.</li>
           </ul>
-          <p>Your score is how many doors you safely pass through.</p>
-        `
-      },
-      {
-        id: "tips",
-        label: "Memory Tips",
-        html: `
-          <h3>Memory Tips</h3>
-          <ul>
-            <li>Hum the melody before you tap.</li>
-            <li>Think in shapes: same, step up, step down, or jump.</li>
-            <li>Break long patterns into tiny groups.</li>
-          </ul>
+          <p>Each game should replace this with short, concrete instructions.</p>
         `
       }
     ];
 
-    let activeShellMenuTab = "instructions";
+    let activeShellMenuTab = "pause";
 
     function preventBrowserHoldGesture(event) {
       const tagName = event.target?.tagName;
@@ -1040,16 +1244,8 @@
 
     function closeShellMenu(options = {}) {
       const shouldResume = options.resume !== false;
-      const shouldRunPendingStart = options.runPendingStart !== false;
       shellMenu.classList.remove("open");
       shellMenu.setAttribute("aria-hidden", "true");
-
-      if (shouldRunPendingStart && pendingStartAfterHelp) {
-        pendingStartAfterHelp = false;
-        shellMenuWasRunning = false;
-        startGame();
-        return;
-      }
 
       if (
         shouldResume &&
@@ -1058,11 +1254,164 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        scheduleGameLoop();
       }
 
       shellMenuWasRunning = false;
     }
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function shouldShowFirstTimeHelp() {
+      // Guest is a shared/new-visitor account, so it should open How to Play every time.
+      if (isGuestPlayerName()) return true;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      // Do not mark Guest as done. The next Guest player should still see How to Play.
+      if (isGuestPlayerName()) return;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function maybeOpenFirstTimeHelp() {
+      if (!shouldShowFirstTimeHelp()) return;
+      markFirstTimeHelpSeen();
+      openShellMenu("instructions");
+    }
+
+    /*
+      DEFAULT MOBILE CONTROLS
+      The template includes the full control inventory, but the layout now reflows.
+      Individual games should hide anything they do not use with
+      MobileArcadeShell.configureControls({...}) rather than resizing the game world.
+
+      Example future game-specific override:
+      MobileArcadeShell.configureControls({
+        showDpad: false,
+        showLeftJoystick: true,
+        showRightJoystick: false,
+        faceButtons: ["a"],
+        systemButtons: ["start"],
+        labels: { a: "REEL", start: "MENU" }
+      });
+    */
+    const defaultMobileControlConfig = {
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: ["a", "b", "x", "y"],
+      systemButtons: ["select", "start"],
+      labels: {
+        a: "A",
+        b: "B",
+        x: "X",
+        y: "Y",
+        select: "SELECT",
+        start: "START"
+      }
+    };
+
+    function setVisible(element, visible) {
+      if (!element) return;
+      element.classList.toggle("hidden", !visible);
+    }
+
+    function configureMobileControls(options = {}) {
+      const config = {
+        ...defaultMobileControlConfig,
+        ...options,
+        labels: {
+          ...defaultMobileControlConfig.labels,
+          ...(options.labels || {})
+        }
+      };
+
+      const showDpad = config.showDpad !== false;
+      const showLeftJoystick = config.showLeftJoystick !== false;
+      const showRightJoystick = config.showRightJoystick === true;
+      const visibleFaceButtons = new Set(
+        (config.faceButtons || []).map(action => String(action).toLowerCase())
+      );
+      const visibleSystemButtons = new Set(
+        (config.systemButtons || []).map(action => String(action).toLowerCase())
+      );
+
+      setVisible(dpad, showDpad);
+      setVisible(leftJoystickPad, showLeftJoystick);
+      setVisible(rightJoystickPad, showRightJoystick);
+      setVisible(faceButtons, visibleFaceButtons.size > 0);
+      setVisible(systemButtons, visibleSystemButtons.size > 0);
+
+      const faceButtonMap = {
+        a: document.getElementById("buttonA"),
+        b: document.getElementById("buttonB"),
+        x: document.getElementById("buttonX"),
+        y: document.getElementById("buttonY")
+      };
+
+      Object.entries(faceButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleFaceButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+        button.classList.toggle("singleAction", isVisible && visibleFaceButtons.size === 1);
+      });
+
+      faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
+
+      const systemButtonMap = {
+        select: document.getElementById("selectButton"),
+        start: document.getElementById("startButton")
+      };
+
+      Object.entries(systemButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleSystemButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+      });
+
+      systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
+
+      // Empty rows disappear entirely. Remaining rows automatically redistribute
+      // themselves vertically, so game-specific control sets stay centered.
+      setVisible(primaryControlsRow, showDpad || visibleFaceButtons.size > 0);
+      setVisible(stickControlsRow, showLeftJoystick || showRightJoystick);
+      setVisible(systemControlsRow, visibleSystemButtons.size > 0);
+
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
 
     function saveCurrentScoreForSelectedPlayer() {
       if (!selectedPlayer) return;
@@ -1081,7 +1430,6 @@
     }
 
     function exitToPlayerMenu(options = {}) {
-      pendingStartAfterHelp = false;
       const shouldSave = options.save === true;
 
       if (shouldSave) {
@@ -1117,7 +1465,6 @@
       }
     });
 
-
     shellMenuCloseBtn.addEventListener("click", () => closeShellMenu());
 
     shellMenu.addEventListener("click", event => {
@@ -1136,17 +1483,10 @@
     }
 
     function scaleAppToFrame() {
-      const measuredWidth =
-        appFrame.clientWidth ||
-        appFrame.parentElement?.clientWidth ||
-        document.documentElement.clientWidth ||
-        window.innerWidth ||
-        DESIGN_WIDTH;
-
-      const frameWidth = Math.max(1, measuredWidth);
+      const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
-      appFrame.style.height = `${DESIGN_HEIGHT * appScale}px`;
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1177,17 +1517,15 @@
         const cleanName = String(name || "").trim();
         if (!cleanName) return;
 
-        const best = data && typeof data === "object"
+        const isObjectData = data && typeof data === "object" && !Array.isArray(data);
+        const best = isObjectData
           ? Number(data.best || 0)
           : Number(data || 0);
 
         cleaned[cleanName] = {
+          ...(isObjectData ? data : {}),
           best: Math.max(0, Math.floor(best || 0))
         };
-
-        if (data && typeof data === "object" && typeof data.helpSeenVersion === "string") {
-          cleaned[cleanName].helpSeenVersion = data.helpSeenVersion;
-        }
       });
 
       return cleaned;
@@ -1198,7 +1536,7 @@
         Supports both:
         1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
         2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
-        Either way, this stores only each player's best score.
+        Either way, this template stores only each player's best score.
       */
       if (!savedData || typeof savedData !== "object") {
         return { players: {}, selectedPlayer: null };
@@ -1270,7 +1608,7 @@
       /*
         In Wix on iPhone Safari, the parent page should answer and provide
         Wix/Velo local storage. Outside Wix, or if the Velo bridge is not added,
-        this fallback keeps the old localStorage behavior working.
+        this fallback keeps the old desktop/localStorage behavior working.
       */
       if (askedWixParent) {
         setTimeout(() => {
@@ -1287,7 +1625,7 @@
       const payload = getSavePayload();
 
       /*
-        Keep the original browser localStorage path for non-Wix tests.
+        Keep the original browser localStorage path for desktop/non-Wix tests.
         On iPhone Safari inside Wix, this may not persist, so we also send
         the same payload to the Wix parent page.
       */
@@ -1340,7 +1678,7 @@
       const hasSelection = selectedPlayer && players[selectedPlayer];
 
       selectedPlayerText.textContent = hasSelection
-        ? `Selected: ${selectedPlayer}`
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
         : "No player selected";
 
       resetSelectedPlayerBtn.disabled = !hasSelection;
@@ -1375,16 +1713,16 @@
           row.addEventListener("click", () => {
             selectedPlayer = name;
             resetRemoveConfirmButton();
-            renderPlayers();
             savePlayers();
+            renderPlayers();
           });
 
           row.addEventListener("touchend", event => {
             event.preventDefault();
             selectedPlayer = name;
             resetRemoveConfirmButton();
-            renderPlayers();
             savePlayers();
+            renderPlayers();
           }, { passive: false });
 
           playerSelect.appendChild(row);
@@ -1449,13 +1787,13 @@
 
       if (!players[name]) {
         players[name] = { best: 0 };
-        savePlayers();
       }
 
       selectedPlayer = name;
       newPlayerName.value = "";
       playerSearchInput.value = "";
 
+      savePlayers();
       resetRemoveConfirmButton();
       renderPlayers();
       renderLeaderboard();
@@ -1468,71 +1806,36 @@
       }
     });
 
-    function isGuestPlayerName(name = selectedPlayer) {
-      return String(name || "").trim().toLowerCase() === "guest";
-    }
-
-    function ensureSelectedPlayerRecord() {
-      if (!selectedPlayer) return null;
-
-      if (!players[selectedPlayer]) {
-        players[selectedPlayer] = { best: 0 };
-      }
-
-      return players[selectedPlayer];
-    }
-
-    function shouldShowFirstTimeHelp() {
-      if (!selectedPlayer || isGuestPlayerName(selectedPlayer)) return true;
-
-      const player = ensureSelectedPlayerRecord();
-      return !player || player.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
-    }
-
-    function markFirstTimeHelpSeen() {
-      if (!selectedPlayer || isGuestPlayerName(selectedPlayer)) return;
-
-      const player = ensureSelectedPlayerRecord();
-      if (!player) return;
-
-      player.helpSeenVersion = FIRST_TIME_HELP_VERSION;
-      savePlayers();
-    }
-
-    function beginGameWithFirstTimeHelp() {
-      pendingStartAfterHelp = false;
-      closeShellMenu({ resume: false, runPendingStart: false });
-
-      menuScreen.style.display = "none";
-      gameScreen.style.display = "block";
-      gameOverBox.style.display = "none";
-
-      if (shouldShowFirstTimeHelp()) {
-        markFirstTimeHelpSeen();
-        pendingStartAfterHelp = true;
-        openShellMenu("instructions");
-        return;
-      }
-
-      startGame();
-    }
-
     startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
+
       if (!selectedPlayer) {
         selectedPlayer = "Guest";
         if (!players.Guest) players.Guest = { best: 0 };
       }
 
       savePlayers();
-      beginGameWithFirstTimeHelp();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+      maybeOpenFirstTimeHelp();
     };
 
-    playAgainBtn.onclick = () => beginGameWithFirstTimeHelp();
+    playAgainBtn.onclick = () => {
+      startGame();
+      maybeOpenFirstTimeHelp();
+    };
 
     backToMenuBtn.onclick = () => {
-      pendingStartAfterHelp = false;
-      closeShellMenu({ resume: false, runPendingStart: false });
-      exitToPlayerMenu({ save: false });
+      closeShellMenu({ resume: false });
+      stopGame();
+      gameOverBox.style.display = "none";
+      gameScreen.style.display = "none";
+      menuScreen.style.display = "block";
+      resetRemoveConfirmButton();
+      renderPlayers();
+      renderLeaderboard();
     };
 
     function joystickPointFromEvent(event, stick) {
@@ -1549,13 +1852,17 @@
 
       const centerX = stick.pad.offsetWidth / 2;
       const centerY = stick.pad.offsetHeight / 2;
+      const rawDx = point.x - centerX;
+      const rawDy = point.y - centerY;
+      const rawDistance = Math.hypot(rawDx, rawDy);
+      const limitedDistance = Math.min(stick.maxDistance, rawDistance);
+      const directionX = rawDistance > 0 ? rawDx / rawDistance : 0;
+      const directionY = rawDistance > 0 ? rawDy / rawDistance : 0;
+      const dx = directionX * limitedDistance;
+      const dy = directionY * limitedDistance;
 
-      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
-      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
-
-      const dx = limitedX - centerX;
-      const dy = limitedY - centerY;
-
+      // Normalized analog values in the range -1 through 1.
+      // Game modules can read MobileArcadeShell.sticks.left/right continuously.
       stick.x = dx / stick.maxDistance;
       stick.y = dy / stick.maxDistance;
 
@@ -1618,10 +1925,34 @@
       const action = button.dataset.action;
       if (!action) return;
 
+      let activePointerId = null;
+
       button.addEventListener("pointerdown", event => {
         event.preventDefault();
+        activePointerId = event.pointerId;
+        try { button.setPointerCapture(event.pointerId); } catch (error) {}
         pressButton(button);
         handleInput(action);
+      });
+
+      const releaseAction = event => {
+        if (activePointerId == null || event.pointerId !== activePointerId) return;
+        event.preventDefault();
+        try {
+          if (button.hasPointerCapture(event.pointerId)) {
+            button.releasePointerCapture(event.pointerId);
+          }
+        } catch (error) {}
+        activePointerId = null;
+        handleInput(`${action}_release`);
+      };
+
+      button.addEventListener("pointerup", releaseAction);
+      button.addEventListener("pointercancel", releaseAction);
+      button.addEventListener("lostpointercapture", event => {
+        if (activePointerId == null) return;
+        activePointerId = null;
+        handleInput(`${action}_release`);
       });
 
       button.addEventListener("contextmenu", event => event.preventDefault());
@@ -1630,20 +1961,21 @@
     document.querySelectorAll("button[data-action]").forEach(bindButton);
 
     function startGame() {
-      ensureSelectedPlayerRecord();
       stopGame();
 
       score = 0;
       running = true;
 
+      playerNameEl.textContent = selectedPlayer || "Guest";
       scoreEl.textContent = score;
       bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
+      scheduleGameLoop();
     }
 
     function stopGame() {
@@ -1654,13 +1986,39 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
       if (!running) return;
 
-      gameUpdate();
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+      }
+
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+      if (!running) return;
+
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
+
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
       gameDraw();
 
       loopId = requestAnimationFrame(loop);
@@ -1671,6 +2029,10 @@
 
       stopGame();
       soundLose();
+
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
 
       if (score > (players[selectedPlayer].best || 0)) {
         players[selectedPlayer].best = score;
@@ -1695,6 +2057,65 @@
 
       gameInput(action);
     }
+
+    function canvasPointFromClient(clientX, clientY, originalEvent) {
+      const rect = canvas.getBoundingClientRect();
+
+      return {
+        x: (clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height),
+        originalEvent
+      };
+    }
+
+    // The game module selectively captures pointer input only when a gesture
+    // begins on an actual piano key. Other playfield gestures remain scrollable.
+    canvas.addEventListener("click", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+
+      if (typeof gamePointer === "function") {
+        gamePointer(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+      if (shellMenu.classList.contains("open")) return;
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+
+      if (event.key === "ArrowUp" || key === "w") {
+        event.preventDefault();
+        handleInput("up");
+      }
+
+      if (event.key === "ArrowDown" || key === "s") {
+        event.preventDefault();
+        handleInput("down");
+      }
+
+      if (event.key === "ArrowLeft" || key === "a") {
+        event.preventDefault();
+        handleInput("left");
+      }
+
+      if (event.key === "ArrowRight" || key === "d") {
+        event.preventDefault();
+        handleInput("right");
+      }
+
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        handleInput("a");
+      }
+
+      if (key === "m") {
+        event.preventDefault();
+        openShellMenu("instructions");
+      }
+    });
 
     function getAudio() {
       if (!audioCtx) {
@@ -1747,900 +2168,22 @@
       });
     }
 
-        /* =========================
-       MEMODY GAME MODULE
-       ========================= */
-
-    const MEMODY_NOTE_SYMBOLS = ["♪", "♫", "♬", "♭", "♯", "𝄞"];
-    const MEMODY_NOTES = [
-      { freq: 261.63, black: false },
-      { freq: 277.18, black: true },
-      { freq: 293.66, black: false },
-      { freq: 311.13, black: true },
-      { freq: 329.63, black: false },
-      { freq: 349.23, black: false },
-      { freq: 369.99, black: true },
-      { freq: 392.00, black: false },
-      { freq: 415.30, black: true },
-      { freq: 440.00, black: false },
-      { freq: 466.16, black: true },
-      { freq: 493.88, black: false }
-    ];
-
-        const MEMODY_SHOW_MS = 560;
-    const MEMODY_GAP_MS = 165;
-    const MEMODY_TRANSITION_MS = 1280;
-    const MEMODY_CHEST_OPEN_MS = 470;
-    const MEMODY_REVEAL_MS = 880;
-    const MEMODY_WALK_MS = MEMODY_TRANSITION_MS + MEMODY_CHEST_OPEN_MS + MEMODY_REVEAL_MS;
-
-    let memodySequence = [];
-    let memodyPhase = "idle";
-    let memodyOutcome = "treasure";
-    let memodyInputIndex = 0;
-    let memodyShowIndex = 0;
-    let memodyShowOn = false;
-    let memodyNextShowAt = 0;
-    let memodyActiveNote = null;
-    let memodyActiveUntil = 0;
-    let memodySelectedNote = 0;
-    let memodySelectionVisible = false;
-    let memodyAnimStart = 0;
-    let memodyKeyboardRects = [];
-    let memodyMonsterBits = [];
-    let memodyHeldTone = null;
-    let memodyHeldNoteIndex = null;
-    let memodyPointerDown = false;
-    let memodyPointerId = null;
-    let memodyResultCueDone = false;
-    let memodyCanvasEventsBound = false;
-    let memodyButtonAHeld = false;
-    let memodyAButtonPointerId = null;
-    let memodyLastSlideAt = 0;
-    let memodyButtonHoldEventsBound = false;
-
-    updateShellMenuTab("controls", `
-      <h3>Controls</h3>
-      <ul>
-        <li><strong>Piano:</strong> Tap or hold the piano keys on the game screen.</li>
-        <li><strong>LEFT / RIGHT:</strong> Move the glowing key selector.</li>
-        <li><strong>PLAY:</strong> Play the glowing selected key.</li>
-        <li><strong>MENU:</strong> Pause or open help.</li>
-      </ul>
-    `);
-
-    updateShellMenuTab("instructions", `
-      <h3>How to Play</h3>
-      <ul>
-        <li>First, watch and listen while the piano shows a short melody.</li>
-        <li>When it is your turn, repeat the same notes in the same order.</li>
-        <li>You can tap the piano keys directly, or use LEFT / RIGHT and PLAY.</li>
-        <li>If the melody is correct, the center door opens and you move ahead.</li>
-        <li>Each safe door adds one more note to remember.</li>
-        <li>A wrong note opens a monster door and ends the run.</li>
-      </ul>
-      <p>Your score is the number of doors you safely pass through.</p>
-    `);
-
-    registerShellMenuTab("tips", "Memory Tips", `
-      <h3>Memory Tips</h3>
-      <ul>
-        <li>Hum the pattern before you answer.</li>
-        <li>Notice the shape: same note, step up, step down, or jump.</li>
-        <li>Think in small groups when the pattern gets longer.</li>
-      </ul>
-    `);
-
-    function memodyClamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function memodyEaseOut(t) {
-      return 1 - Math.pow(1 - memodyClamp(t, 0, 1), 3);
-    }
-
-    function memodyEaseInOut(t) {
-      t = memodyClamp(t, 0, 1);
-      return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-    }
-
-    function memodyRand(max) {
-      return Math.floor(Math.random() * max);
-    }
-
-    function memodyAddRandomNote() {
-      memodySequence.push(memodyRand(MEMODY_NOTES.length));
-    }
-
-    function memodyBeginShowing() {
-      memodyPhase = "show";
-      memodyInputIndex = 0;
-      memodyShowIndex = 0;
-      memodyShowOn = false;
-      memodyActiveNote = null;
-      memodyStopHeldTone();
-      memodyButtonAHeld = false;
-      memodySelectionVisible = false;
-      memodyNextShowAt = performance.now() + 440;
-      setMessage("WATCH");
-    }
-
-    function memodyGetKeyboardRects() {
-      const totalW = Math.min(canvas.width * 0.58, 232);
-      const totalH = Math.min(canvas.height * 0.24, 60);
-      const x0 = (canvas.width - totalW) / 2;
-      const y0 = canvas.height - totalH - 10;
-      const whiteCount = MEMODY_NOTES.filter(note => !note.black).length;
-      const whiteW = totalW / whiteCount;
-      const blackW = whiteW * 0.62;
-      const blackH = totalH * 0.62;
-      const rects = [];
-      let whiteIndex = 0;
-
-      MEMODY_NOTES.forEach((note, index) => {
-        if (!note.black) {
-          rects[index] = { x: x0 + whiteIndex * whiteW, y: y0, w: whiteW, h: totalH, black: false, z: 0 };
-          whiteIndex += 1;
-        } else {
-          rects[index] = { x: x0 + whiteIndex * whiteW - blackW / 2, y: y0, w: blackW, h: blackH, black: true, z: 1 };
-        }
-      });
-
-      return rects;
-    }
-
-    function memodyNoteFromPoint(point) {
-      memodyKeyboardRects = memodyGetKeyboardRects();
-      const sorted = memodyKeyboardRects.map((rect, index) => ({ ...rect, index })).sort((a, b) => b.z - a.z);
-      for (const rect of sorted) {
-        if (point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h) {
-          return rect.index;
-        }
-      }
-      return null;
-    }
-
-    function memodyBuildTone(index, volume = 0.088) {
-      const ac = getAudio();
-      if (!ac || !MEMODY_NOTES[index]) return null;
-      const note = MEMODY_NOTES[index];
-      const now = ac.currentTime;
-      const osc = ac.createOscillator();
-      const soft = ac.createOscillator();
-      const gain = ac.createGain();
-      const filter = ac.createBiquadFilter();
-
-      osc.type = "triangle";
-      soft.type = "sine";
-      osc.frequency.setValueAtTime(note.freq, now);
-      soft.frequency.setValueAtTime(note.freq * 2, now);
-      filter.type = "lowpass";
-      filter.frequency.setValueAtTime(1850, now);
-      gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(volume, now + 0.016);
-      osc.connect(filter);
-      soft.connect(filter);
-      filter.connect(gain);
-      gain.connect(ac.destination);
-      osc.start(now);
-      soft.start(now);
-
-      return { ac, osc, soft, gain, stopped: false, index };
-    }
-
-    function memodyStopTone(tone, releaseSeconds = 0.06) {
-      if (!tone || tone.stopped) return;
-      tone.stopped = true;
-      const now = tone.ac.currentTime;
-      tone.gain.gain.cancelScheduledValues(now);
-      tone.gain.gain.setValueAtTime(Math.max(0.0001, tone.gain.gain.value), now);
-      tone.gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseSeconds);
-      tone.osc.stop(now + releaseSeconds + 0.02);
-      tone.soft.stop(now + releaseSeconds + 0.02);
-    }
-
-    function memodyPreviewNote(index, durationSeconds = 0.22, volume = 0.082) {
-      const tone = memodyBuildTone(index, volume);
-      if (!tone) return;
-      setTimeout(() => memodyStopTone(tone, 0.06), durationSeconds * 1000);
-    }
-
-    function memodyStartHeldTone(index, volume = 0.09) {
-      if (memodyHeldTone && memodyHeldTone.index === index) return;
-      memodyStopHeldTone();
-      memodyHeldTone = memodyBuildTone(index, volume);
-      memodyHeldNoteIndex = index;
-    }
-
-    function memodyStopHeldTone() {
-      if (memodyHeldTone) memodyStopTone(memodyHeldTone, 0.055);
-      memodyHeldTone = null;
-      memodyHeldNoteIndex = null;
-    }
-
-    function memodySoundDoor() {
-      [210, 176, 148, 126].forEach((freq, i) => setTimeout(() => beep(freq, 0.075, "sawtooth", 0.03), i * 48));
-    }
-
-    function memodySoundTreasure() {
-      [659, 784, 988, 1318].forEach((freq, i) => setTimeout(() => beep(freq, 0.08, "triangle", 0.043), i * 58));
-    }
-
-    function memodySoundMonster() {
-      [98, 82, 65, 54].forEach((freq, i) => setTimeout(() => beep(freq, 0.15, "sawtooth", 0.068), i * 72));
-      setTimeout(() => beep(41, 0.22, "square", 0.042), 100);
-    }
-
-    function memodyMakeMonster() {
-      memodyMonsterBits = Array.from({ length: 24 }, (_, i) => ({
-        x: (Math.random() - 0.5) * 90,
-        y: (Math.random() - 0.5) * 60,
-        size: 11 + Math.random() * 16,
-        char: MEMODY_NOTE_SYMBOLS[i % MEMODY_NOTE_SYMBOLS.length],
-        shade: 25 + Math.floor(Math.random() * 85),
-        spin: (Math.random() - 0.5) * 0.55
-      }));
-    }
-
-    function memodyTriggerOutcome(success) {
-      memodyPhase = "walk";
-      memodyOutcome = success ? "treasure" : "monster";
-      memodyAnimStart = performance.now();
-      memodyResultCueDone = false;
-      memodyStopHeldTone();
-      memodyButtonAHeld = false;
-      memodySelectionVisible = false;
-      memodyActiveNote = null;
-      setMessage("THE DOOR OPENS");
-      memodySoundDoor();
-      if (!success) memodyMakeMonster();
-    }
-
-    function memodyHandleNote(index) {
-      if (index == null) return;
-      memodySelectedNote = index;
-      memodyActiveNote = index;
-      memodyActiveUntil = performance.now() + 140;
-      if (memodyPhase !== "input") return;
-
-      if (index === memodySequence[memodyInputIndex]) {
-        soundCorrect();
-        memodyInputIndex += 1;
-        if (memodyInputIndex >= memodySequence.length) {
-          addScore(1);
-          memodyTriggerOutcome(true);
-        } else {
-          setMessage("KEEP GOING");
-        }
-      } else {
-        memodyTriggerOutcome(false);
-      }
-    }
-
-    function memodyHandlePointerNote(index) {
-      if (index == null) {
-        memodyActiveNote = null;
-        return;
-      }
-      memodySelectedNote = index;
-      memodyActiveNote = index;
-      memodyActiveUntil = performance.now() + 130;
-      if (memodyHeldNoteIndex === index) return;
-      memodyStartHeldTone(index, 0.09);
-    }
-
-        function memodyDrawChest(x, y, scale, openAmount) {
-      const chestW = 84 * scale;
-      const chestH = 54 * scale;
-      const left = x - chestW / 2;
-      const top = y - chestH / 2;
-
-      ctx.save();
-      ctx.fillStyle = "#8a5a1d";
-      ctx.fillRect(left, top + chestH * 0.18, chestW, chestH * 0.56);
-      ctx.fillStyle = "#d4a72c";
-      ctx.fillRect(left + chestW * 0.08, top + chestH * 0.18, chestW * 0.84, chestH * 0.12);
-      ctx.fillRect(left + chestW * 0.08, top + chestH * 0.50, chestW * 0.84, chestH * 0.10);
-      ctx.fillStyle = "#4b2e10";
-      ctx.fillRect(left + chestW * 0.46, top + chestH * 0.40, chestW * 0.08, chestH * 0.20);
-      ctx.fillStyle = "#facc15";
-      ctx.fillRect(left + chestW * 0.47, top + chestH * 0.44, chestW * 0.06, chestH * 0.12);
-
-      ctx.save();
-      ctx.translate(x, top + chestH * 0.20);
-      ctx.rotate(-1.12 * openAmount);
-      ctx.fillStyle = "#a56b24";
-      ctx.beginPath();
-      ctx.moveTo(-chestW * 0.50, 0);
-      ctx.quadraticCurveTo(0, -chestH * 0.34, chestW * 0.50, 0);
-      ctx.lineTo(chestW * 0.44, chestH * 0.10);
-      ctx.quadraticCurveTo(0, -chestH * 0.20, -chestW * 0.44, chestH * 0.10);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = "#eab308";
-      ctx.lineWidth = 3 * scale;
-      ctx.stroke();
-      ctx.restore();
-      ctx.restore();
-    }
-
-    function memodyDrawTreasureBurst(now, x, y, reveal, scale) {
-      const rise = (1 - reveal) * 18 * scale;
-      const spread = 40 * scale;
-      const symbols = ["♪", "♫", "♬", "♩", "𝄞", "♬", "♫"];
-      ctx.save();
-      ctx.textAlign = "center";
-      symbols.forEach((symbol, i) => {
-        const t = i / Math.max(1, symbols.length - 1);
-        const sx = x + (t - 0.5) * spread * 1.5;
-        const sy = y - rise - Math.sin(t * Math.PI) * 16 * scale;
-        ctx.fillStyle = i % 3 === 0 ? "#fde68a" : i % 3 === 1 ? "#facc15" : "#f59e0b";
-        ctx.font = `bold ${Math.round((15 + (i % 4) * 4) * scale)}px Arial`;
-        ctx.fillText(symbol, sx, sy);
-      });
-      for (let i = 0; i < 10; i += 1) {
-        const angle = i * 0.58 + now / 280;
-        const radius = 15 * scale + (i % 4) * 6 * scale;
-        ctx.fillStyle = i % 2 ? "#facc15" : "#f59e0b";
-        ctx.beginPath();
-        ctx.arc(x + Math.cos(angle) * radius, y - 5 * scale + Math.sin(angle) * radius * 0.45, 2.5 * scale + (i % 2), 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    function memodyDrawMonsterFigure(now, x, y, reveal, scale) {
-      const jump = memodyEaseOut(reveal);
-      const monsterScale = scale * (0.52 + jump * 0.92);
-      const bob = Math.sin(now / 120) * 5 * monsterScale;
-      const lunge = jump * 38 * scale;
-
-      ctx.save();
-      ctx.translate(x, y - jump * 34 * scale + bob);
-      ctx.scale(monsterScale, monsterScale);
-
-      memodyMonsterBits.forEach((bit, i) => {
-        const wobble = Math.sin(now / 145 + i) * 3.5;
-        ctx.save();
-        ctx.translate(bit.x * 0.48 + wobble, bit.y * 0.48 + Math.cos(now / 185 + i) * 2.5);
-        ctx.rotate(bit.spin * Math.sin(now / 170 + i));
-        ctx.fillStyle = `rgb(${bit.shade}, ${bit.shade}, ${bit.shade})`;
-        ctx.font = `bold ${Math.max(9, bit.size * 0.72)}px Arial`;
-        ctx.textAlign = "center";
-        ctx.fillText(bit.char, 0, 0);
-        ctx.restore();
-      });
-
-      ctx.fillStyle = "#ef4444";
-      ctx.beginPath();
-      ctx.arc(-14, -8, 5.5, 0, Math.PI * 2);
-      ctx.arc(14, -8, 5.5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#fff5f5";
-      ctx.beginPath();
-      ctx.arc(-14, -8, 2.3, 0, Math.PI * 2);
-      ctx.arc(14, -8, 2.3, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = "#ef4444";
-      ctx.lineWidth = 3.2;
-      ctx.lineCap = "round";
-      ctx.beginPath();
-      ctx.moveTo(-34, 8);
-      ctx.lineTo(-52 - lunge, 24);
-      ctx.moveTo(34, 8);
-      ctx.lineTo(52 + lunge, 24);
-      ctx.stroke();
-
-      ctx.fillStyle = "#ef4444";
-      ctx.font = "bold 15px Arial";
-      ctx.fillText("♯", -58 - lunge, 31);
-      ctx.fillText("♭", 58 + lunge, 31);
-      ctx.restore();
-    }
-
-    function memodyCorridorMetrics(scale = 1, centerOffset = 0) {
-      const w = canvas.width;
-      const h = canvas.height;
-      const overdraw = Math.max(w, h) * 0.42;
-      const cx = w / 2 + centerOffset;
-      const wallCenterY = h * 0.42;
-      const baseWallW = w * 0.32;
-      const baseWallH = h * 0.24;
-      const wallW = baseWallW * scale;
-      const wallH = baseWallH * scale;
-      const wallLeft = cx - wallW / 2;
-      const wallRight = cx + wallW / 2;
-      const wallTop = wallCenterY - wallH / 2;
-      const wallBottom = wallCenterY + wallH / 2;
-      const floorY = h * 0.74;
-      const doorW = wallW * 0.23;
-      const doorH = wallH * 0.70;
-      const doorX = cx - doorW / 2;
-      const doorY = wallCenterY - doorH / 2 + wallH * 0.06;
-      return { w, h, overdraw, cx, wallCenterY, wallW, wallH, wallLeft, wallRight, wallTop, wallBottom, floorY, doorW, doorH, doorX, doorY, scale };
-    }
-
-    function memodyDrawCorridorShell(metrics, options = {}) {
-      const { w, h, overdraw, cx, wallW, wallH, wallLeft, wallRight, wallTop, wallBottom, floorY, doorW, doorH, doorX, doorY, scale } = metrics;
-      const doorOpen = options.doorOpen || 0;
-      const showClosedDoor = options.showClosedDoor !== false;
-      const panelScale = Math.max(0, 1 - doorOpen);
-
-      const sky = ctx.createLinearGradient(0, -overdraw, 0, h + overdraw);
-      sky.addColorStop(0, "#18264a");
-      sky.addColorStop(0.55, "#101827");
-      sky.addColorStop(1, "#0a0e17");
-      ctx.fillStyle = sky;
-      ctx.fillRect(-overdraw, -overdraw, w + overdraw * 2, h + overdraw * 2);
-
-      ctx.fillStyle = "#162138";
-      ctx.beginPath();
-      ctx.moveTo(-overdraw, -overdraw);
-      ctx.lineTo(wallLeft, wallTop);
-      ctx.lineTo(wallLeft, wallBottom);
-      ctx.lineTo(-overdraw, floorY + overdraw * 0.35);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(w + overdraw, -overdraw);
-      ctx.lineTo(wallRight, wallTop);
-      ctx.lineTo(wallRight, wallBottom);
-      ctx.lineTo(w + overdraw, floorY + overdraw * 0.35);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#1a2540";
-      ctx.beginPath();
-      ctx.moveTo(-overdraw, floorY + overdraw * 0.35);
-      ctx.lineTo(wallLeft, wallBottom);
-      ctx.lineTo(wallRight, wallBottom);
-      ctx.lineTo(w + overdraw, floorY + overdraw * 0.35);
-      ctx.lineTo(w + overdraw, h + overdraw);
-      ctx.lineTo(-overdraw, h + overdraw);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#20304d";
-      ctx.fillRect(wallLeft, wallTop, wallW, wallH);
-
-      ctx.strokeStyle = "rgba(255,255,255,0.07)";
-      ctx.lineWidth = Math.max(1, 2 * scale);
-      [0.18, 0.34, 0.5, 0.66, 0.82].forEach(pos => {
-        ctx.beginPath();
-        ctx.moveTo(cx, wallBottom);
-        ctx.lineTo(w * pos, h + overdraw * 0.12);
-        ctx.stroke();
-      });
-
-      if (!showClosedDoor) return;
-
-      const doorInnerX = doorX + 1 * scale;
-      const doorInnerY = doorY + 1.5 * scale;
-      const doorInnerW = Math.max(0, doorW - 2 * scale);
-      const doorInnerH = doorH + 3.5 * scale;
-
-      ctx.fillStyle = "rgba(0,0,0,0.32)";
-      ctx.fillRect(doorX - 3 * scale, doorY + 3 * scale, doorW + 6 * scale, doorH + 5 * scale);
-
-      ctx.fillStyle = "#05060a";
-      ctx.fillRect(doorInnerX, doorInnerY, doorInnerW, doorInnerH);
-
-      ctx.fillStyle = "#f8fafc";
-      ctx.fillRect(doorX - 4 * scale, doorY - 4 * scale, doorW + 8 * scale, 5 * scale);
-      ctx.fillRect(doorX - 4 * scale, doorY - 4 * scale, 5 * scale, doorH + 9 * scale);
-      ctx.fillRect(doorX + doorW - 1 * scale, doorY - 4 * scale, 5 * scale, doorH + 9 * scale);
-
-      if (panelScale > 0.001 && doorInnerW > 0) {
-        ctx.save();
-        ctx.translate(doorInnerX, doorInnerY);
-        ctx.scale(panelScale, 1);
-        const doorGrad = ctx.createLinearGradient(0, 0, doorInnerW, doorInnerH);
-        doorGrad.addColorStop(0, "#8aa9ff");
-        doorGrad.addColorStop(1, "#4361b9");
-        ctx.fillStyle = doorGrad;
-        ctx.fillRect(0, 0, doorInnerW, doorInnerH);
-        ctx.fillStyle = "rgba(255,255,255,0.18)";
-        ctx.fillRect(doorInnerW * 0.12, doorInnerH * 0.12, doorInnerW * 0.76, doorInnerH * 0.22);
-        ctx.fillRect(doorInnerW * 0.12, doorInnerH * 0.47, doorInnerW * 0.76, doorInnerH * 0.30);
-        ctx.fillStyle = "#e0edff";
-        ctx.beginPath();
-        ctx.arc(doorInnerW * 0.82, doorInnerH * 0.53, Math.max(2, 2.2 * scale), 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-    }
-
-    function memodyDrawTreasureChestLayer(now, outcome, chestOpen, reveal) {
-      const w = canvas.width;
-      const h = canvas.height;
-      const chestX = w / 2;
-      const chestY = h * 0.70;
-      const chestScale = Math.max(0.62, Math.min(0.88, w / 420));
-      memodyDrawChest(chestX, chestY, chestScale, chestOpen);
-      if (reveal > 0) {
-        if (outcome === "treasure") memodyDrawTreasureBurst(now, chestX, chestY - 15 * chestScale, reveal, chestScale);
-        else memodyDrawMonsterFigure(now, chestX, chestY - 8 * chestScale, reveal, chestScale);
-      }
-    }
-
-    function memodyDrawRoomScene(now, outcome, chestOpen, reveal) {
-      const metrics = memodyCorridorMetrics(1, 0);
-      memodyDrawCorridorShell(metrics, { doorOpen: 0, showClosedDoor: true });
-      memodyDrawTreasureChestLayer(now, outcome, chestOpen, reveal);
-    }
-
-    function memodyDrawHallway(now) {
-      const w = canvas.width;
-      const h = canvas.height;
-      const elapsed = memodyPhase === "walk" ? now - memodyAnimStart : 0;
-      const transitionUnclamped = memodyPhase === "walk" ? elapsed / MEMODY_TRANSITION_MS : 0;
-      const transitionRaw = memodyClamp(transitionUnclamped, 0, 1);
-
-      if (memodyPhase === "walk" && transitionUnclamped >= 1) {
-        const chestOpen = memodyClamp((elapsed - MEMODY_TRANSITION_MS) / MEMODY_CHEST_OPEN_MS, 0, 1);
-        const reveal = memodyClamp((elapsed - MEMODY_TRANSITION_MS - MEMODY_CHEST_OPEN_MS * 0.35) / MEMODY_REVEAL_MS, 0, 1);
-        memodyDrawRoomScene(now, memodyOutcome, chestOpen, reveal);
-        return;
-      }
-
-      const progress = memodyEaseInOut(transitionRaw);
-      const waver = memodyPhase === "walk" ? Math.sin((now - memodyAnimStart) / 95) * (1 - transitionRaw) * 1.5 : 0;
-      const zoom = 1 + progress * 16.4;
-      const metrics = memodyCorridorMetrics(zoom, waver);
-      const doorOpen = memodyPhase === "walk" ? memodyEaseOut(memodyClamp(elapsed / 320, 0, 1)) : 0;
-      memodyDrawCorridorShell(metrics, { doorOpen, showClosedDoor: true });
-      if (memodyPhase === "walk") {
-        const childScale = 0.30 + transitionRaw * 0.70;
-        const baseMetrics = memodyCorridorMetrics(1, 0);
-        const startChildX = baseMetrics.doorX + baseMetrics.doorW / 2;
-        const startChildY = baseMetrics.doorY + baseMetrics.doorH / 2;
-        const childCenterX = startChildX + (w / 2 - startChildX) * transitionRaw;
-        const childCenterY = startChildY + (h / 2 - startChildY) * transitionRaw;
-        const openWidth = Math.max(0, metrics.doorW * doorOpen - 3);
-        if (openWidth > 1) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(metrics.doorX + metrics.doorW - openWidth - 1.5, metrics.doorY + 1.5, openWidth, Math.max(0, metrics.doorH - 3));
-          ctx.clip();
-          ctx.translate(childCenterX, childCenterY);
-          ctx.scale(childScale, childScale);
-          ctx.translate(-w / 2, -h / 2);
-          memodyDrawRoomScene(now, memodyOutcome, 0, 0);
-          ctx.restore();
-        }
-      }
-    }
-
-
-    function memodyRoundRect(x, y, w, h, r) {
-      const radius = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
-      if (typeof ctx.roundRect === "function") {
-        ctx.roundRect(x, y, w, h, radius);
-        return;
-      }
-      ctx.moveTo(x + radius, y);
-      ctx.lineTo(x + w - radius, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
-      ctx.lineTo(x + w, y + h - radius);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
-      ctx.lineTo(x + radius, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
-      ctx.lineTo(x, y + radius);
-      ctx.quadraticCurveTo(x, y, x + radius, y);
-    }
-
-function memodyDrawKeyboard() {
-      memodyKeyboardRects = memodyGetKeyboardRects();
-      const frame = memodyKeyboardRects[0];
-      const totalW = memodyKeyboardRects[memodyKeyboardRects.length - 1].x + memodyKeyboardRects[memodyKeyboardRects.length - 1].w - frame.x;
-
-      ctx.save();
-      ctx.globalAlpha = memodyPhase === "walk" ? 0.36 : 1;
-      ctx.fillStyle = "rgba(10,16,30,0.52)";
-      ctx.beginPath();
-      memodyRoundRect(frame.x - 10, frame.y - 10, totalW + 20, frame.h + 18, 16);
-      ctx.fill();
-
-      memodyKeyboardRects.forEach((rect, index) => {
-        if (rect.black) return;
-        const isHeld = memodyHeldNoteIndex === index;
-        const isComputer = memodyPhase === "show" && memodyActiveNote === index;
-        const isPressed = memodyPhase !== "show" && memodyActiveNote === index;
-        const isSelected = memodySelectionVisible && memodySelectedNote === index && memodyPhase === "input";
-        ctx.fillStyle = (isHeld || isPressed) ? "#ffe08a" : isComputer ? "#3b82f6" : isSelected ? "#dbeafe" : "#f8fafc";
-        ctx.fillRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
-        ctx.strokeStyle = "#111827";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-      });
-
-      memodyKeyboardRects.forEach((rect, index) => {
-        if (!rect.black) return;
-        const isHeld = memodyHeldNoteIndex === index;
-        const isComputer = memodyPhase === "show" && memodyActiveNote === index;
-        const isPressed = memodyPhase !== "show" && memodyActiveNote === index;
-        const isSelected = memodySelectionVisible && memodySelectedNote === index && memodyPhase === "input";
-        ctx.fillStyle = (isHeld || isPressed) ? "#f59e0b" : (isComputer || isSelected) ? "#1d4ed8" : "#0f172a";
-        ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
-        ctx.strokeStyle = "#020617";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
-      });
-
-      ctx.restore();
-    }
-
-    function memodyDrawResultOverlay(now) {
-      // The room now appears through the doorway during the first-person walk.
-    }
-    function memodyBindCanvasEvents() {
-      if (memodyCanvasEventsBound) return;
-      memodyCanvasEventsBound = true;
-
-      function pointFromEvent(event) {
-        const rect = canvas.getBoundingClientRect();
-        return {
-          x: (event.clientX - rect.left) * (canvas.width / rect.width),
-          y: (event.clientY - rect.top) * (canvas.height / rect.height)
-        };
-      }
-
-      canvas.addEventListener("pointerdown", event => {
-        if (!running || shellMenu.classList.contains("open")) return;
-        event.preventDefault();
-        const index = memodyNoteFromPoint(pointFromEvent(event));
-        if (index == null) return;
-        memodyPointerDown = true;
-        memodyPointerId = event.pointerId;
-        try { canvas.setPointerCapture(event.pointerId); } catch (err) {}
-        memodyHandlePointerNote(index);
-      });
-
-      canvas.addEventListener("pointermove", event => {
-        if (!memodyPointerDown || event.pointerId !== memodyPointerId) return;
-        memodyHandlePointerNote(memodyNoteFromPoint(pointFromEvent(event)));
-      });
-
-      function releasePointer(event) {
-        if (!memodyPointerDown || event.pointerId !== memodyPointerId) return;
-        const commitIndex = memodyHeldNoteIndex;
-        memodyPointerDown = false;
-        memodyPointerId = null;
-        memodyStopHeldTone();
-        if (commitIndex != null) memodyHandleNote(commitIndex);
-        try {
-          if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-        } catch (err) {}
-      }
-
-      canvas.addEventListener("pointerup", releasePointer);
-      canvas.addEventListener("pointercancel", releasePointer);
-    }
-
-    function memodySlideSelectedNote(step) {
-      if (memodyPhase !== "input") return;
-      if (!memodySelectionVisible || memodySelectedNote == null) {
-        memodySelectedNote = step > 0 ? 0 : MEMODY_NOTES.length - 1;
-      } else {
-        memodySelectedNote = (memodySelectedNote + step + MEMODY_NOTES.length) % MEMODY_NOTES.length;
-      }
-      memodySelectionVisible = true;
-      if (memodyButtonAHeld) {
-        memodyActiveNote = memodySelectedNote;
-        memodyActiveUntil = performance.now() + 130;
-        memodyStartHeldTone(memodySelectedNote, 0.09);
-      }
-    }
-
-    function memodyStartButtonHold() {
-      if (memodyPhase !== "input") return;
-      if (!memodySelectionVisible || memodySelectedNote == null) {
-        memodySelectedNote = 0;
-        memodySelectionVisible = true;
-      }
-      if (memodyButtonAHeld && memodyHeldNoteIndex === memodySelectedNote) return;
-      memodyButtonAHeld = true;
-      memodyActiveNote = memodySelectedNote;
-      memodyActiveUntil = performance.now() + 130;
-      memodyStartHeldTone(memodySelectedNote, 0.09);
-    }
-
-    function memodyReleaseButtonHold() {
-      if (!memodyButtonAHeld) return;
-      const commitIndex = memodyHeldNoteIndex != null ? memodyHeldNoteIndex : memodySelectedNote;
-      memodyButtonAHeld = false;
-      memodySelectionVisible = false;
-      memodyAButtonPointerId = null;
-      memodyStopHeldTone();
-      if (commitIndex != null) memodyHandleNote(commitIndex);
-      if (memodyPhase === "input") {
-        memodySelectedNote = commitIndex;
-        memodySelectionVisible = true;
-      }
-    }
-
-    function memodyBindButtonHoldEvents() {
-      if (memodyButtonHoldEventsBound) return;
-      memodyButtonHoldEventsBound = true;
-      const aButton = document.getElementById("buttonA");
-      if (!aButton) return;
-
-      aButton.addEventListener("pointerdown", event => {
-        memodyAButtonPointerId = event.pointerId;
-      });
-
-      aButton.addEventListener("pointerup", event => {
-        if (memodyAButtonPointerId !== event.pointerId) return;
-        event.preventDefault();
-        memodyAButtonPointerId = null;
-        memodyReleaseButtonHold();
-      });
-
-      aButton.addEventListener("pointercancel", event => {
-        if (memodyAButtonPointerId !== event.pointerId) return;
-        event.preventDefault();
-        memodyAButtonPointerId = null;
-        memodyButtonAHeld = false;
-        memodyStopHeldTone();
-      });
-
-      document.addEventListener("pointerup", event => {
-        if (memodyAButtonPointerId !== event.pointerId) return;
-        memodyAButtonPointerId = null;
-        memodyReleaseButtonHold();
-      });
-    }
-
-    function gameInit() {
-      memodySequence = [];
-      memodyOutcome = "treasure";
-      memodyInputIndex = 0;
-      memodySelectedNote = 0;
-      memodySelectionVisible = false;
-      memodyActiveNote = null;
-      memodyKeyboardRects = [];
-      memodyResultCueDone = false;
-      memodyPointerDown = false;
-      memodyPointerId = null;
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      memodyStopHeldTone();
-      memodyBindCanvasEvents();
-      memodyBindButtonHoldEvents();
-      memodyAddRandomNote();
-      memodyBeginShowing();
-      gameDraw();
-    }
-
-        function gameUpdate() {
-      const now = performance.now();
-
-      if (memodyButtonAHeld && memodyPhase === "input" && now - memodyLastSlideAt > 135) {
-        const x = sticks.left.x || 0;
-        if (x > 0.55) {
-          memodyLastSlideAt = now;
-          memodySlideSelectedNote(1);
-        } else if (x < -0.55) {
-          memodyLastSlideAt = now;
-          memodySlideSelectedNote(-1);
-        }
-      }
-
-      if (memodyActiveNote != null && now > memodyActiveUntil && memodyPhase !== "show") {
-        memodyActiveNote = null;
-      }
-
-      if (memodyPhase === "show" && now >= memodyNextShowAt) {
-        if (!memodyShowOn) {
-          if (memodyShowIndex >= memodySequence.length) {
-            memodyPhase = "input";
-            memodyActiveNote = null;
-            memodySelectedNote = 0;
-            memodySelectionVisible = false;
-            setMessage("PLAY THE MELODY");
-          } else {
-            const noteIndex = memodySequence[memodyShowIndex];
-            memodyShowOn = true;
-            memodyActiveNote = noteIndex;
-            memodyActiveUntil = now + MEMODY_SHOW_MS;
-            memodyPreviewNote(noteIndex, MEMODY_SHOW_MS / 1000, 0.082);
-            memodyNextShowAt = now + MEMODY_SHOW_MS;
-          }
-        } else {
-          memodyShowOn = false;
-          memodyActiveNote = null;
-          memodyShowIndex += 1;
-          memodyNextShowAt = now + MEMODY_GAP_MS;
-        }
-      } else if (memodyPhase === "walk") {
-        const elapsed = now - memodyAnimStart;
-        if (!memodyResultCueDone && elapsed > MEMODY_TRANSITION_MS + 120) {
-          memodyResultCueDone = true;
-          if (memodyOutcome === "treasure") {
-            setMessage("TREASURE!");
-            memodySoundTreasure();
-          } else {
-            setMessage("MONSTER!");
-            memodySoundMonster();
-          }
-        }
-
-        if (elapsed > MEMODY_WALK_MS) {
-          if (memodyOutcome === "treasure") {
-            memodyAddRandomNote();
-            memodyBeginShowing();
-          } else {
-            endGame("The monster got you!");
-          }
-        }
-      }
-    }
-    function gameDraw() {
-      const now = performance.now();
-      memodyDrawHallway(now);
-      memodyDrawResultOverlay(now);
-      memodyDrawKeyboard();
-    }
-
-    function gameInput(action) {
-      if (memodyPhase !== "input") {
-        if (action === "x") setMessage("WATCH FIRST");
-        if (action === "y") setMessage(`DOORS ${score}`);
-        if (action === "b") setMessage("WATCH THE DOOR");
-        if (action === "select") setMessage("REMEMBER");
-        return;
-      }
-
-      if (action === "left") {
-        memodySlideSelectedNote(-1);
-        return;
-      }
-
-      if (action === "right") {
-        memodySlideSelectedNote(1);
-        return;
-      }
-
-      if (action === "up") {
-        memodySlideSelectedNote(1);
-        return;
-      }
-
-      if (action === "down") {
-        memodySlideSelectedNote(-1);
-        return;
-      }
-
-      if (action === "a") {
-        memodyStartButtonHold();
-        return;
-      }
-
-      if (action === "x") setMessage("TAP OR HOLD KEYS");
-      if (action === "y") setMessage(`DOORS ${score}`);
-      if (action === "b") setMessage("ONE DOOR AHEAD");
-      if (action === "select") setMessage("PLAY THE MELODY");
-    }
-    function gameStop() {
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      memodyButtonAHeld = false;
-      memodySelectionVisible = false;
-      memodyAButtonPointerId = null;
-      memodyStopHeldTone();
-      memodyPointerDown = false;
-      memodyPointerId = null;
-      memodyActiveNote = null;
-      memodyPhase = "idle";
-    }
-
-
-
-    window.MobileArcadeShell = {
+    /*
+      COMPATIBLE SHELL API
+      MobileArcadeShell is the native mobile name.
+      ArcadeShell is an alias so desktop game-module code can be reused without
+      renaming its shell calls.
+    */
+    const mobileShellApi = {
+      root: appStage,
       canvas,
       ctx,
+      questionBox,
+      gameWidth: GAME_CANVAS_LOGICAL_WIDTH,
+      gameHeight: GAME_CANVAS_LOGICAL_HEIGHT,
+      getCanvasSize: getGameCanvasSize,
+      scaleGameCanvasBackingStore,
+      resetGameCanvasTransform,
       sticks,
       setScore,
       addScore,
@@ -2650,31 +2193,996 @@ function memodyDrawKeyboard() {
       soundWin,
       soundLose,
       getAudio,
+      savePlayers,
+      loadPlayers,
       openMenu: openShellMenu,
       closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      returnToPlayerMenu: exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
       registerMenuTab: registerShellMenuTab,
-      updateMenuTab: updateShellMenuTab
+      updateMenuTab: updateShellMenuTab,
+      configureControls: configureMobileControls,
+      setFirstTimeHelpVersion
     };
 
-    function handleMemodyResize() {
-      scaleAppToFrame();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
+    window.MobileArcadeShell = mobileShellApi;
+    window.ArcadeShell = mobileShellApi;
+
+    /* =========================
+       GAME MODULE — MELO MEMO
+
+       The desktop game's complete 720 x 520 logical world, coordinates,
+       timing, artwork, piano proportions, hitboxes, and animation geometry
+       are preserved exactly. Only the shell display scale changes.
+       ========================= */
+
+    MobileArcadeShell.setFirstTimeHelpVersion("memodyMobileHowToPlay_v1");
+
+    MobileArcadeShell.configureControls({
+      showDpad: true,
+      showLeftJoystick: false,
+      showRightJoystick: false,
+      faceButtons: ["a"],
+      systemButtons: ["start"],
+      labels: {
+        a: "PLAY",
+        start: "MENU"
+      }
+    });
+
+  /* =========================
+     Melo Memo GAME MODULE
+     ========================= */
+
+  const Memody_NOTE_SYMBOLS = ["♪", "♫", "♬", "♭", "♯", "𝄞"];
+  const Memody_NOTES = [
+    { freq: 261.63, black: false, key: "1" },
+    { freq: 277.18, black: true,  key: "2" },
+    { freq: 293.66, black: false, key: "3" },
+    { freq: 311.13, black: true,  key: "4" },
+    { freq: 329.63, black: false, key: "5" },
+    { freq: 349.23, black: false, key: "6" },
+    { freq: 369.99, black: true,  key: "7" },
+    { freq: 392.00, black: false, key: "8" },
+    { freq: 415.30, black: true,  key: "9" },
+    { freq: 440.00, black: false, key: "0" },
+    { freq: 466.16, black: true,  key: "-" },
+    { freq: 493.88, black: false, key: "=" }
+  ];
+
+  const Memody_KEYBOARD_MAP = Memody_NOTES.reduce((map, note, index) => {
+    map[note.key] = index;
+    return map;
+  }, {});
+
+    const Memody_SHOW_MS = 620;
+  const Memody_GAP_MS = 180;
+  const Memody_TRANSITION_MS = 1360;
+  const Memody_CHEST_OPEN_MS = 520;
+  const Memody_REVEAL_MS = 980;
+  const Memody_WALK_MS = Memody_TRANSITION_MS + Memody_CHEST_OPEN_MS + Memody_REVEAL_MS;
+
+  let MemodySequence = [];
+  let MemodyPhase = "idle";
+  let MemodyOutcome = "treasure";
+  let MemodyInputIndex = 0;
+  let MemodyShowIndex = 0;
+  let MemodyShowOn = false;
+  let MemodyNextShowAt = 0;
+  let MemodyActiveNote = null;
+  let MemodyActiveUntil = 0;
+  let MemodySelectedNote = 0;
+  let MemodySelectionVisible = false;
+  let MemodyControlHeld = false;
+  let MemodyAnimStart = 0;
+  let MemodyKeyboardRects = [];
+  let MemodyMonsterBits = [];
+  let MemodyHeldTone = null;
+  let MemodyHeldNoteIndex = null;
+  let MemodyPointerDown = false;
+  let MemodyPointerId = null;
+  let MemodyIgnoreClickUntil = 0;
+  let MemodyResultCueDone = false;
+  let MemodyBoundPointerEvents = false;
+  let MemodyBoundKeyboardEvents = false;
+  let MemodyKeysHeld = new Set();
+
+  updateShellMenuTab("controls", `
+    <h3>Controls</h3>
+    <ul>
+      <li><strong>Play notes:</strong> Click, tap, or hold the piano keys on the game screen.</li>
+      <li><strong>Computer keyboard:</strong> Use <code>1 2 3 4 5 6 7 8 9 0 - =</code> for the full octave.</li>
+      <li><strong>Selector:</strong> Left/Right moves the glowing key. Space or Enter plays it.</li>
+      <li><strong>Help:</strong> Click Help or press M.</li>
+    </ul>
+  `);
+
+  updateShellMenuTab("instructions", `
+    <h3>How to Play</h3>
+    <ul>
+      <li>First, watch and listen while the piano shows a short melody.</li>
+      <li>When it is your turn, repeat the same notes in the same order.</li>
+      <li>If the melody is correct, the center door opens and you move ahead.</li>
+      <li>Each safe door adds one more note to remember.</li>
+      <li>A wrong note opens a monster door and ends the run.</li>
+    </ul>
+    <p>Your score is the number of doors you safely pass through.</p>
+  `);
+
+  registerShellMenuTab("tips", "Memory Tips", `
+    <h3>Memory Tips</h3>
+    <ul>
+      <li>Hum the melody before you answer.</li>
+      <li>Notice the shape: same note, step up, step down, or jump.</li>
+      <li>Break longer patterns into tiny groups.</li>
+    </ul>
+  `);
+
+  function MemodyClamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function MemodyEaseOut(t) {
+    return 1 - Math.pow(1 - MemodyClamp(t, 0, 1), 3);
+  }
+
+  function MemodyEaseInOut(t) {
+    t = MemodyClamp(t, 0, 1);
+    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  function MemodyRand(max) {
+    return Math.floor(Math.random() * max);
+  }
+
+  function MemodySetPrompt(text) {
+    questionBox.textContent = text;
+  }
+
+  function MemodyAddRandomNote() {
+    MemodySequence.push(MemodyRand(Memody_NOTES.length));
+  }
+
+  function MemodyBeginShowing() {
+    MemodyPhase = "show";
+    MemodyInputIndex = 0;
+    MemodyShowIndex = 0;
+    MemodyShowOn = false;
+    MemodyActiveNote = null;
+    MemodyStopHeldTone();
+    MemodyControlHeld = false;
+    MemodySelectionVisible = false;
+    MemodyNextShowAt = performance.now() + 520;
+    MemodySetPrompt("Watch carefully");
+  }
+
+  function MemodyGetKeyboardRects() {
+    const totalW = Math.min(GAME_CANVAS_LOGICAL_WIDTH * 0.58, 420);
+    const totalH = Math.min(GAME_CANVAS_LOGICAL_HEIGHT * 0.21, 108);
+    const x0 = (GAME_CANVAS_LOGICAL_WIDTH - totalW) / 2;
+    const y0 = GAME_CANVAS_LOGICAL_HEIGHT - totalH - 22;
+    const whiteCount = Memody_NOTES.filter(note => !note.black).length;
+    const whiteW = totalW / whiteCount;
+    const blackW = whiteW * 0.62;
+    const blackH = totalH * 0.62;
+    const rects = [];
+    let whiteIndex = 0;
+
+    Memody_NOTES.forEach((note, index) => {
+      if (!note.black) {
+        rects[index] = { x: x0 + whiteIndex * whiteW, y: y0, w: whiteW, h: totalH, black: false, z: 0 };
+        whiteIndex += 1;
+      } else {
+        rects[index] = { x: x0 + whiteIndex * whiteW - blackW / 2, y: y0, w: blackW, h: blackH, black: true, z: 1 };
+      }
+    });
+
+    return rects;
+  }
+
+  function MemodyNoteFromPoint(point) {
+    MemodyKeyboardRects = MemodyGetKeyboardRects();
+    const sorted = MemodyKeyboardRects.map((rect, index) => ({ ...rect, index })).sort((a, b) => b.z - a.z);
+    for (const rect of sorted) {
+      if (point.x >= rect.x && point.x <= rect.x + rect.w && point.y >= rect.y && point.y <= rect.y + rect.h) {
+        return rect.index;
+      }
+    }
+    return null;
+  }
+
+  function MemodyBuildTone(index, volume = 0.09) {
+    const ac = getAudio();
+    if (!ac || !Memody_NOTES[index]) return null;
+
+    const note = Memody_NOTES[index];
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const soft = ac.createOscillator();
+    const gain = ac.createGain();
+    const filter = ac.createBiquadFilter();
+
+    osc.type = "triangle";
+    soft.type = "sine";
+    osc.frequency.setValueAtTime(note.freq, now);
+    soft.frequency.setValueAtTime(note.freq * 2, now);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(1900, now);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.exponentialRampToValueAtTime(volume, now + 0.018);
+
+    osc.connect(filter);
+    soft.connect(filter);
+    filter.connect(gain);
+    gain.connect(ac.destination);
+
+    osc.start(now);
+    soft.start(now);
+
+    return { ac, osc, soft, gain, stopped: false, index };
+  }
+
+  function MemodyStopTone(tone, releaseSeconds = 0.065) {
+    if (!tone || tone.stopped) return;
+    tone.stopped = true;
+    const now = tone.ac.currentTime;
+    tone.gain.gain.cancelScheduledValues(now);
+    tone.gain.gain.setValueAtTime(Math.max(0.0001, tone.gain.gain.value), now);
+    tone.gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseSeconds);
+    tone.osc.stop(now + releaseSeconds + 0.02);
+    tone.soft.stop(now + releaseSeconds + 0.02);
+  }
+
+  function MemodyPreviewNote(index, durationSeconds = 0.24, volume = 0.085) {
+    const tone = MemodyBuildTone(index, volume);
+    if (!tone) return;
+    setTimeout(() => MemodyStopTone(tone, 0.07), durationSeconds * 1000);
+  }
+
+  function MemodyStartHeldTone(index, volume = 0.095) {
+    if (MemodyHeldTone && MemodyHeldTone.index === index) return;
+    MemodyStopHeldTone();
+    MemodyHeldTone = MemodyBuildTone(index, volume);
+    MemodyHeldNoteIndex = index;
+  }
+
+  function MemodyStopHeldTone() {
+    if (MemodyHeldTone) MemodyStopTone(MemodyHeldTone, 0.06);
+    MemodyHeldTone = null;
+    MemodyHeldNoteIndex = null;
+  }
+
+  function MemodySoundDoor() {
+    [210, 176, 148, 126].forEach((freq, i) => setTimeout(() => beep(freq, 0.08, "sawtooth", 0.032), i * 55));
+  }
+
+  function MemodySoundTreasure() {
+    [659, 784, 988, 1318, 1568].forEach((freq, i) => setTimeout(() => beep(freq, 0.09, "triangle", 0.043), i * 65));
+  }
+
+  function MemodySoundMonster() {
+    [98, 82, 65, 54].forEach((freq, i) => setTimeout(() => beep(freq, 0.16, "sawtooth", 0.07), i * 78));
+    setTimeout(() => beep(41, 0.26, "square", 0.045), 120);
+  }
+
+  function MemodyMakeMonster() {
+    MemodyMonsterBits = Array.from({ length: 34 }, (_, i) => ({
+      x: (Math.random() - 0.5) * 150,
+      y: (Math.random() - 0.5) * 105,
+      size: 18 + Math.random() * 22,
+      char: Memody_NOTE_SYMBOLS[i % Memody_NOTE_SYMBOLS.length],
+      shade: 25 + Math.floor(Math.random() * 90),
+      spin: (Math.random() - 0.5) * 0.55
+    }));
+  }
+
+  function MemodyTriggerOutcome(success) {
+    MemodyPhase = "walk";
+    MemodyOutcome = success ? "treasure" : "monster";
+    MemodyAnimStart = performance.now();
+    MemodyResultCueDone = false;
+    MemodyStopHeldTone();
+    MemodyControlHeld = false;
+    MemodySelectionVisible = false;
+    MemodyActiveNote = null;
+    MemodySetPrompt("The door opens...");
+    MemodySoundDoor();
+    if (!success) MemodyMakeMonster();
+  }
+
+  function MemodyHandleNote(index) {
+    if (index == null) return;
+
+    MemodySelectedNote = index;
+    MemodyActiveNote = index;
+    MemodyActiveUntil = performance.now() + 150;
+
+    if (MemodyPhase !== "input") return;
+
+    if (index === MemodySequence[MemodyInputIndex]) {
+      soundCorrect();
+      MemodyInputIndex += 1;
+      if (MemodyInputIndex >= MemodySequence.length) {
+        addScore(1);
+        MemodyTriggerOutcome(true);
+      } else {
+        MemodySetPrompt("Keep the melody going");
+      }
+    } else {
+      MemodyTriggerOutcome(false);
+    }
+  }
+
+  function MemodyHandlePointerNote(index) {
+    if (index == null) {
+      MemodyActiveNote = null;
+      return;
+    }
+    MemodySelectionVisible = false;
+    MemodySelectedNote = index;
+    MemodyActiveNote = index;
+    MemodyActiveUntil = performance.now() + 140;
+    if (MemodyHeldNoteIndex === index) return;
+    MemodyStartHeldTone(index, 0.095);
+  }
+
+    function MemodyDrawChest(x, y, scale, openAmount) {
+    const chestW = 120 * scale;
+    const chestH = 78 * scale;
+    const left = x - chestW / 2;
+    const top = y - chestH / 2;
+
+    ctx.save();
+    ctx.fillStyle = "#8a5a1d";
+    ctx.fillRect(left, top + chestH * 0.18, chestW, chestH * 0.56);
+    ctx.fillStyle = "#d4a72c";
+    ctx.fillRect(left + chestW * 0.08, top + chestH * 0.18, chestW * 0.84, chestH * 0.12);
+    ctx.fillRect(left + chestW * 0.08, top + chestH * 0.50, chestW * 0.84, chestH * 0.10);
+    ctx.fillStyle = "#4b2e10";
+    ctx.fillRect(left + chestW * 0.46, top + chestH * 0.40, chestW * 0.08, chestH * 0.20);
+    ctx.fillStyle = "#facc15";
+    ctx.fillRect(left + chestW * 0.47, top + chestH * 0.44, chestW * 0.06, chestH * 0.12);
+
+    ctx.save();
+    ctx.translate(x, top + chestH * 0.20);
+    ctx.rotate(-1.18 * openAmount);
+    ctx.fillStyle = "#a56b24";
+    ctx.beginPath();
+    ctx.moveTo(-chestW * 0.50, 0);
+    ctx.quadraticCurveTo(0, -chestH * 0.36, chestW * 0.50, 0);
+    ctx.lineTo(chestW * 0.44, chestH * 0.10);
+    ctx.quadraticCurveTo(0, -chestH * 0.20, -chestW * 0.44, chestH * 0.10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#eab308";
+    ctx.lineWidth = 4 * scale;
+    ctx.stroke();
+    ctx.restore();
+    ctx.restore();
+  }
+
+  function MemodyDrawTreasureBurst(now, x, y, reveal, scale) {
+    const rise = (1 - reveal) * 26 * scale;
+    const spread = 60 * scale;
+    const symbols = ["♪", "♫", "♬", "♩", "𝄞", "♬", "♫", "♪"];
+    ctx.save();
+    ctx.textAlign = "center";
+    symbols.forEach((symbol, i) => {
+      const t = i / Math.max(1, symbols.length - 1);
+      const sx = x + (t - 0.5) * spread * 1.5;
+      const sy = y - rise - Math.sin(t * Math.PI) * 26 * scale;
+      ctx.fillStyle = i % 3 === 0 ? "#fde68a" : i % 3 === 1 ? "#facc15" : "#f59e0b";
+      ctx.font = `bold ${Math.round((22 + (i % 4) * 7) * scale)}px Arial`;
+      ctx.fillText(symbol, sx, sy);
+    });
+    for (let i = 0; i < 12; i += 1) {
+      const angle = i * 0.52 + now / 280;
+      const radius = 22 * scale + (i % 4) * 10 * scale;
+      ctx.fillStyle = i % 2 ? "#facc15" : "#f59e0b";
+      ctx.beginPath();
+      ctx.arc(x + Math.cos(angle) * radius, y - 8 * scale + Math.sin(angle) * radius * 0.45, 4 * scale + (i % 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function MemodyDrawMonsterFigure(now, x, y, reveal, scale) {
+    const jump = MemodyEaseOut(reveal);
+    const monsterScale = scale * (0.58 + jump * 0.95);
+    const bob = Math.sin(now / 120) * 7 * monsterScale;
+    const lunge = jump * 60 * scale;
+
+    ctx.save();
+    ctx.translate(x, y - jump * 54 * scale + bob);
+    ctx.scale(monsterScale, monsterScale);
+
+    MemodyMonsterBits.forEach((bit, i) => {
+      const wobble = Math.sin(now / 145 + i) * 5;
+      ctx.save();
+      ctx.translate(bit.x * 0.55 + wobble, bit.y * 0.55 + Math.cos(now / 185 + i) * 4);
+      ctx.rotate(bit.spin * Math.sin(now / 170 + i));
+      ctx.fillStyle = `rgb(${bit.shade}, ${bit.shade}, ${bit.shade})`;
+      ctx.font = `bold ${Math.max(12, bit.size * 0.75)}px Arial`;
+      ctx.textAlign = "center";
+      ctx.fillText(bit.char, 0, 0);
+      ctx.restore();
+    });
+
+    ctx.fillStyle = "#ef4444";
+    ctx.beginPath();
+    ctx.arc(-20, -12, 9, 0, Math.PI * 2);
+    ctx.arc(20, -12, 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff5f5";
+    ctx.beginPath();
+    ctx.arc(-20, -12, 3.4, 0, Math.PI * 2);
+    ctx.arc(20, -12, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = "#ef4444";
+    ctx.lineWidth = 5;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-44, 10);
+    ctx.lineTo(-72 - lunge, 40);
+    ctx.moveTo(44, 10);
+    ctx.lineTo(72 + lunge, 40);
+    ctx.stroke();
+
+    ctx.fillStyle = "#ef4444";
+    ctx.font = "bold 22px Arial";
+    ctx.fillText("♯", -82 - lunge, 48);
+    ctx.fillText("♭", 82 + lunge, 48);
+    ctx.restore();
+  }
+
+  function MemodyCorridorMetrics(scale = 1, centerOffset = 0) {
+    const w = GAME_CANVAS_LOGICAL_WIDTH;
+    const h = GAME_CANVAS_LOGICAL_HEIGHT;
+    const overdraw = Math.max(w, h) * 0.42;
+    const cx = w / 2 + centerOffset;
+    const wallCenterY = h * 0.42;
+    const baseWallW = w * 0.31;
+    const baseWallH = h * 0.24;
+    const wallW = baseWallW * scale;
+    const wallH = baseWallH * scale;
+    const wallLeft = cx - wallW / 2;
+    const wallRight = cx + wallW / 2;
+    const wallTop = wallCenterY - wallH / 2;
+    const wallBottom = wallCenterY + wallH / 2;
+    const floorY = h * 0.75;
+    const doorW = wallW * 0.23;
+    const doorH = wallH * 0.70;
+    const doorX = cx - doorW / 2;
+    const doorY = wallCenterY - doorH / 2 + wallH * 0.06;
+    return { w, h, overdraw, cx, wallCenterY, wallW, wallH, wallLeft, wallRight, wallTop, wallBottom, floorY, doorW, doorH, doorX, doorY, scale };
+  }
+
+  function MemodyDrawCorridorShell(metrics, options = {}) {
+    const { w, h, overdraw, cx, wallW, wallH, wallLeft, wallRight, wallTop, wallBottom, floorY, doorW, doorH, doorX, doorY, scale } = metrics;
+    const doorOpen = options.doorOpen || 0;
+    const showClosedDoor = options.showClosedDoor !== false;
+    const panelScale = Math.max(0, 1 - doorOpen);
+
+    const sky = ctx.createLinearGradient(0, -overdraw, 0, h + overdraw);
+    sky.addColorStop(0, "#18264a");
+    sky.addColorStop(0.52, "#101827");
+    sky.addColorStop(1, "#090d16");
+    ctx.fillStyle = sky;
+    ctx.fillRect(-overdraw, -overdraw, w + overdraw * 2, h + overdraw * 2);
+
+    ctx.fillStyle = "#162138";
+    ctx.beginPath();
+    ctx.moveTo(-overdraw, -overdraw);
+    ctx.lineTo(wallLeft, wallTop);
+    ctx.lineTo(wallLeft, wallBottom);
+    ctx.lineTo(-overdraw, floorY + overdraw * 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(w + overdraw, -overdraw);
+    ctx.lineTo(wallRight, wallTop);
+    ctx.lineTo(wallRight, wallBottom);
+    ctx.lineTo(w + overdraw, floorY + overdraw * 0.35);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#1a2540";
+    ctx.beginPath();
+    ctx.moveTo(-overdraw, floorY + overdraw * 0.35);
+    ctx.lineTo(wallLeft, wallBottom);
+    ctx.lineTo(wallRight, wallBottom);
+    ctx.lineTo(w + overdraw, floorY + overdraw * 0.35);
+    ctx.lineTo(w + overdraw, h + overdraw);
+    ctx.lineTo(-overdraw, h + overdraw);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#20304d";
+    ctx.fillRect(wallLeft, wallTop, wallW, wallH);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.07)";
+    ctx.lineWidth = Math.max(2, 2.8 * scale);
+    [0.16, 0.32, 0.5, 0.68, 0.84].forEach(pos => {
+      ctx.beginPath();
+      ctx.moveTo(cx, wallBottom);
+      ctx.lineTo(w * pos, h + overdraw * 0.12);
+      ctx.stroke();
+    });
+
+    if (!showClosedDoor) return;
+
+    const doorInnerX = doorX + 2 * scale;
+    const doorInnerY = doorY + 2 * scale;
+    const doorInnerW = Math.max(0, doorW - 4 * scale);
+    const doorInnerH = doorH + 6 * scale;
+
+    ctx.fillStyle = "rgba(0,0,0,0.32)";
+    ctx.fillRect(doorX - 5 * scale, doorY + 6 * scale, doorW + 10 * scale, doorH + 8 * scale);
+
+    ctx.fillStyle = "#05060a";
+    ctx.fillRect(doorInnerX, doorInnerY, doorInnerW, doorInnerH);
+
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(doorX - 6 * scale, doorY - 6 * scale, doorW + 12 * scale, 8 * scale);
+    ctx.fillRect(doorX - 6 * scale, doorY - 6 * scale, 8 * scale, doorH + 14 * scale);
+    ctx.fillRect(doorX + doorW - 2 * scale, doorY - 6 * scale, 8 * scale, doorH + 14 * scale);
+
+    if (panelScale > 0.001 && doorInnerW > 0) {
+      ctx.save();
+      ctx.translate(doorInnerX, doorInnerY);
+      ctx.scale(panelScale, 1);
+      const doorGrad = ctx.createLinearGradient(0, 0, doorInnerW, doorInnerH);
+      doorGrad.addColorStop(0, "#8aa9ff");
+      doorGrad.addColorStop(1, "#4361b9");
+      ctx.fillStyle = doorGrad;
+      ctx.fillRect(0, 0, doorInnerW, doorInnerH);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillRect(doorInnerW * 0.12, doorInnerH * 0.12, doorInnerW * 0.76, doorInnerH * 0.22);
+      ctx.fillRect(doorInnerW * 0.12, doorInnerH * 0.47, doorInnerW * 0.76, doorInnerH * 0.30);
+      ctx.fillStyle = "#e0edff";
+      ctx.beginPath();
+      ctx.arc(doorInnerW * 0.82, doorInnerH * 0.53, 4.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function MemodyDrawTreasureChestLayer(now, outcome, chestOpen, reveal) {
+    const w = GAME_CANVAS_LOGICAL_WIDTH;
+    const h = GAME_CANVAS_LOGICAL_HEIGHT;
+    const chestX = w / 2;
+    const chestY = h * 0.70;
+    const chestScale = Math.max(0.72, Math.min(1.04, w / 760));
+    MemodyDrawChest(chestX, chestY, chestScale, chestOpen);
+    if (reveal > 0) {
+      if (outcome === "treasure") MemodyDrawTreasureBurst(now, chestX, chestY - 24 * chestScale, reveal, chestScale);
+      else MemodyDrawMonsterFigure(now, chestX, chestY - 10 * chestScale, reveal, chestScale);
+    }
+  }
+
+  function MemodyDrawRoomScene(now, outcome, chestOpen, reveal) {
+    const metrics = MemodyCorridorMetrics(1, 0);
+    MemodyDrawCorridorShell(metrics, { doorOpen: 0, showClosedDoor: true });
+    MemodyDrawTreasureChestLayer(now, outcome, chestOpen, reveal);
+  }
+
+  function MemodyDrawHallway(now) {
+    const w = GAME_CANVAS_LOGICAL_WIDTH;
+    const h = GAME_CANVAS_LOGICAL_HEIGHT;
+    const elapsed = MemodyPhase === "walk" ? now - MemodyAnimStart : 0;
+    const transitionUnclamped = MemodyPhase === "walk" ? elapsed / Memody_TRANSITION_MS : 0;
+    const transitionRaw = MemodyClamp(transitionUnclamped, 0, 1);
+
+    if (MemodyPhase === "walk" && transitionUnclamped >= 1) {
+      const chestOpen = MemodyClamp((elapsed - Memody_TRANSITION_MS) / Memody_CHEST_OPEN_MS, 0, 1);
+      const reveal = MemodyClamp((elapsed - Memody_TRANSITION_MS - Memody_CHEST_OPEN_MS * 0.35) / Memody_REVEAL_MS, 0, 1);
+      MemodyDrawRoomScene(now, MemodyOutcome, chestOpen, reveal);
+      return;
     }
 
-    if (typeof ResizeObserver !== "undefined") {
-      const resizeObserver = new ResizeObserver(handleMemodyResize);
+    const progress = MemodyEaseInOut(transitionRaw);
+    const waver = MemodyPhase === "walk" ? Math.sin((now - MemodyAnimStart) / 95) * (1 - transitionRaw) * 3 : 0;
+    const zoom = 1 + progress * 17.2;
+    const metrics = MemodyCorridorMetrics(zoom, waver);
+    const doorOpen = MemodyPhase === "walk" ? MemodyEaseOut(MemodyClamp(elapsed / 340, 0, 1)) : 0;
+    MemodyDrawCorridorShell(metrics, { doorOpen, showClosedDoor: true });
+    if (MemodyPhase === "walk") {
+      const childScale = 0.30 + transitionRaw * 0.70;
+      const baseMetrics = MemodyCorridorMetrics(1, 0);
+      const startChildX = baseMetrics.doorX + baseMetrics.doorW / 2;
+      const startChildY = baseMetrics.doorY + baseMetrics.doorH / 2;
+      const childCenterX = startChildX + (w / 2 - startChildX) * transitionRaw;
+      const childCenterY = startChildY + (h / 2 - startChildY) * transitionRaw;
+      const openWidth = Math.max(0, metrics.doorW * doorOpen - 4);
+      if (openWidth > 1) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(metrics.doorX + metrics.doorW - openWidth - 2, metrics.doorY + 2, openWidth, Math.max(0, metrics.doorH - 4));
+        ctx.clip();
+        ctx.translate(childCenterX, childCenterY);
+        ctx.scale(childScale, childScale);
+        ctx.translate(-w / 2, -h / 2);
+        MemodyDrawRoomScene(now, MemodyOutcome, 0, 0);
+        ctx.restore();
+      }
+    }
+  }
+
+
+  function MemodyRoundRect(x, y, w, h, r) {
+    const radius = Math.max(0, Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2));
+    if (typeof ctx.roundRect === "function") {
+      ctx.roundRect(x, y, w, h, radius);
+      return;
+    }
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+  }
+
+function MemodyDrawKeyboard() {
+    MemodyKeyboardRects = MemodyGetKeyboardRects();
+    const frame = MemodyKeyboardRects[0];
+    const totalW = MemodyKeyboardRects[MemodyKeyboardRects.length - 1].x + MemodyKeyboardRects[MemodyKeyboardRects.length - 1].w - frame.x;
+
+    ctx.save();
+    ctx.globalAlpha = MemodyPhase === "walk" ? 0.38 : 1;
+    ctx.fillStyle = "rgba(10,16,30,0.55)";
+    ctx.beginPath();
+    MemodyRoundRect(frame.x - 18, frame.y - 18, totalW + 36, frame.h + 34, 20);
+    ctx.fill();
+
+    MemodyKeyboardRects.forEach((rect, index) => {
+      if (rect.black) return;
+      const isHeld = MemodyHeldNoteIndex === index;
+      const isComputer = MemodyPhase === "show" && MemodyActiveNote === index;
+      const isPressed = MemodyPhase !== "show" && MemodyActiveNote === index;
+      const isSelected = MemodySelectionVisible && MemodySelectedNote === index && MemodyPhase === "input";
+      ctx.fillStyle = (isHeld || isPressed) ? "#ffe08a" : isComputer ? "#3b82f6" : isSelected ? "#dbeafe" : "#f8fafc";
+      ctx.fillRect(rect.x + 1, rect.y + 1, rect.w - 2, rect.h - 2);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 1.2;
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    });
+
+    MemodyKeyboardRects.forEach((rect, index) => {
+      if (!rect.black) return;
+      const isHeld = MemodyHeldNoteIndex === index;
+      const isComputer = MemodyPhase === "show" && MemodyActiveNote === index;
+      const isPressed = MemodyPhase !== "show" && MemodyActiveNote === index;
+      const isSelected = MemodySelectionVisible && MemodySelectedNote === index && MemodyPhase === "input";
+      ctx.fillStyle = (isHeld || isPressed) ? "#f59e0b" : (isComputer || isSelected) ? "#1d4ed8" : "#0f172a";
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+      ctx.strokeStyle = "#020617";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(rect.x, rect.y, rect.w, rect.h);
+    });
+
+    ctx.restore();
+  }
+
+  function MemodyDrawResultOverlay(now) {
+    // The room now appears through the doorway during the first-person walk.
+  }
+  function MemodyBindDesktopPointer() {
+    if (MemodyBoundPointerEvents) return;
+    MemodyBoundPointerEvents = true;
+
+    function getPoint(event) {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (event.clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (event.clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height)
+      };
+    }
+
+    canvas.addEventListener("pointerdown", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+      const point = getPoint(event);
+      const index = MemodyNoteFromPoint(point);
+      if (index == null) return;
+      event.preventDefault();
+      MemodyIgnoreClickUntil = performance.now() + 700;
+      MemodyPointerDown = true;
+      MemodyPointerId = event.pointerId;
+      try { canvas.setPointerCapture(event.pointerId); } catch (err) {}
+      MemodyHandlePointerNote(index);
+    });
+
+    canvas.addEventListener("pointermove", event => {
+      if (!MemodyPointerDown || event.pointerId !== MemodyPointerId) return;
+      const point = getPoint(event);
+      MemodyHandlePointerNote(MemodyNoteFromPoint(point));
+    });
+
+    function releasePointer(event) {
+      if (!MemodyPointerDown || event.pointerId !== MemodyPointerId) return;
+      const commitIndex = MemodyHeldNoteIndex;
+      MemodyPointerDown = false;
+      MemodyPointerId = null;
+      MemodyIgnoreClickUntil = performance.now() + 500;
+      MemodyStopHeldTone();
+      if (commitIndex != null) MemodyHandleNote(commitIndex);
+      try {
+        if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      } catch (err) {}
+    }
+
+    canvas.addEventListener("pointerup", releasePointer);
+    canvas.addEventListener("pointercancel", releasePointer);
+  }
+
+  function MemodyBindDesktopKeys() {
+    if (MemodyBoundKeyboardEvents) return;
+    MemodyBoundKeyboardEvents = true;
+
+    document.addEventListener("keydown", event => {
+      if (gameScreen.style.display !== "block" || !running) return;
+      if (shellMenu.classList.contains("open")) return;
+      const key = event.key.toLowerCase();
+      if (!(key in Memody_KEYBOARD_MAP)) return;
+      event.preventDefault();
+      if (MemodyKeysHeld.has(key)) return;
+      MemodyKeysHeld.add(key);
+      const index = Memody_KEYBOARD_MAP[key];
+      MemodySelectionVisible = false;
+      MemodyStartHeldTone(index, 0.095);
+      MemodyHandleNote(index);
+    });
+
+    document.addEventListener("keyup", event => {
+      const key = event.key.toLowerCase();
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        MemodyReleaseControlHold();
+        return;
+      }
+      if (!(key in Memody_KEYBOARD_MAP)) return;
+      MemodyKeysHeld.delete(key);
+      if (MemodyHeldNoteIndex === Memody_KEYBOARD_MAP[key]) MemodyStopHeldTone();
+    });
+  }
+
+  function gameInit() {
+    MemodySequence = [];
+    MemodyOutcome = "treasure";
+    MemodyInputIndex = 0;
+    MemodySelectedNote = 0;
+    MemodySelectionVisible = false;
+    MemodyControlHeld = false;
+    MemodyActiveNote = null;
+    MemodyKeyboardRects = [];
+    MemodyResultCueDone = false;
+    MemodyPointerDown = false;
+    MemodyPointerId = null;
+    MemodyKeysHeld.clear();
+    MemodyStopHeldTone();
+    MemodyBindDesktopPointer();
+    MemodyBindDesktopKeys();
+    MemodyAddRandomNote();
+    MemodyBeginShowing();
+    gameDraw();
+  }
+
+    function gameUpdate() {
+    const now = performance.now();
+
+    if (MemodyActiveNote != null && now > MemodyActiveUntil && MemodyPhase !== "show") {
+      MemodyActiveNote = null;
+    }
+
+    if (MemodyPhase === "show" && now >= MemodyNextShowAt) {
+      if (!MemodyShowOn) {
+        if (MemodyShowIndex >= MemodySequence.length) {
+          MemodyPhase = "input";
+          MemodyActiveNote = null;
+          MemodySelectedNote = 0;
+          MemodySelectionVisible = false;
+          MemodySetPrompt("Play the melody");
+        } else {
+          const noteIndex = MemodySequence[MemodyShowIndex];
+          MemodyShowOn = true;
+          MemodyActiveNote = noteIndex;
+          MemodyActiveUntil = now + Memody_SHOW_MS;
+          MemodyPreviewNote(noteIndex, Memody_SHOW_MS / 1000, 0.085);
+          MemodyNextShowAt = now + Memody_SHOW_MS;
+        }
+      } else {
+        MemodyShowOn = false;
+        MemodyActiveNote = null;
+        MemodyShowIndex += 1;
+        MemodyNextShowAt = now + Memody_GAP_MS;
+      }
+    } else if (MemodyPhase === "walk") {
+      const elapsed = now - MemodyAnimStart;
+      if (!MemodyResultCueDone && elapsed > Memody_TRANSITION_MS + 140) {
+        MemodyResultCueDone = true;
+        if (MemodyOutcome === "treasure") {
+          MemodySetPrompt("Treasure!");
+          MemodySoundTreasure();
+        } else {
+          MemodySetPrompt("A monster attacks!");
+          MemodySoundMonster();
+        }
+      }
+
+      if (elapsed > Memody_WALK_MS) {
+        if (MemodyOutcome === "treasure") {
+          MemodyAddRandomNote();
+          MemodyBeginShowing();
+        } else {
+          endGame("The monster got you!");
+        }
+      }
+    }
+  }
+  function gameDraw() {
+    const now = performance.now();
+    MemodyDrawHallway(now);
+    MemodyDrawResultOverlay(now);
+    MemodyDrawKeyboard();
+  }
+
+  function MemodyMoveSelection(step) {
+    if (MemodyPhase !== "input") return;
+    if (!MemodySelectionVisible || MemodySelectedNote == null) {
+      MemodySelectedNote = step > 0 ? 0 : Memody_NOTES.length - 1;
+    } else {
+      MemodySelectedNote = (MemodySelectedNote + step + Memody_NOTES.length) % Memody_NOTES.length;
+    }
+    MemodySelectionVisible = true;
+    if (MemodyControlHeld) {
+      MemodyActiveNote = MemodySelectedNote;
+      MemodyActiveUntil = performance.now() + 160;
+      MemodyStartHeldTone(MemodySelectedNote, 0.095);
+    }
+  }
+
+  function MemodyStartControlHold() {
+    if (MemodyPhase !== "input") return;
+    if (!MemodySelectionVisible || MemodySelectedNote == null) {
+      MemodySelectedNote = 0;
+      MemodySelectionVisible = true;
+    }
+    if (MemodyControlHeld && MemodyHeldNoteIndex === MemodySelectedNote) return;
+    MemodyControlHeld = true;
+    MemodyActiveNote = MemodySelectedNote;
+    MemodyActiveUntil = performance.now() + 160;
+    MemodyStartHeldTone(MemodySelectedNote, 0.095);
+  }
+
+  function MemodyReleaseControlHold() {
+    if (!MemodyControlHeld) return;
+    const commitIndex = MemodyHeldNoteIndex != null ? MemodyHeldNoteIndex : MemodySelectedNote;
+    MemodyControlHeld = false;
+    MemodyStopHeldTone();
+    if (commitIndex != null) MemodyHandleNote(commitIndex);
+    if (MemodyPhase === "input") {
+      MemodySelectedNote = commitIndex;
+      MemodySelectionVisible = true;
+    }
+  }
+
+  function gameInput(action) {
+    if (action === "left" && MemodyPhase === "input") {
+      MemodyMoveSelection(-1);
+      return;
+    }
+
+    if (action === "right" && MemodyPhase === "input") {
+      MemodyMoveSelection(1);
+      return;
+    }
+
+    if ((action === "up" || action === "down") && MemodyPhase === "input") {
+      MemodyMoveSelection(action === "up" ? 1 : -1);
+      return;
+    }
+
+    if (action === "a" && MemodyPhase === "input") {
+      MemodyStartControlHold();
+      return;
+    }
+
+    if ((action === "a_release" || action === "a_up") && MemodyPhase === "input") {
+      MemodyReleaseControlHold();
+    }
+  }
+
+  function gamePointer(point) {
+    if (performance.now() < MemodyIgnoreClickUntil) return;
+    const index = MemodyNoteFromPoint(point);
+    if (index == null) return;
+    MemodyPreviewNote(index, 0.2, 0.085);
+    MemodyHandleNote(index);
+  }
+
+  function gameStop() {
+    MemodyStopHeldTone();
+    MemodyPointerDown = false;
+    MemodyPointerId = null;
+    MemodyControlHeld = false;
+    MemodySelectionVisible = false;
+    MemodyActiveNote = null;
+  }
+
+
+
+    let resizeObserver = null;
+
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      });
+
       resizeObserver.observe(appFrame);
     }
 
-    window.addEventListener("resize", handleMemodyResize);
-    window.addEventListener("orientationchange", () => setTimeout(handleMemodyResize, 250));
+    window.addEventListener("resize", () => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
 
-    handleMemodyResize();
-    requestAnimationFrame(handleMemodyResize);
-    setTimeout(handleMemodyResize, 80);
+      if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
+    });
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      }, 250);
+    });
+
+    function shutDownMobileArcade() {
+      try {
+        stopGame();
+      } catch (err) {}
+
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
+      }
+
+      audioCtx = null;
+    }
+
+    window.addEventListener("pagehide", shutDownMobileArcade);
+
+    scaleAppToFrame();
     loadPlayers();
-    // Game initializes when Start Game is pressed.
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    configureMobileControls();
+    gameInit();
+    resetGameCanvasTransform();
+    gameDraw();
+
+
+
   </script>
 </body>
 </html>
