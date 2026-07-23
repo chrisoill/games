@@ -263,7 +263,8 @@
       position: absolute;
       left: 34px;
       right: 34px;
-      top: 35px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -371,28 +372,6 @@
       letter-spacing: 0.3px;
       color: rgba(255,255,255,0.78);
       text-align: center;
-    }
-
-    #cancelChordBtn {
-      position: absolute;
-      right: 14px;
-      top: 0;
-      width: 72px;
-      height: 24px;
-      margin: 0;
-      padding: 0;
-      border-radius: 999px;
-      border: 2px solid #111;
-      background: #fff3bf;
-      color: #111827;
-      font-size: 11px;
-      font-weight: bold;
-      z-index: 8;
-    }
-
-    #cancelChordBtn:active {
-      transform: scale(0.96);
-      filter: brightness(1.12);
     }
 
     .pianoGroup {
@@ -795,6 +774,106 @@
       border-radius: 6px;
     }
 
+  
+    /* Key Defender rebuilt mobile layout: locked-ratio shell, desktop game world,
+       split touch piano, and a flat neutral controller deck. */
+    #screen {
+      height: 303.333333px;
+      touch-action: pan-y;
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 303.333333px;
+      image-rendering: auto;
+      touch-action: pan-y;
+    }
+
+    #lcd {
+      top: 303.333333px;
+    }
+
+    #controls {
+      top: 351.333333px;
+      height: 318.666667px;
+      background: #242424;
+      touch-action: pan-y;
+    }
+
+    #pianoControls {
+      top: 23px;
+      height: 200px;
+      padding: 0 14px;
+    }
+
+    #cancelChordBtn {
+      position: absolute;
+      right: 4px;
+      top: 35px;
+      width: 72px;
+      height: 24px;
+      margin: 0;
+      padding: 0;
+      border: 2px solid #111;
+      border-radius: 999px;
+      background: #fff3bf;
+      color: #111827;
+      font-size: 11px;
+      font-weight: 900;
+      z-index: 8;
+      touch-action: none;
+    }
+
+    #cancelChordBtn:active,
+    #cancelChordBtn.pressed {
+      transform: scale(0.96);
+      filter: brightness(1.12);
+    }
+
+    .pianoGroup {
+      height: 94px;
+      margin-bottom: 12px;
+    }
+
+    .pianoGroupTop {
+      width: 228px;
+    }
+
+    .pianoGroupBottom {
+      width: 300px;
+    }
+
+    .whiteKey {
+      height: 94px;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .blackKey {
+      left: calc((var(--pos) * 100% / var(--white-count)) - 23px);
+      width: 46px;
+      height: 60px;
+      border-radius: 0 0 10px 10px;
+    }
+
+    #dpad,
+    #faceButtons,
+    #leftJoystickPad,
+    #rightJoystickPad,
+    #selectButton {
+      display: none !important;
+    }
+
+    #systemButtons {
+      top: 246px;
+      width: 92px;
+      height: 32px;
+      gap: 0;
+    }
+
+    #startButton {
+      width: 92px;
+    }
+
   </style>
 </head>
 
@@ -830,7 +909,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="560"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -848,9 +927,7 @@
 
         <div id="controls">
           <div id="pianoControls" aria-label="Split piano keyboard controls">
-            <div id="pianoHint">Build each chord</div>
             <button id="cancelChordBtn" type="button">CANCEL</button>
-
             <div class="pianoGroup pianoGroupTop" style="--white-count: 3;" aria-label="C through E piano keys">
               <div class="whiteKeys">
                 <button class="pianoKey whiteKey" type="button" data-note="C" aria-label="C"></button>
@@ -923,6 +1000,14 @@
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
 
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 560;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
     /*
       Change STORAGE_KEY for each separate arcade game if you want each game
       to keep its own local player list/leaderboard.
@@ -932,7 +1017,7 @@
     const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Score";
-    const FIRST_TIME_HELP_DEFAULT_VERSION = "chordDefender_howToPlay_v1";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "chordDefender_howToPlay_v2";
     let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
 
     const appFrame = document.getElementById("appFrame");
@@ -954,6 +1039,55 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameCanvasPixelScale = 1;
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+      const targetWidth = Math.max(
+        1,
+        Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale)
+      );
+      const targetHeight = Math.max(
+        1,
+        Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale)
+      );
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      resetGameCanvasTransform();
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
     const scoreEl = document.getElementById("score");
@@ -984,6 +1118,8 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
@@ -1038,8 +1174,9 @@
           <h3>Controls</h3>
           <ul>
             <li><strong>Piano keys:</strong> Tap or hold the split piano keyboard.</li>
-            <li><strong>START / MENU:</strong> Pause, resume, or return to the player screen.</li>
-            <li><strong>Goal:</strong> Build the chord shown on each incoming missile.</li>
+            <li><strong>CANCEL / Space:</strong> Clear the chord currently being built.</li>
+            <li><strong>MENU:</strong> Pause, resume, or return to the player screen.</li>
+            <li><strong>Goal:</strong> Build the chord shown on each incoming missile before it reaches your shield.</li>
           </ul>
         `
       },
@@ -1048,13 +1185,13 @@
         label: "How to Play",
         html: `
           <h3>How to Play</h3>
-          <p>Incoming missiles show chord symbols, including both sharp and flat roots. Play the chord tones in any order.</p>
+          <p>Incoming missiles show chord symbols. Play all three chord tones in any order before the missile reaches the shield.</p>
           <ul>
             <li>Major chords appear first. Minor chords unlock next, then diminished chords.</li>
-          <li>Black-key chord roots may appear as sharps or flats, such as <code>F#</code> or <code>Gb</code>.</li>
-            <li>Chord missiles move much slower than Key Defender missiles, but each one needs three correct keys.</li>
+            <li>Black-key roots may be written as sharps or flats, such as <code>F#</code> or <code>Gb</code>.</li>
             <li>Wrong keys subtract 1 point, so button-mashing will drag your score down.</li>
-            <li>Tap CANCEL to clear your active chord target and choose another one.</li>
+            <li>Use CANCEL or press <code>Space</code> to abandon the active chord and choose another missile.</li>
+            <li>Missiles that reach your shield cause damage.</li>
           </ul>
         `
       }
@@ -1367,9 +1504,13 @@
     }
 
     function scaleAppToFrame() {
-      const frameWidth = appFrame.clientWidth;
+      const frameWidth = Math.max(
+        1,
+        appFrame.clientWidth || window.innerWidth || DESIGN_WIDTH
+      );
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1826,9 +1967,10 @@
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
+      scheduleGameLoop();
     }
 
     function stopGame() {
@@ -1839,15 +1981,34 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
+      if (!running) return;
+      if (loopId) cancelAnimationFrame(loopId);
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
       if (!running) return;
 
-      gameUpdate();
-      gameDraw();
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
 
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
+      gameDraw();
       loopId = requestAnimationFrame(loop);
     }
 
@@ -1886,19 +2047,19 @@
     }
 
     const PIANO_KEYBOARD_MAP = {
-    d: "C",
-    r: "C#",
-    f: "D",
-    t: "D#",
-    g: "E",
-    h: "F",
-    u: "F#",
-    j: "G",
-    i: "G#",
-    k: "A",
-    o: "A#",
-    l: "B"
-  };
+      z: "C",
+      s: "C#",
+      x: "D",
+      d: "D#",
+      c: "E",
+      v: "F",
+      g: "F#",
+      b: "G",
+      h: "G#",
+      n: "A",
+      j: "A#",
+      m: "B"
+    };
 
     const activePianoInputs = new Map();
     const activePianoVoices = new Map();
@@ -1989,6 +2150,13 @@
       if (shellMenu.classList.contains("open")) return;
       if (gameScreen.style.display !== "block") return;
 
+      if ((event.key === " " || event.code === "Space") &&
+          !(event.target && event.target.classList && event.target.classList.contains("pianoKey"))) {
+        event.preventDefault();
+        if (running) cancelActiveTarget();
+        return;
+      }
+
       const key = event.key.toLowerCase();
       const mappedNote = PIANO_KEYBOARD_MAP[key];
       if (mappedNote) {
@@ -2011,8 +2179,13 @@
     if (cancelChordBtn) {
       cancelChordBtn.addEventListener("pointerdown", event => {
         event.preventDefault();
-        if (running) cancelActiveTarget();
+        cancelChordBtn.classList.add("pressed");
+        if (running && !shellMenu.classList.contains("open")) cancelActiveTarget();
       });
+      ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
+        cancelChordBtn.addEventListener(type, () => cancelChordBtn.classList.remove("pressed"));
+      });
+      cancelChordBtn.addEventListener("click", event => event.preventDefault());
     }
 
     function getAudio() {
@@ -2147,670 +2320,696 @@
       setTimeout(() => beep(82, 0.16, "sawtooth", 0.04), 80);
     }
 
-    /*
-      GAME MODULE
-      Chord Defender: build each incoming chord symbol on the piano.
-      Major chords unlock first, then minor, then diminished.
-    */
+      /* =========================
+         GAME MODULE
+         Chord Defender: build each incoming chord symbol on the piano.
+         Major chords unlock first, then minor, then diminished.
+         ========================= */
 
-    const PIANO_PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-  const CHORD_ROOTS = [
-    { key: "C", labels: ["C"] },
-    { key: "C#", labels: ["C#", "Db"] },
-    { key: "D", labels: ["D"] },
-    { key: "D#", labels: ["D#", "Eb"] },
-    { key: "E", labels: ["E"] },
-    { key: "F", labels: ["F"] },
-    { key: "F#", labels: ["F#", "Gb"] },
-    { key: "G", labels: ["G"] },
-    { key: "G#", labels: ["G#", "Ab"] },
-    { key: "A", labels: ["A"] },
-    { key: "A#", labels: ["A#", "Bb"] },
-    { key: "B", labels: ["B"] }
-  ];
-  const CHORD_QUALITIES = [
-    { id: "major", label: "Major", suffix: "", intervals: [0, 4, 7] },
-    { id: "minor", label: "Minor", suffix: "m", intervals: [0, 3, 7] },
-    { id: "diminished", label: "Diminished", suffix: "dim", intervals: [0, 3, 6] }
-  ];
-  const CHORD_MISSILE_SPEED_RATIO = 0.30;
+      const PIANO_PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+      const CHORD_ROOTS = [
+        { key: "C", labels: ["C"] },
+        { key: "C#", labels: ["C#", "Db"] },
+        { key: "D", labels: ["D"] },
+        { key: "D#", labels: ["D#", "Eb"] },
+        { key: "E", labels: ["E"] },
+        { key: "F", labels: ["F"] },
+        { key: "F#", labels: ["F#", "Gb"] },
+        { key: "G", labels: ["G"] },
+        { key: "G#", labels: ["G#", "Ab"] },
+        { key: "A", labels: ["A"] },
+        { key: "A#", labels: ["A#", "Bb"] },
+        { key: "B", labels: ["B"] }
+      ];
+      const CHORD_QUALITIES = [
+        { id: "major", label: "Major", suffix: "", intervals: [0, 4, 7] },
+        { id: "minor", label: "Minor", suffix: "m", intervals: [0, 3, 7] },
+        { id: "diminished", label: "Diminished", suffix: "dim", intervals: [0, 3, 6] }
+      ];
+      const CHORD_MISSILE_SPEED_RATIO = 0.30;
 
-    let missiles = [];
-    let particles = [];
-    let scorePops = [];
-    let lasers = [];
-    let frameCount = 0;
-    let spawnTimer = 0;
-    let shield = 5;
-    let streak = 0;
-    let hitsCleared = 0;
-    let feedbackText = "";
-    let feedbackTimer = 0;
-    let activeMissileId = null;
-    let shakeFrames = 0;
-    const BASE_HIT_POINTS = 1;
-    const WRONG_KEY_PENALTY = BASE_HIT_POINTS;
+      let missiles = [];
+      let particles = [];
+      let scorePops = [];
+      let lasers = [];
+      let frameCount = 0;
+      let spawnTimer = 0;
+      let shield = 5;
+      let streak = 0;
+      let hitsCleared = 0;
+      let feedbackText = "";
+      let feedbackTimer = 0;
+      let activeMissileId = null;
+      let shakeFrames = 0;
+      const BASE_HIT_POINTS = 1;
+      const WRONG_KEY_PENALTY = BASE_HIT_POINTS;
 
-    function gameInit() {
-      missiles = [];
-      particles = [];
-      scorePops = [];
-      lasers = [];
-      frameCount = 0;
-      spawnTimer = 160;
-      shield = 5;
-      streak = 0;
-      hitsCleared = 0;
-      feedbackText = "";
-      feedbackTimer = 0;
-      activeMissileId = null;
-      shakeFrames = 0;
-      setMessage("BUILD THE CHORD");
-      gameDraw();
-    }
-
-    function getShipPosition() {
-      return {
-        x: canvas.width / 2,
-        y: canvas.height - 34
-      };
-    }
-
-    function uniqueKeys(keys) {
-      const clean = [];
-      (keys || []).forEach(key => {
-        const note = String(key || "").trim();
-        if (note && !clean.includes(note)) clean.push(note);
-      });
-      return clean;
-    }
-
-  function makeTargetFromKeys(targetData) {
-    if (targetData && typeof targetData === "object" && !Array.isArray(targetData)) {
-      return {
-        label: String(targetData.label || "Chord"),
-        requiredKeys: uniqueKeys(targetData.requiredKeys),
-        hitKeys: []
-      };
-    }
-
-    const requiredKeys = uniqueKeys(targetData);
-    return {
-      label: requiredKeys.join("-"),
-      requiredKeys,
-      hitKeys: []
-    };
-  }
-
-    function randomFrom(list) {
-      return list[Math.floor(Math.random() * list.length)];
-    }
-
-  function randomNote() {
-    return randomFrom(PIANO_PITCH_CLASSES);
-  }
-
-  function chooseTargetKeys() {
-    return buildChordTarget();
-  }
-
-    function getUnlockedChordQualities() {
-      const difficulty = getDifficultyLevel();
-      const qualities = [CHORD_QUALITIES[0]];
-
-      // Quality ramp: major first, then minor, then diminished.
-      // It responds to both survival time and successful clears.
-      if (difficulty >= 1.65 || hitsCleared >= 10 || frameCount > 60 * 32) {
-        qualities.push(CHORD_QUALITIES[1]);
+      function gameInit() {
+        missiles = [];
+        particles = [];
+        scorePops = [];
+        lasers = [];
+        frameCount = 0;
+        spawnTimer = 125;
+        shield = 5;
+        streak = 0;
+        hitsCleared = 0;
+        feedbackText = "";
+        feedbackTimer = 0;
+        activeMissileId = null;
+        shakeFrames = 0;
+        setMessage("BUILD THE CHORD");
+        gameDraw();
       }
 
-      if (difficulty >= 3.35 || hitsCleared >= 26 || frameCount > 60 * 78) {
-        qualities.push(CHORD_QUALITIES[2]);
+      function getShipPosition() {
+        return {
+          x: GAME_CANVAS_LOGICAL_WIDTH / 2,
+          y: GAME_CANVAS_LOGICAL_HEIGHT - 92
+        };
       }
 
-      return qualities;
-    }
-
-    function transposePitchClass(rootKey, semitones) {
-      const rootIndex = PIANO_PITCH_CLASSES.indexOf(rootKey);
-      if (rootIndex < 0) return rootKey;
-      return PIANO_PITCH_CLASSES[(rootIndex + semitones + 120) % 12];
-    }
-
-    function buildChordTarget() {
-      const root = randomFrom(CHORD_ROOTS);
-      const quality = randomFrom(getUnlockedChordQualities());
-      const requiredKeys = quality.intervals.map(interval => transposePitchClass(root.key, interval));
-      const rootLabels = Array.isArray(root.labels) && root.labels.length ? root.labels : [root.label || root.key];
-      const rootLabel = randomFrom(rootLabels);
-
-      return {
-        label: `${rootLabel}${quality.suffix}`,
-        requiredKeys
-      };
-    }
-
-    function cancelActiveTarget() {
-      const active = getActiveMissile();
-      if (!active) {
-        feedbackText = "No chord selected";
-        feedbackTimer = 26;
-        return;
+      function uniqueKeys(keys) {
+        const clean = [];
+        (keys || []).forEach(key => {
+          const note = String(key || "").trim();
+          if (note && !clean.includes(note)) clean.push(note);
+        });
+        return clean;
       }
 
-      active.hitKeys = [];
-      activeMissileId = null;
-      feedbackText = "Cancelled";
-      feedbackTimer = 28;
-      createBurst(active.x, active.y, "#93c5fd", 8);
-      soundWrong();
-    }
+      function makeTargetFromKeys(targetData) {
+        if (targetData && typeof targetData === "object" && !Array.isArray(targetData)) {
+          return {
+            label: String(targetData.label || "Chord"),
+            requiredKeys: uniqueKeys(targetData.requiredKeys),
+            hitKeys: []
+          };
+        }
 
-    function getDifficultyLevel() {
-      const secondsAlive = frameCount / 60;
-      const timePressure = secondsAlive / 30;
-      const clearPressure = hitsCleared / 22;
-      const streakPressure = Math.min(1.55, streak / 32);
-      return timePressure + clearPressure + streakPressure;
-    }
-
-    function getWaveMultiplier() {
-      return 1;
-    }
-
-    function getCurrentMaxMissiles() {
-      const difficulty = getDifficultyLevel();
-      return Math.min(3, 1 + Math.floor(difficulty / 2.55));
-    }
-
-    function getMissileTravelFrames(distance) {
-      const difficulty = getDifficultyLevel();
-      const baseTravel = 455 + Math.random() * 58;
-      const distanceNudge = 0.97 + Math.min(0.10, distance / 4200);
-      const keyDefenderTravel = Math.max(104, (baseTravel * distanceNudge) / (1 + difficulty * 0.085));
-
-      // Chord Defender missiles move at 30% of Key Defender speed.
-      // That means the travel time is roughly 3.33x longer.
-      return Math.max(320, keyDefenderTravel / CHORD_MISSILE_SPEED_RATIO);
-    }
-    function spawnMissile() {
-      const target = makeTargetFromKeys(chooseTargetKeys());
-      const ship = getShipPosition();
-      const edge = Math.floor(Math.random() * 3);
-      let x;
-      let y;
-
-      if (edge === 0) {
-        x = 28 + Math.random() * (canvas.width - 56);
-        y = -22;
-      } else if (edge === 1) {
-        x = -28;
-        y = 30 + Math.random() * 78;
-      } else {
-        x = canvas.width + 28;
-        y = 30 + Math.random() * 78;
+        const requiredKeys = uniqueKeys(targetData);
+        return {
+          label: requiredKeys.join("-"),
+          requiredKeys,
+          hitKeys: []
+        };
       }
 
-      const dx = ship.x - x;
-      const dy = ship.y - y;
-      const distance = Math.hypot(dx, dy) || 1;
-      const travelFrames = getMissileTravelFrames(distance);
-
-      missiles.push({
-        id: Date.now() + Math.random(),
-        label: target.label,
-        requiredKeys: target.requiredKeys,
-        hitKeys: target.hitKeys,
-        startX: x,
-        startY: y,
-        targetX: ship.x,
-        targetY: ship.y,
-        x,
-        y,
-        travelFrames,
-        travelAge: 0,
-        radius: 12,
-        trail: [],
-        age: 0
-      });
-    }
-
-    function nextSpawnDelay() {
-      const difficulty = getDifficultyLevel();
-      const delay = 270 / (1 + difficulty * 0.045);
-      return Math.max(96, Math.floor(delay * getWaveMultiplier() + Math.random() * 24));
-    }
-
-    function damageShield() {
-      shield -= 1;
-      streak = 0;
-      activeMissileId = null;
-      feedbackText = "HIT";
-      feedbackTimer = 40;
-      setMessage(`SHIELD ${Math.max(0, shield)}/5`);
-      soundLose();
-
-      if (shield <= 0) {
-        endGame("Shield broken.");
-      }
-    }
-
-    function gameUpdate() {
-      frameCount += 1;
-      spawnTimer -= 1;
-
-      if (spawnTimer <= 0 && missiles.length < getCurrentMaxMissiles()) {
-        spawnMissile();
-        spawnTimer = nextSpawnDelay();
+      function randomFrom(list) {
+        return list[Math.floor(Math.random() * list.length)];
       }
 
-      for (let i = missiles.length - 1; i >= 0; i--) {
-        const missile = missiles[i];
-        missile.age += 1;
-        missile.travelAge += 1;
-        missile.trail.push({ x: missile.x, y: missile.y });
-        if (missile.trail.length > 6) missile.trail.shift();
+      function randomNote() {
+        return randomFrom(PIANO_PITCH_CLASSES);
+      }
 
-        const progress = Math.min(1, missile.travelAge / Math.max(1, missile.travelFrames));
-        missile.x = missile.startX + (missile.targetX - missile.startX) * progress;
-        missile.y = missile.startY + (missile.targetY - missile.startY) * progress;
+      function chooseTargetKeys() {
+        return buildChordTarget();
+      }
 
-        if (progress >= 1) {
-          if (activeMissileId === missile.id) activeMissileId = null;
-          createBurst(missile.x, missile.y, "#fb7185", 9);
-          missiles.splice(i, 1);
-          damageShield();
+
+      function getUnlockedChordQualities() {
+        const difficulty = getDifficultyLevel();
+        const qualities = [CHORD_QUALITIES[0]];
+
+        // Quality ramp: major first, then minor, then diminished.
+        // It responds to both survival time and successful clears.
+        if (difficulty >= 1.65 || hitsCleared >= 10 || frameCount > 60 * 32) {
+          qualities.push(CHORD_QUALITIES[1]);
+        }
+
+        if (difficulty >= 3.35 || hitsCleared >= 26 || frameCount > 60 * 78) {
+          qualities.push(CHORD_QUALITIES[2]);
+        }
+
+        return qualities;
+      }
+
+      function transposePitchClass(rootKey, semitones) {
+        const rootIndex = PIANO_PITCH_CLASSES.indexOf(rootKey);
+        if (rootIndex < 0) return rootKey;
+        return PIANO_PITCH_CLASSES[(rootIndex + semitones + 120) % 12];
+      }
+
+      function buildChordTarget() {
+        const root = randomFrom(CHORD_ROOTS);
+        const quality = randomFrom(getUnlockedChordQualities());
+        const requiredKeys = quality.intervals.map(interval => transposePitchClass(root.key, interval));
+        const rootLabels = Array.isArray(root.labels) && root.labels.length ? root.labels : [root.label || root.key];
+        const rootLabel = randomFrom(rootLabels);
+
+        return {
+          label: `${rootLabel}${quality.suffix}`,
+          requiredKeys
+        };
+      }
+
+      function cancelActiveTarget() {
+        const active = getActiveMissile();
+        if (!active) {
+          feedbackText = "No chord selected";
+          feedbackTimer = 26;
+          return;
+        }
+
+        active.hitKeys = [];
+        activeMissileId = null;
+        feedbackText = "Cancelled";
+        feedbackTimer = 28;
+        createBurst(active.x, active.y, "#93c5fd", 8);
+        soundWrong();
+      }
+
+      function getDifficultyLevel() {
+        const secondsAlive = frameCount / 60;
+        const timePressure = secondsAlive / 24;
+        const clearPressure = hitsCleared / 18;
+        const streakPressure = Math.min(1.8, streak / 26);
+        return timePressure + clearPressure + streakPressure;
+      }
+
+      function getWaveMultiplier() {
+        return 1;
+      }
+
+      function getCurrentMaxMissiles() {
+        const difficulty = getDifficultyLevel();
+        return Math.min(4, 1 + Math.floor(difficulty / 2.1));
+      }
+
+      function getMissileTravelFrames(distance) {
+        const difficulty = getDifficultyLevel();
+        const baseTravel = 340 + Math.random() * 42;
+        const distanceNudge = 0.96 + Math.min(0.12, distance / 5200);
+        const keyDefenderTravel = Math.max(68, (baseTravel * distanceNudge) / (1 + difficulty * 0.105));
+
+        // Chord Defender missiles move at 30% of Key Defender speed.
+        // That means the travel time is roughly 3.33x longer.
+        return Math.max(225, keyDefenderTravel / CHORD_MISSILE_SPEED_RATIO);
+      }
+      function spawnMissile() {
+        const target = makeTargetFromKeys(chooseTargetKeys());
+        const ship = getShipPosition();
+        const edge = Math.floor(Math.random() * 3);
+        let x;
+        let y;
+
+        if (edge === 0) {
+          x = 42 + Math.random() * (GAME_CANVAS_LOGICAL_WIDTH - 84);
+          y = -34;
+        } else if (edge === 1) {
+          x = -44;
+          y = 48 + Math.random() * (GAME_CANVAS_LOGICAL_HEIGHT * 0.5);
+        } else {
+          x = GAME_CANVAS_LOGICAL_WIDTH + 44;
+          y = 48 + Math.random() * (GAME_CANVAS_LOGICAL_HEIGHT * 0.5);
+        }
+
+        const dx = ship.x - x;
+        const dy = ship.y - y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const travelFrames = getMissileTravelFrames(distance);
+
+        missiles.push({
+          id: Date.now() + Math.random(),
+          label: target.label,
+          requiredKeys: target.requiredKeys,
+          hitKeys: target.hitKeys,
+          startX: x,
+          startY: y,
+          targetX: ship.x,
+          targetY: ship.y,
+          x,
+          y,
+          travelFrames,
+          travelAge: 0,
+          radius: 25,
+          trail: [],
+          age: 0
+        });
+      }
+
+      function nextSpawnDelay() {
+        const difficulty = getDifficultyLevel();
+        const delay = 212 / (1 + difficulty * 0.055);
+        return Math.max(70, Math.floor(delay * getWaveMultiplier() + Math.random() * 18));
+      }
+
+      function damageShield() {
+        shield -= 1;
+        streak = 0;
+        activeMissileId = null;
+        feedbackText = "Shield hit!";
+        feedbackTimer = 55;
+        shakeFrames = 18;
+        spawnTimer = Math.max(spawnTimer, 28);
+        soundShieldHit();
+
+        if (shield <= 0) {
+          endGame("Shield broken.");
         }
       }
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.life -= 1;
-        if (p.life <= 0) particles.splice(i, 1);
+      function gameUpdate() {
+        frameCount += 1;
+        spawnTimer -= 1;
+
+        if (spawnTimer <= 0 && missiles.length < getCurrentMaxMissiles()) {
+          spawnMissile();
+          spawnTimer = nextSpawnDelay();
+        }
+
+        for (let i = missiles.length - 1; i >= 0; i--) {
+          const missile = missiles[i];
+          missile.age += 1;
+          missile.travelAge += 1;
+          missile.trail.push({ x: missile.x, y: missile.y });
+          if (missile.trail.length > 11) missile.trail.shift();
+
+          const progress = Math.min(1, missile.travelAge / Math.max(1, missile.travelFrames));
+          missile.x = missile.startX + (missile.targetX - missile.startX) * progress;
+          missile.y = missile.startY + (missile.targetY - missile.startY) * progress;
+
+          if (progress >= 1) {
+            if (activeMissileId === missile.id) activeMissileId = null;
+            createBurst(missile.x, missile.y, "#fb7185", 12);
+            missiles.splice(i, 1);
+            damageShield();
+          }
+        }
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.life -= 1;
+          if (p.life <= 0) particles.splice(i, 1);
+        }
+
+        for (let i = scorePops.length - 1; i >= 0; i--) {
+          const pop = scorePops[i];
+          pop.y += pop.vy;
+          pop.life -= 1;
+          if (pop.life <= 0) scorePops.splice(i, 1);
+        }
+
+        for (let i = lasers.length - 1; i >= 0; i--) {
+          const laser = lasers[i];
+          laser.life -= 1;
+          if (laser.life <= 0) lasers.splice(i, 1);
+        }
+
+        if (shakeFrames > 0) shakeFrames -= 1;
+        if (feedbackTimer > 0) feedbackTimer -= 1;
       }
 
-      for (let i = scorePops.length - 1; i >= 0; i--) {
-        const pop = scorePops[i];
-        pop.y += pop.vy;
-        pop.life -= 1;
-        if (pop.life <= 0) scorePops.splice(i, 1);
+      function createBurst(x, y, color = "#ffe08a", count = 16) {
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 1.1 + Math.random() * 3.2;
+          particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            life: 18 + Math.floor(Math.random() * 16),
+            color
+          });
+        }
       }
 
-      for (let i = lasers.length - 1; i >= 0; i--) {
-        const laser = lasers[i];
-        laser.life -= 1;
-        if (laser.life <= 0) lasers.splice(i, 1);
-      }
-
-      if (shakeFrames > 0) shakeFrames -= 1;
-      if (feedbackTimer > 0) feedbackTimer -= 1;
-    }
-
-    function createBurst(x, y, color = "#ffe08a", count = 12) {
-      for (let i = 0; i < count; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 0.55 + Math.random() * 1.85;
-        particles.push({
+      function addScorePop(text, x, y, color = "#ffe08a") {
+        scorePops.push({
+          text,
           x,
           y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          life: 10 + Math.floor(Math.random() * 11),
+          vy: -0.9,
+          life: 42,
           color
         });
       }
-    }
-
-    function addScorePop(text, x, y, color = "#ffe08a") {
-      scorePops.push({
-        text,
-        x,
-        y,
-        vy: -0.48,
-        life: 34,
-        color
-      });
-    }
 
 
-    function createLaser(targetX, targetY) {
-      const ship = getShipPosition();
-      lasers.push({
-        fromX: ship.x,
-        fromY: ship.y - 17,
-        toX: targetX,
-        toY: targetY,
-        life: 7,
-        maxLife: 7
-      });
-    }
-
-    function drawLasers() {
-      if (!lasers.length) return;
-
-      ctx.save();
-      lasers.forEach(laser => {
-        const alpha = Math.max(0, Math.min(1, laser.life / laser.maxLife));
-
-        ctx.globalAlpha = alpha * 0.42;
-        ctx.strokeStyle = "#b7ff9e";
-        ctx.lineWidth = 4.2;
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.moveTo(laser.fromX, laser.fromY);
-        ctx.lineTo(laser.toX, laser.toY);
-        ctx.stroke();
-
-        ctx.globalAlpha = alpha;
-        ctx.strokeStyle = "#dff3ff";
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(laser.fromX, laser.fromY);
-        ctx.lineTo(laser.toX, laser.toY);
-        ctx.stroke();
-
-        ctx.fillStyle = "#ffffff";
-        ctx.beginPath();
-        ctx.arc(laser.toX, laser.toY, 2.3 + alpha * 3, 0, Math.PI * 2);
-        ctx.fill();
-      });
-      ctx.restore();
-    }
-
-    function drawBackground() {
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, "#0b1420");
-      gradient.addColorStop(1, "#172a46");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgba(255,255,255,0.2)";
-      for (let i = 0; i < 28; i++) {
-        const x = (i * 83 + frameCount * 0.08) % canvas.width;
-        const y = (i * 47) % canvas.height;
-        ctx.fillRect(x, y, 2, 2);
-      }
-    }
-
-    function drawShip() {
-      const ship = getShipPosition();
-      const pulse = Math.sin(frameCount * 0.06) * 1;
-
-      ctx.save();
-      ctx.translate(ship.x, ship.y + pulse);
-
-      ctx.fillStyle = "#2563eb";
-      ctx.beginPath();
-      ctx.moveTo(0, -18);
-      ctx.lineTo(-24, 15);
-      ctx.lineTo(24, 15);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.fillStyle = "#93c5fd";
-      ctx.beginPath();
-      ctx.arc(0, -3, 7.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = `rgba(183, 255, 158, ${0.25 + shield * 0.08})`;
-      ctx.lineWidth = 2.2;
-      ctx.beginPath();
-      ctx.arc(0, 0, 34, Math.PI * 1.08, Math.PI * 1.92);
-      ctx.stroke();
-
-      for (let i = 0; i < 5; i++) {
-        ctx.fillStyle = i < shield ? "#b7ff9e" : "rgba(255,255,255,0.18)";
-        ctx.beginPath();
-        ctx.arc(-18 + i * 9, 22, 2.8, 0, Math.PI * 2);
-        ctx.fill();
+      function createLaser(targetX, targetY) {
+        const ship = getShipPosition();
+        lasers.push({
+          fromX: ship.x,
+          fromY: ship.y - 40,
+          toX: targetX,
+          toY: targetY,
+          life: 9,
+          maxLife: 9
+        });
       }
 
-      ctx.restore();
-    }
+      function drawLasers() {
+        if (!lasers.length) return;
 
-    function getMissileBoxMetrics(missile) {
-      const keyCount = missile.requiredKeys.length;
-      return {
-        width: Math.max(52, Math.min(86, missile.label.length * 10 + 24)),
-        height: keyCount > 1 ? 28 : 24,
-        font: missile.label.length >= 5 ? "bold 13px Arial, sans-serif" : "bold 16px Arial, sans-serif"
-      };
-    }
+        ctx.save();
+        lasers.forEach(laser => {
+          const alpha = Math.max(0, Math.min(1, laser.life / laser.maxLife));
 
-    function drawMissileProgress(missile, x, y, boxHeight) {
-      if (missile.requiredKeys.length <= 1) return;
-
-      const total = missile.requiredKeys.length;
-      const startX = x - ((total - 1) * 7) / 2;
-      const dotY = y + boxHeight / 2 - 5;
-
-      for (let i = 0; i < total; i++) {
-        ctx.fillStyle = i < missile.hitKeys.length ? "#ffe08a" : "rgba(255,255,255,0.38)";
-        ctx.beginPath();
-        ctx.arc(startX + i * 7, dotY, 2.1, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    function drawMissiles() {
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-
-      missiles.forEach(missile => {
-        if (missile.trail.length > 1) {
-          ctx.strokeStyle = "rgba(251, 113, 133, 0.35)";
-          ctx.lineWidth = 2.1;
+          ctx.globalAlpha = alpha * 0.42;
+          ctx.strokeStyle = "#b7ff9e";
+          ctx.lineWidth = 9;
+          ctx.lineCap = "round";
           ctx.beginPath();
-          missile.trail.forEach((point, index) => {
-            if (index === 0) ctx.moveTo(point.x, point.y);
-            else ctx.lineTo(point.x, point.y);
-          });
+          ctx.moveTo(laser.fromX, laser.fromY);
+          ctx.lineTo(laser.toX, laser.toY);
           ctx.stroke();
+
+          ctx.globalAlpha = alpha;
+          ctx.strokeStyle = "#dff3ff";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(laser.fromX, laser.fromY);
+          ctx.lineTo(laser.toX, laser.toY);
+          ctx.stroke();
+
+          ctx.fillStyle = "#ffffff";
+          ctx.beginPath();
+          ctx.arc(laser.toX, laser.toY, 5 + alpha * 6, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+      }
+
+      function drawBackground() {
+        const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CANVAS_LOGICAL_HEIGHT);
+        gradient.addColorStop(0, "#0b1420");
+        gradient.addColorStop(1, "#172a46");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+
+        ctx.fillStyle = "rgba(255,255,255,0.2)";
+        for (let i = 0; i < 58; i++) {
+          const x = (i * 137 + frameCount * 0.12) % GAME_CANVAS_LOGICAL_WIDTH;
+          const y = (i * 71) % GAME_CANVAS_LOGICAL_HEIGHT;
+          ctx.fillRect(x, y, 2, 2);
         }
+      }
 
-        const metrics = getMissileBoxMetrics(missile);
-        const wobble = Math.sin((frameCount + missile.age) * 0.1) * 1;
-        const drawY = missile.y + wobble;
-        const isActive = activeMissileId === missile.id;
-        const remainingFrames = (missile.travelFrames || 0) - (missile.travelAge || 0);
-        const isDanger = remainingFrames < 75;
+      function drawShip() {
+        const ship = getShipPosition();
+        const pulse = Math.sin(frameCount * 0.05) * 3;
 
-        ctx.fillStyle = isActive ? "#f97316" : (isDanger ? "#ef4444" : "#fb7185");
+        ctx.save();
+        ctx.translate(ship.x, ship.y + pulse);
+
+        ctx.fillStyle = "#2563eb";
         ctx.beginPath();
-        ctx.roundRect(missile.x - metrics.width / 2, drawY - metrics.height / 2, metrics.width, metrics.height, 8);
+        ctx.moveTo(0, -42);
+        ctx.lineTo(-55, 38);
+        ctx.lineTo(55, 38);
+        ctx.closePath();
         ctx.fill();
 
-        ctx.strokeStyle = isActive ? "#ffe08a" : (isDanger ? "#fecaca" : "rgba(255,255,255,0.65)");
-        ctx.lineWidth = isActive ? 2.2 : 1.5;
+        ctx.fillStyle = "#93c5fd";
+        ctx.beginPath();
+        ctx.arc(0, -5, 18, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = `rgba(183, 255, 158, ${0.28 + shield * 0.08})`;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.arc(0, 0, 72, Math.PI * 1.08, Math.PI * 1.92);
         ctx.stroke();
 
-        ctx.fillStyle = "white";
-        ctx.font = metrics.font;
-        ctx.fillText(missile.label, missile.x, drawY - (missile.requiredKeys.length > 1 ? 3 : 0));
-        drawMissileProgress(missile, missile.x, drawY, metrics.height);
-      });
-    }
-
-    function drawParticles() {
-      particles.forEach(p => {
-        ctx.globalAlpha = Math.max(0, p.life / 24);
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      });
-    }
-
-    function drawScorePops() {
-      ctx.save();
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      scorePops.forEach(pop => {
-        ctx.globalAlpha = Math.max(0, Math.min(1, pop.life / 14));
-        ctx.fillStyle = pop.color;
-        ctx.font = "bold 11px Arial, sans-serif";
-        ctx.fillText(pop.text, pop.x, pop.y);
-      });
-      ctx.restore();
-    }
-
-    function drawHud() {
-      ctx.save();
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.font = "bold 8.5px Arial, sans-serif";
-      ctx.fillStyle = streak >= 10 ? "#ffe08a" : "rgba(255,255,255,0.84)";
-      ctx.fillText(`STREAK ${streak}`, 7, 6);
-
-      const urgent = missiles.some(missile => ((missile.travelFrames || 0) - (missile.travelAge || 0)) < 65);
-      if (urgent) {
-        ctx.textAlign = "right";
-        ctx.fillStyle = "#fecaca";
-        ctx.fillText("DANGER", canvas.width - 7, 6);
-      }
-      ctx.restore();
-    }
-
-    function drawFeedback() {
-      if (feedbackTimer <= 0 || !feedbackText) return;
-      ctx.save();
-      ctx.globalAlpha = Math.min(1, feedbackTimer / 12);
-      ctx.fillStyle = feedbackText === "MISS" || feedbackText === "WRONG" ? "#fecaca" : "#ffe08a";
-      ctx.font = "bold 18px Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(feedbackText, canvas.width / 2, canvas.height * 0.52);
-      ctx.restore();
-    }
-
-    function gameDraw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.save();
-      if (shakeFrames > 0) {
-        const shake = Math.min(4, 1 + shakeFrames * 0.16);
-        ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
-      }
-      drawBackground();
-      drawMissiles();
-      drawLasers();
-      drawShip();
-      drawParticles();
-      drawScorePops();
-      drawHud();
-      ctx.restore();
-      drawFeedback();
-    }
-
-    function getActiveMissile() {
-      if (!activeMissileId) return null;
-      return missiles.find(missile => missile.id === activeMissileId) || null;
-    }
-
-    function findMatchingMissile(note) {
-      const active = getActiveMissile();
-
-      if (active) {
-        if (active.requiredKeys.includes(note) && !active.hitKeys.includes(note)) {
-          return active;
+        for (let i = 0; i < 5; i++) {
+          ctx.fillStyle = i < shield ? "#b7ff9e" : "rgba(255,255,255,0.18)";
+          ctx.beginPath();
+          ctx.arc(-44 + i * 22, 58, 7, 0, Math.PI * 2);
+          ctx.fill();
         }
-        return null;
+
+        ctx.restore();
       }
 
-      const candidates = missiles.filter(missile =>
-        missile.requiredKeys.includes(note) && !missile.hitKeys.includes(note)
-      );
+      function getMissileBoxMetrics(missile) {
+        const keyCount = missile.requiredKeys.length;
+        return {
+          width: Math.max(86, Math.min(170, missile.label.length * 20 + 34)),
+          height: keyCount > 1 ? 58 : 46,
+          font: missile.label.length >= 5 ? "bold 21px Arial, sans-serif" : "bold 25px Arial, sans-serif"
+        };
+      }
 
-      candidates.sort((a, b) => {
-        const ta = (a.travelFrames || 0) - (a.travelAge || 0);
-        const tb = (b.travelFrames || 0) - (b.travelAge || 0);
-        return ta - tb;
+      function drawMissileProgress(missile, x, y, boxHeight) {
+        if (missile.requiredKeys.length <= 1) return;
+
+        const total = missile.requiredKeys.length;
+        const startX = x - ((total - 1) * 14) / 2;
+        const dotY = y + boxHeight / 2 - 10;
+
+        for (let i = 0; i < total; i++) {
+          ctx.fillStyle = i < missile.hitKeys.length ? "#ffe08a" : "rgba(255,255,255,0.38)";
+          ctx.beginPath();
+          ctx.arc(startX + i * 14, dotY, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawMissiles() {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        missiles.forEach(missile => {
+          if (missile.trail.length > 1) {
+            ctx.strokeStyle = "rgba(251, 113, 133, 0.35)";
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            missile.trail.forEach((point, index) => {
+              if (index === 0) ctx.moveTo(point.x, point.y);
+              else ctx.lineTo(point.x, point.y);
+            });
+            ctx.stroke();
+          }
+
+          const metrics = getMissileBoxMetrics(missile);
+          const wobble = Math.sin((frameCount + missile.age) * 0.08) * 2;
+          const drawY = missile.y + wobble;
+          const isActive = activeMissileId === missile.id;
+          const remainingFrames = (missile.travelFrames || 0) - (missile.travelAge || 0);
+          const isDanger = remainingFrames < 85;
+
+          ctx.fillStyle = isActive ? "#f97316" : (isDanger ? "#ef4444" : "#fb7185");
+          ctx.beginPath();
+          ctx.roundRect(missile.x - metrics.width / 2, drawY - metrics.height / 2, metrics.width, metrics.height, 14);
+          ctx.fill();
+
+          ctx.strokeStyle = isActive ? "#ffe08a" : (isDanger ? "#fecaca" : "rgba(255,255,255,0.65)");
+          ctx.lineWidth = isActive ? 4 : 2;
+          ctx.stroke();
+
+          ctx.fillStyle = "white";
+          ctx.font = metrics.font;
+          ctx.fillText(missile.label, missile.x, drawY - (missile.requiredKeys.length > 1 ? 6 : 0));
+          drawMissileProgress(missile, missile.x, drawY, metrics.height);
+        });
+      }
+
+      function drawParticles() {
+        particles.forEach(p => {
+          ctx.globalAlpha = Math.max(0, p.life / 32);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+      }
+
+      function drawScorePops() {
+        ctx.save();
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        scorePops.forEach(pop => {
+          ctx.globalAlpha = Math.max(0, Math.min(1, pop.life / 18));
+          ctx.fillStyle = pop.color;
+          ctx.font = "bold 20px Arial, sans-serif";
+          ctx.fillText(pop.text, pop.x, pop.y);
+        });
+        ctx.restore();
+      }
+
+      function drawHud() {
+        ctx.save();
+        ctx.textAlign = "left";
+        ctx.textBaseline = "top";
+        ctx.font = "bold 15px Arial, sans-serif";
+        ctx.fillStyle = streak >= 10 ? "#ffe08a" : "rgba(255,255,255,0.84)";
+        ctx.fillText(`STREAK ${streak}`, 14, 12);
+
+        const urgent = missiles.some(missile => ((missile.travelFrames || 0) - (missile.travelAge || 0)) < 75);
+        if (urgent) {
+          ctx.textAlign = "right";
+          ctx.fillStyle = "#fecaca";
+          ctx.fillText("DANGER", GAME_CANVAS_LOGICAL_WIDTH - 14, 12);
+        }
+        ctx.restore();
+      }
+
+      function drawFeedback() {
+        if (feedbackTimer <= 0 || !feedbackText) return;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, feedbackTimer / 15);
+        ctx.fillStyle = feedbackText === "Miss!" || feedbackText === "Wrong key!" ? "#fecaca" : "#ffe08a";
+        ctx.font = "bold 28px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(feedbackText, GAME_CANVAS_LOGICAL_WIDTH / 2, GAME_CANVAS_LOGICAL_HEIGHT * 0.55);
+        ctx.restore();
+      }
+
+      function gameDraw() {
+        ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+        ctx.save();
+        if (shakeFrames > 0) {
+          const shake = Math.min(8, 2 + shakeFrames * 0.26);
+          ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+        }
+        drawBackground();
+        drawMissiles();
+        drawLasers();
+        drawShip();
+        drawParticles();
+        drawScorePops();
+        drawHud();
+        ctx.restore();
+        drawFeedback();
+      }
+
+      function getActiveMissile() {
+        if (!activeMissileId) return null;
+        return missiles.find(missile => missile.id === activeMissileId) || null;
+      }
+
+      function findMatchingMissile(note) {
+        const active = getActiveMissile();
+
+        if (active) {
+          if (active.requiredKeys.includes(note) && !active.hitKeys.includes(note)) {
+            return active;
+          }
+          return null;
+        }
+
+        const candidates = missiles.filter(missile =>
+          missile.requiredKeys.includes(note) && !missile.hitKeys.includes(note)
+        );
+
+        candidates.sort((a, b) => {
+          const ta = (a.travelFrames || 0) - (a.travelAge || 0);
+          const tb = (b.travelFrames || 0) - (b.travelAge || 0);
+          return ta - tb;
+        });
+
+        return candidates[0] || null;
+      }
+
+      function soundPartialHit() {
+        beep(520, 0.045, "triangle", 0.035);
+      }
+
+      function gamePianoInput(note) {
+        const active = getActiveMissile();
+        const missile = findMatchingMissile(note);
+
+        if (!missile) {
+          streak = 0;
+          addScore(-WRONG_KEY_PENALTY);
+          feedbackText = `-${WRONG_KEY_PENALTY}`;
+          feedbackTimer = 28;
+          const ship = getShipPosition();
+          addScorePop(`-${WRONG_KEY_PENALTY}`, ship.x, ship.y - 54, "#fecaca");
+          createBurst(ship.x, ship.y - 34, "#fecaca", 7);
+          soundWrong();
+          return;
+        }
+
+        if (!activeMissileId) activeMissileId = missile.id;
+        missile.hitKeys.push(note);
+        const complete = missile.requiredKeys.every(key => missile.hitKeys.includes(key));
+
+        if (complete) {
+          missiles = missiles.filter(item => item !== missile);
+          if (activeMissileId === missile.id) activeMissileId = null;
+          streak += 1;
+          hitsCleared += 1;
+          const points = BASE_HIT_POINTS;
+          addScore(points);
+          feedbackText = `+${points}`;
+          feedbackTimer = 30;
+          createLaser(missile.x, missile.y);
+          addScorePop(`+${points}`, missile.x, missile.y - 26, "#ffe08a");
+          if (streak > 0 && streak % 10 === 0) {
+            addScorePop(`${streak} STREAK`, GAME_CANVAS_LOGICAL_WIDTH / 2, 72, "#b7ff9e");
+          }
+          createBurst(missile.x, missile.y, "#ffe08a", 24);
+          soundCorrect();
+        } else {
+          activeMissileId = missile.id;
+          feedbackText = `${missile.hitKeys.length}/${missile.requiredKeys.length}`;
+          feedbackTimer = 18;
+          createBurst(missile.x, missile.y, "#93c5fd", 5);
+          soundPartialHit();
+        }
+      }
+
+      function gameInput(action) {
+        // Emulator-style actions are not used in this game. Piano input uses gamePianoInput().
+      }
+
+      function gamePointer(point) {
+        // Canvas pointer input is intentionally inactive; the piano keys are the controls.
+      }
+
+      function gameStop() {
+        stopAllPianoKeyPresses();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        missiles = [];
+        particles = [];
+        scorePops = [];
+        lasers = [];
+        activeMissileId = null;
+      }
+
+
+    let resizeObserver = null;
+
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
       });
-
-      return candidates[0] || null;
+      resizeObserver.observe(appFrame);
     }
 
-    function soundPartialHit() {
-      beep(520, 0.045, "triangle", 0.03);
-    }
-
-  function gamePianoInput(note) {
-    const active = getActiveMissile();
-    const missile = findMatchingMissile(note);
-
-    if (!missile) {
-      streak = 0;
-      addScore(-WRONG_KEY_PENALTY);
-      feedbackText = `-${WRONG_KEY_PENALTY}`;
-      feedbackTimer = 28;
-      const ship = getShipPosition();
-      addScorePop(`-${WRONG_KEY_PENALTY}`, ship.x, ship.y - 54, "#fecaca");
-      createBurst(ship.x, ship.y - 34, "#fecaca", 7);
-      soundWrong();
-      return;
-    }
-
-    if (!activeMissileId) activeMissileId = missile.id;
-    missile.hitKeys.push(note);
-    const complete = missile.requiredKeys.every(key => missile.hitKeys.includes(key));
-
-    if (complete) {
-      missiles = missiles.filter(item => item !== missile);
-      if (activeMissileId === missile.id) activeMissileId = null;
-      streak += 1;
-      hitsCleared += 1;
-      const points = BASE_HIT_POINTS;
-      addScore(points);
-      feedbackText = `+${points}`;
-      feedbackTimer = 30;
-      createLaser(missile.x, missile.y);
-      addScorePop(`+${points}`, missile.x, missile.y - 26, "#ffe08a");
-      if (streak > 0 && streak % 10 === 0) {
-        addScorePop(`${streak} STREAK`, canvas.width / 2, 72, "#b7ff9e");
-      }
-      createBurst(missile.x, missile.y, "#ffe08a", 24);
-      soundCorrect();
-    } else {
-      activeMissileId = missile.id;
-      feedbackText = `${missile.hitKeys.length}/${missile.requiredKeys.length}`;
-      feedbackTimer = 18;
-      createBurst(missile.x, missile.y, "#93c5fd", 5);
-      soundPartialHit();
-    }
-  }
-
-    function gameInput(action) {
-      // Only START/MENU is used by the shell in this step. Piano input uses gamePianoInput().
-    }
-
-    function gameStop() {
-      stopAllPianoKeyPresses();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      missiles = [];
-      particles = [];
-      scorePops = [];
-      lasers = [];
-      activeMissileId = null;
-    }
-
-    const resizeObserver = new ResizeObserver(() => {
+    window.addEventListener("resize", () => {
       scaleAppToFrame();
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
-      if (!running) gameDraw();
+      if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
     });
-
-    resizeObserver.observe(appFrame);
 
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
       }, 250);
     });
 
@@ -2830,6 +3029,7 @@
       stopPianoNote,
       handlePianoKey,
       getAudio,
+      getGameCanvasSize,
       savePlayers,
       loadPlayers,
       openMenu: openShellMenu,
@@ -2854,6 +3054,7 @@
       systemButtons: ["start"],
       labels: { start: "MENU" }
     });
+    resetGameCanvasTransform();
     gameInit();
     gameDraw();
   </script>
