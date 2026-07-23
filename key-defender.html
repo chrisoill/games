@@ -263,7 +263,8 @@
       position: absolute;
       left: 34px;
       right: 34px;
-      top: 35px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -773,6 +774,82 @@
       border-radius: 6px;
     }
 
+  
+    /* Key Defender rebuilt mobile layout: locked-ratio shell, desktop game world,
+       split touch piano, and a flat neutral controller deck. */
+    #screen {
+      height: 303.333333px;
+      touch-action: pan-y;
+    }
+
+    #gameCanvas {
+      width: 390px;
+      height: 303.333333px;
+      image-rendering: auto;
+      touch-action: pan-y;
+    }
+
+    #lcd {
+      top: 303.333333px;
+    }
+
+    #controls {
+      top: 351.333333px;
+      height: 318.666667px;
+      background: #242424;
+      touch-action: pan-y;
+    }
+
+    #pianoControls {
+      top: 23px;
+      height: 200px;
+      padding: 0 14px;
+    }
+
+    .pianoGroup {
+      height: 94px;
+      margin-bottom: 12px;
+    }
+
+    .pianoGroupTop {
+      width: 228px;
+    }
+
+    .pianoGroupBottom {
+      width: 300px;
+    }
+
+    .whiteKey {
+      height: 94px;
+      border-radius: 0 0 12px 12px;
+    }
+
+    .blackKey {
+      left: calc((var(--pos) * 100% / var(--white-count)) - 23px);
+      width: 46px;
+      height: 60px;
+      border-radius: 0 0 10px 10px;
+    }
+
+    #dpad,
+    #faceButtons,
+    #leftJoystickPad,
+    #rightJoystickPad,
+    #selectButton {
+      display: none !important;
+    }
+
+    #systemButtons {
+      top: 246px;
+      width: 92px;
+      height: 32px;
+      gap: 0;
+    }
+
+    #startButton {
+      width: 92px;
+    }
+
   </style>
 </head>
 
@@ -808,7 +885,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="560"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -826,8 +903,6 @@
 
         <div id="controls">
           <div id="pianoControls" aria-label="Split piano keyboard controls">
-            <div id="pianoHint">Defend with the piano keys</div>
-
             <div class="pianoGroup pianoGroupTop" style="--white-count: 3;" aria-label="C through E piano keys">
               <div class="whiteKeys">
                 <button class="pianoKey whiteKey" type="button" data-note="C" aria-label="C"></button>
@@ -900,6 +975,14 @@
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
 
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 560;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
     /*
       Change STORAGE_KEY for each separate arcade game if you want each game
       to keep its own local player list/leaderboard.
@@ -931,6 +1014,55 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameCanvasPixelScale = 1;
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+      const targetWidth = Math.max(
+        1,
+        Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale)
+      );
+      const targetHeight = Math.max(
+        1,
+        Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale)
+      );
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      resetGameCanvasTransform();
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
     const scoreEl = document.getElementById("score");
@@ -961,6 +1093,8 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
@@ -1344,9 +1478,13 @@
     }
 
     function scaleAppToFrame() {
-      const frameWidth = appFrame.clientWidth;
+      const frameWidth = Math.max(
+        1,
+        appFrame.clientWidth || window.innerWidth || DESIGN_WIDTH
+      );
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1803,9 +1941,10 @@
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
+      scheduleGameLoop();
     }
 
     function stopGame() {
@@ -1816,15 +1955,34 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
+      if (!running) return;
+      if (loopId) cancelAnimationFrame(loopId);
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
       if (!running) return;
 
-      gameUpdate();
-      gameDraw();
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
 
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
+      gameDraw();
       loopId = requestAnimationFrame(loop);
     }
 
@@ -1863,19 +2021,19 @@
     }
 
     const PIANO_KEYBOARD_MAP = {
-    d: "C",
-    r: "C#",
-    f: "D",
-    t: "D#",
-    g: "E",
-    h: "F",
-    u: "F#",
-    j: "G",
-    i: "G#",
-    k: "A",
-    o: "A#",
-    l: "B"
-  };
+      z: "C",
+      s: "C#",
+      x: "D",
+      d: "D#",
+      c: "E",
+      v: "F",
+      g: "F#",
+      b: "G",
+      h: "G#",
+      n: "A",
+      j: "A#",
+      m: "B"
+    };
 
     const activePianoInputs = new Map();
     const activePianoVoices = new Map();
@@ -2116,26 +2274,26 @@
       setTimeout(() => beep(82, 0.16, "sawtooth", 0.04), 80);
     }
 
-    /*
-      GAME MODULE
-      Final polished single-key missile mode for Key Defender.
-      Chord Defender will use a separate multi-key/chord-target ruleset later.
-    */
+    /* =========================
+       GAME MODULE
+       Final polished single-key missile mode for Key Defender.
+       Chord Defender will use a separate multi-key/chord-target ruleset later.
+       ========================= */
 
     const TARGET_NOTES = [
-    { key: "C", labels: ["C"] },
-    { key: "C#", labels: ["C#", "Db"] },
-    { key: "D", labels: ["D"] },
-    { key: "D#", labels: ["D#", "Eb"] },
-    { key: "E", labels: ["E"] },
-    { key: "F", labels: ["F"] },
-    { key: "F#", labels: ["F#", "Gb"] },
-    { key: "G", labels: ["G"] },
-    { key: "G#", labels: ["G#", "Ab"] },
-    { key: "A", labels: ["A"] },
-    { key: "A#", labels: ["A#", "Bb"] },
-    { key: "B", labels: ["B"] }
-  ];
+      { key: "C", labels: ["C"] },
+      { key: "C#", labels: ["C#", "Db"] },
+      { key: "D", labels: ["D"] },
+      { key: "D#", labels: ["D#", "Eb"] },
+      { key: "E", labels: ["E"] },
+      { key: "F", labels: ["F"] },
+      { key: "F#", labels: ["F#", "Gb"] },
+      { key: "G", labels: ["G"] },
+      { key: "G#", labels: ["G#", "Ab"] },
+      { key: "A", labels: ["A"] },
+      { key: "A#", labels: ["A#", "Bb"] },
+      { key: "B", labels: ["B"] }
+    ];
 
     let missiles = [];
     let particles = [];
@@ -2159,7 +2317,7 @@
       scorePops = [];
       lasers = [];
       frameCount = 0;
-      spawnTimer = 160;
+      spawnTimer = 125;
       shield = 5;
       streak = 0;
       hitsCleared = 0;
@@ -2173,8 +2331,8 @@
 
     function getShipPosition() {
       return {
-        x: canvas.width / 2,
-        y: canvas.height - 34
+        x: GAME_CANVAS_LOGICAL_WIDTH / 2,
+        y: GAME_CANVAS_LOGICAL_HEIGHT - 92
       };
     }
 
@@ -2226,12 +2384,12 @@
     }
 
     function getDifficultyLevel() {
-      // Speed remains the main mobile difficulty, with a gentler quantity ramp
-      // layered back in so long runs do not become sleepy.
+      // Speed still carries the main difficulty, but quantity now climbs again
+      // so strong players cannot settle into an endless low-pressure rhythm.
       const secondsAlive = frameCount / 60;
-      const timePressure = secondsAlive / 19;
-      const clearPressure = hitsCleared / 42;
-      const streakPressure = Math.min(1.9, streak / 42);
+      const timePressure = secondsAlive / 16;
+      const clearPressure = hitsCleared / 34;
+      const streakPressure = Math.min(2.2, streak / 34);
       return timePressure + clearPressure + streakPressure;
     }
 
@@ -2242,18 +2400,19 @@
     function getCurrentMaxMissiles() {
       const difficulty = getDifficultyLevel();
 
-      // Mobile gets a softer quantity ramp than desktop, but no longer stays
-      // capped at three missiles for too long. Wrong-key penalties prevent mashing.
-      return Math.min(6, 2 + Math.floor(difficulty / 2.8));
+      // Controlled quantity ramp: starts calm, but adds more simultaneous targets
+      // as the player proves they can keep up. Wrong-key penalties make mashing
+      // lose points even when several missiles are on screen.
+      return Math.min(7, 2 + Math.floor(difficulty / 2.25));
     }
 
     function getMissileTravelFrames(distance) {
       const difficulty = getDifficultyLevel();
-      const baseTravel = 455 + Math.random() * 58;
-      const distanceNudge = 0.97 + Math.min(0.10, distance / 4200);
+      const baseTravel = 340 + Math.random() * 42;
+      const distanceNudge = 0.96 + Math.min(0.12, distance / 5200);
 
-      // Keep the current mobile speed ramp: fairer than desktop, but still rising.
-      return Math.max(104, (baseTravel * distanceNudge) / (1 + difficulty * 0.085));
+      // Keep the speed ramp from the previous pass: readable early, intense late.
+      return Math.max(68, (baseTravel * distanceNudge) / (1 + difficulty * 0.105));
     }
     function spawnMissile() {
       const target = makeTargetFromKeys(chooseTargetKeys());
@@ -2263,14 +2422,14 @@
       let y;
 
       if (edge === 0) {
-        x = 28 + Math.random() * (canvas.width - 56);
-        y = -22;
+        x = 42 + Math.random() * (GAME_CANVAS_LOGICAL_WIDTH - 84);
+        y = -34;
       } else if (edge === 1) {
-        x = -28;
-        y = 30 + Math.random() * 78;
+        x = -44;
+        y = 48 + Math.random() * (GAME_CANVAS_LOGICAL_HEIGHT * 0.5);
       } else {
-        x = canvas.width + 28;
-        y = 30 + Math.random() * 78;
+        x = GAME_CANVAS_LOGICAL_WIDTH + 44;
+        y = 48 + Math.random() * (GAME_CANVAS_LOGICAL_HEIGHT * 0.5);
       }
 
       const dx = ship.x - x;
@@ -2291,7 +2450,7 @@
         y,
         travelFrames,
         travelAge: 0,
-        radius: 12,
+        radius: 25,
         trail: [],
         age: 0
       });
@@ -2300,20 +2459,21 @@
     function nextSpawnDelay() {
       const difficulty = getDifficultyLevel();
 
-      // Increase mobile spawn pressure slightly from the first hybrid pass.
-      // Mobile stays more forgiving than desktop, but notes release sooner.
-      const delay = 148 / (1 + difficulty * 0.085);
-      return Math.max(48, Math.floor(delay * getWaveMultiplier() + Math.random() * 11));
+      // Increase spawn pressure slightly from the first hybrid pass.
+      // Speed stays the main threat, but notes release a bit quicker.
+      const delay = 108 / (1 + difficulty * 0.095);
+      return Math.max(30, Math.floor(delay * getWaveMultiplier() + Math.random() * 8));
     }
 
     function damageShield() {
       shield -= 1;
       streak = 0;
       activeMissileId = null;
-      feedbackText = "HIT";
-      feedbackTimer = 40;
-      setMessage(`SHIELD ${Math.max(0, shield)}/5`);
-      soundLose();
+      feedbackText = "Shield hit!";
+      feedbackTimer = 55;
+      shakeFrames = 18;
+      spawnTimer = Math.max(spawnTimer, 28);
+      soundShieldHit();
 
       if (shield <= 0) {
         endGame("Shield broken.");
@@ -2334,7 +2494,7 @@
         missile.age += 1;
         missile.travelAge += 1;
         missile.trail.push({ x: missile.x, y: missile.y });
-        if (missile.trail.length > 6) missile.trail.shift();
+        if (missile.trail.length > 11) missile.trail.shift();
 
         const progress = Math.min(1, missile.travelAge / Math.max(1, missile.travelFrames));
         missile.x = missile.startX + (missile.targetX - missile.startX) * progress;
@@ -2342,7 +2502,7 @@
 
         if (progress >= 1) {
           if (activeMissileId === missile.id) activeMissileId = null;
-          createBurst(missile.x, missile.y, "#fb7185", 9);
+          createBurst(missile.x, missile.y, "#fb7185", 12);
           missiles.splice(i, 1);
           damageShield();
         }
@@ -2373,16 +2533,16 @@
       if (feedbackTimer > 0) feedbackTimer -= 1;
     }
 
-    function createBurst(x, y, color = "#ffe08a", count = 12) {
+    function createBurst(x, y, color = "#ffe08a", count = 16) {
       for (let i = 0; i < count; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = 0.55 + Math.random() * 1.85;
+        const speed = 1.1 + Math.random() * 3.2;
         particles.push({
           x,
           y,
           vx: Math.cos(angle) * speed,
           vy: Math.sin(angle) * speed,
-          life: 10 + Math.floor(Math.random() * 11),
+          life: 18 + Math.floor(Math.random() * 16),
           color
         });
       }
@@ -2393,8 +2553,8 @@
         text,
         x,
         y,
-        vy: -0.48,
-        life: 34,
+        vy: -0.9,
+        life: 42,
         color
       });
     }
@@ -2404,11 +2564,11 @@
       const ship = getShipPosition();
       lasers.push({
         fromX: ship.x,
-        fromY: ship.y - 17,
+        fromY: ship.y - 40,
         toX: targetX,
         toY: targetY,
-        life: 7,
-        maxLife: 7
+        life: 9,
+        maxLife: 9
       });
     }
 
@@ -2421,7 +2581,7 @@
 
         ctx.globalAlpha = alpha * 0.42;
         ctx.strokeStyle = "#b7ff9e";
-        ctx.lineWidth = 4.2;
+        ctx.lineWidth = 9;
         ctx.lineCap = "round";
         ctx.beginPath();
         ctx.moveTo(laser.fromX, laser.fromY);
@@ -2430,7 +2590,7 @@
 
         ctx.globalAlpha = alpha;
         ctx.strokeStyle = "#dff3ff";
-        ctx.lineWidth = 1.4;
+        ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.moveTo(laser.fromX, laser.fromY);
         ctx.lineTo(laser.toX, laser.toY);
@@ -2438,57 +2598,57 @@
 
         ctx.fillStyle = "#ffffff";
         ctx.beginPath();
-        ctx.arc(laser.toX, laser.toY, 2.3 + alpha * 3, 0, Math.PI * 2);
+        ctx.arc(laser.toX, laser.toY, 5 + alpha * 6, 0, Math.PI * 2);
         ctx.fill();
       });
       ctx.restore();
     }
 
     function drawBackground() {
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CANVAS_LOGICAL_HEIGHT);
       gradient.addColorStop(0, "#0b1420");
       gradient.addColorStop(1, "#172a46");
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
 
       ctx.fillStyle = "rgba(255,255,255,0.2)";
-      for (let i = 0; i < 28; i++) {
-        const x = (i * 83 + frameCount * 0.08) % canvas.width;
-        const y = (i * 47) % canvas.height;
+      for (let i = 0; i < 58; i++) {
+        const x = (i * 137 + frameCount * 0.12) % GAME_CANVAS_LOGICAL_WIDTH;
+        const y = (i * 71) % GAME_CANVAS_LOGICAL_HEIGHT;
         ctx.fillRect(x, y, 2, 2);
       }
     }
 
     function drawShip() {
       const ship = getShipPosition();
-      const pulse = Math.sin(frameCount * 0.06) * 1;
+      const pulse = Math.sin(frameCount * 0.05) * 3;
 
       ctx.save();
       ctx.translate(ship.x, ship.y + pulse);
 
       ctx.fillStyle = "#2563eb";
       ctx.beginPath();
-      ctx.moveTo(0, -18);
-      ctx.lineTo(-24, 15);
-      ctx.lineTo(24, 15);
+      ctx.moveTo(0, -42);
+      ctx.lineTo(-55, 38);
+      ctx.lineTo(55, 38);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle = "#93c5fd";
       ctx.beginPath();
-      ctx.arc(0, -3, 7.5, 0, Math.PI * 2);
+      ctx.arc(0, -5, 18, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.strokeStyle = `rgba(183, 255, 158, ${0.25 + shield * 0.08})`;
-      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = `rgba(183, 255, 158, ${0.28 + shield * 0.08})`;
+      ctx.lineWidth = 5;
       ctx.beginPath();
-      ctx.arc(0, 0, 34, Math.PI * 1.08, Math.PI * 1.92);
+      ctx.arc(0, 0, 72, Math.PI * 1.08, Math.PI * 1.92);
       ctx.stroke();
 
       for (let i = 0; i < 5; i++) {
         ctx.fillStyle = i < shield ? "#b7ff9e" : "rgba(255,255,255,0.18)";
         ctx.beginPath();
-        ctx.arc(-18 + i * 9, 22, 2.8, 0, Math.PI * 2);
+        ctx.arc(-44 + i * 22, 58, 7, 0, Math.PI * 2);
         ctx.fill();
       }
 
@@ -2498,9 +2658,9 @@
     function getMissileBoxMetrics(missile) {
       const keyCount = missile.requiredKeys.length;
       return {
-        width: Math.max(36, Math.min(82, missile.label.length * 7.2 + 14)),
-        height: keyCount > 1 ? 30 : 24,
-        font: keyCount > 2 ? "bold 9px Arial, sans-serif" : "bold 12px Arial, sans-serif"
+        width: Math.max(68, Math.min(150, missile.label.length * 18 + 26)),
+        height: keyCount > 1 ? 56 : 44,
+        font: keyCount > 2 ? "bold 19px Arial, sans-serif" : "bold 23px Arial, sans-serif"
       };
     }
 
@@ -2508,13 +2668,13 @@
       if (missile.requiredKeys.length <= 1) return;
 
       const total = missile.requiredKeys.length;
-      const startX = x - ((total - 1) * 7) / 2;
-      const dotY = y + boxHeight / 2 - 5;
+      const startX = x - ((total - 1) * 14) / 2;
+      const dotY = y + boxHeight / 2 - 10;
 
       for (let i = 0; i < total; i++) {
         ctx.fillStyle = i < missile.hitKeys.length ? "#ffe08a" : "rgba(255,255,255,0.38)";
         ctx.beginPath();
-        ctx.arc(startX + i * 7, dotY, 2.1, 0, Math.PI * 2);
+        ctx.arc(startX + i * 14, dotY, 4, 0, Math.PI * 2);
         ctx.fill();
       }
     }
@@ -2526,7 +2686,7 @@
       missiles.forEach(missile => {
         if (missile.trail.length > 1) {
           ctx.strokeStyle = "rgba(251, 113, 133, 0.35)";
-          ctx.lineWidth = 2.1;
+          ctx.lineWidth = 4;
           ctx.beginPath();
           missile.trail.forEach((point, index) => {
             if (index === 0) ctx.moveTo(point.x, point.y);
@@ -2536,34 +2696,34 @@
         }
 
         const metrics = getMissileBoxMetrics(missile);
-        const wobble = Math.sin((frameCount + missile.age) * 0.1) * 1;
+        const wobble = Math.sin((frameCount + missile.age) * 0.08) * 2;
         const drawY = missile.y + wobble;
         const isActive = activeMissileId === missile.id;
         const remainingFrames = (missile.travelFrames || 0) - (missile.travelAge || 0);
-        const isDanger = remainingFrames < 75;
+        const isDanger = remainingFrames < 85;
 
         ctx.fillStyle = isActive ? "#f97316" : (isDanger ? "#ef4444" : "#fb7185");
         ctx.beginPath();
-        ctx.roundRect(missile.x - metrics.width / 2, drawY - metrics.height / 2, metrics.width, metrics.height, 8);
+        ctx.roundRect(missile.x - metrics.width / 2, drawY - metrics.height / 2, metrics.width, metrics.height, 14);
         ctx.fill();
 
         ctx.strokeStyle = isActive ? "#ffe08a" : (isDanger ? "#fecaca" : "rgba(255,255,255,0.65)");
-        ctx.lineWidth = isActive ? 2.2 : 1.5;
+        ctx.lineWidth = isActive ? 4 : 2;
         ctx.stroke();
 
         ctx.fillStyle = "white";
         ctx.font = metrics.font;
-        ctx.fillText(missile.label, missile.x, drawY - (missile.requiredKeys.length > 1 ? 3 : 0));
+        ctx.fillText(missile.label, missile.x, drawY - (missile.requiredKeys.length > 1 ? 6 : 0));
         drawMissileProgress(missile, missile.x, drawY, metrics.height);
       });
     }
 
     function drawParticles() {
       particles.forEach(p => {
-        ctx.globalAlpha = Math.max(0, p.life / 24);
+        ctx.globalAlpha = Math.max(0, p.life / 32);
         ctx.fillStyle = p.color;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
         ctx.fill();
         ctx.globalAlpha = 1;
       });
@@ -2574,9 +2734,9 @@
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       scorePops.forEach(pop => {
-        ctx.globalAlpha = Math.max(0, Math.min(1, pop.life / 14));
+        ctx.globalAlpha = Math.max(0, Math.min(1, pop.life / 18));
         ctx.fillStyle = pop.color;
-        ctx.font = "bold 11px Arial, sans-serif";
+        ctx.font = "bold 20px Arial, sans-serif";
         ctx.fillText(pop.text, pop.x, pop.y);
       });
       ctx.restore();
@@ -2586,15 +2746,15 @@
       ctx.save();
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
-      ctx.font = "bold 8.5px Arial, sans-serif";
+      ctx.font = "bold 15px Arial, sans-serif";
       ctx.fillStyle = streak >= 10 ? "#ffe08a" : "rgba(255,255,255,0.84)";
-      ctx.fillText(`STREAK ${streak}`, 7, 6);
+      ctx.fillText(`STREAK ${streak}`, 14, 12);
 
-      const urgent = missiles.some(missile => ((missile.travelFrames || 0) - (missile.travelAge || 0)) < 65);
+      const urgent = missiles.some(missile => ((missile.travelFrames || 0) - (missile.travelAge || 0)) < 75);
       if (urgent) {
         ctx.textAlign = "right";
         ctx.fillStyle = "#fecaca";
-        ctx.fillText("DANGER", canvas.width - 7, 6);
+        ctx.fillText("DANGER", GAME_CANVAS_LOGICAL_WIDTH - 14, 12);
       }
       ctx.restore();
     }
@@ -2602,20 +2762,20 @@
     function drawFeedback() {
       if (feedbackTimer <= 0 || !feedbackText) return;
       ctx.save();
-      ctx.globalAlpha = Math.min(1, feedbackTimer / 12);
-      ctx.fillStyle = feedbackText === "MISS" || feedbackText === "WRONG" ? "#fecaca" : "#ffe08a";
-      ctx.font = "bold 18px Arial, sans-serif";
+      ctx.globalAlpha = Math.min(1, feedbackTimer / 15);
+      ctx.fillStyle = feedbackText === "Miss!" || feedbackText === "Wrong key!" ? "#fecaca" : "#ffe08a";
+      ctx.font = "bold 28px Arial, sans-serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(feedbackText, canvas.width / 2, canvas.height * 0.52);
+      ctx.fillText(feedbackText, GAME_CANVAS_LOGICAL_WIDTH / 2, GAME_CANVAS_LOGICAL_HEIGHT * 0.55);
       ctx.restore();
     }
 
     function gameDraw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
       ctx.save();
       if (shakeFrames > 0) {
-        const shake = Math.min(4, 1 + shakeFrames * 0.16);
+        const shake = Math.min(8, 2 + shakeFrames * 0.26);
         ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
       }
       drawBackground();
@@ -2658,7 +2818,7 @@
     }
 
     function soundPartialHit() {
-      beep(520, 0.045, "triangle", 0.03);
+      beep(520, 0.045, "triangle", 0.035);
     }
 
     function gamePianoInput(note) {
@@ -2670,11 +2830,10 @@
         if (hadActive) activeMissileId = null;
         addScore(-WRONG_KEY_PENALTY);
         feedbackText = `-${WRONG_KEY_PENALTY}`;
-        feedbackTimer = 24;
-        setMessage(`MISS -${WRONG_KEY_PENALTY}`);
+        feedbackTimer = 28;
         const ship = getShipPosition();
-        addScorePop(`-${WRONG_KEY_PENALTY}`, ship.x, ship.y - 30, "#fecaca");
-        createBurst(ship.x, ship.y - 20, "#fecaca", 5);
+        addScorePop(`-${WRONG_KEY_PENALTY}`, ship.x, ship.y - 54, "#fecaca");
+        createBurst(ship.x, ship.y - 34, "#fecaca", 7);
         soundWrong();
         return;
       }
@@ -2687,26 +2846,32 @@
         if (activeMissileId === missile.id) activeMissileId = null;
         streak += 1;
         hitsCleared += 1;
-      const points = BASE_HIT_POINTS;
+        const points = BASE_HIT_POINTS;
         addScore(points);
         feedbackText = `+${points}`;
-        feedbackTimer = 26;
-        setMessage(`BLASTED ${missile.label}`);
+        feedbackTimer = 30;
         createLaser(missile.x, missile.y);
-        createBurst(missile.x, missile.y, "#ffe08a", 13 + missile.requiredKeys.length * 2);
+        addScorePop(`+${points}`, missile.x, missile.y - 26, "#ffe08a");
+        if (streak > 0 && streak % 10 === 0) {
+          addScorePop(`${streak} STREAK`, GAME_CANVAS_LOGICAL_WIDTH / 2, 72, "#b7ff9e");
+        }
+        createBurst(missile.x, missile.y, "#ffe08a", 18 + missile.requiredKeys.length * 3);
         soundCorrect();
       } else {
         activeMissileId = missile.id;
         feedbackText = `${missile.hitKeys.length}/${missile.requiredKeys.length}`;
-        feedbackTimer = 16;
-        setMessage(`TARGET ${missile.hitKeys.length}/${missile.requiredKeys.length}`);
-        createBurst(missile.x, missile.y, "#93c5fd", 4);
+        feedbackTimer = 18;
+        createBurst(missile.x, missile.y, "#93c5fd", 5);
         soundPartialHit();
       }
     }
 
     function gameInput(action) {
-      // Only START/MENU is used by the shell in this step. Piano input uses gamePianoInput().
+      // Emulator-style actions are not used in this game. Piano input uses gamePianoInput().
+    }
+
+    function gamePointer(point) {
+      // Canvas pointer input is intentionally inactive; the piano keys are the controls.
     }
 
     function gameStop() {
@@ -2720,21 +2885,40 @@
       activeMissileId = null;
     }
 
-    const resizeObserver = new ResizeObserver(() => {
+    let resizeObserver = null;
+
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      });
+      resizeObserver.observe(appFrame);
+    }
+
+    window.addEventListener("resize", () => {
       scaleAppToFrame();
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
-      if (!running) gameDraw();
+      if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
     });
-
-    resizeObserver.observe(appFrame);
 
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
       }, 250);
     });
 
@@ -2754,6 +2938,7 @@
       stopPianoNote,
       handlePianoKey,
       getAudio,
+      getGameCanvasSize,
       savePlayers,
       loadPlayers,
       openMenu: openShellMenu,
@@ -2778,6 +2963,7 @@
       systemButtons: ["start"],
       labels: { start: "MENU" }
     });
+    resetGameCanvasTransform();
     gameInit();
     gameDraw();
   </script>
