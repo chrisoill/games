@@ -344,16 +344,16 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: 1fr auto auto;
+      grid-template-columns: auto auto 1fr auto;
       grid-template-rows: 1fr 1fr;
-      column-gap: 12px;
+      column-gap: 8px;
       align-items: center;
-      padding: 5px 14px;
+      padding: 5px 10px;
       pointer-events: none;
     }
 
     #lcdMessage {
-      grid-column: 1 / 4;
+      grid-column: 1 / 5;
       font-size: 14px;
       font-weight: bold;
       white-space: nowrap;
@@ -362,9 +362,10 @@
     }
 
     #lcdPlayer,
+    #lcdLives,
     #lcdScore,
     #lcdBest {
-      font-size: 12px;
+      font-size: 11px;
       white-space: nowrap;
     }
 
@@ -835,6 +836,7 @@
         <div id="lcd">
           <div id="lcdMessage">READY</div>
           <div id="lcdPlayer">HEALTH: <span id="healthValue">6/6</span></div>
+          <div id="lcdLives">LIVES: <span id="livesValue">0</span></div>
           <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
@@ -991,6 +993,7 @@
     const lcdMessage = document.getElementById("lcdMessage");
     const playerNameEl = { textContent: "" };
     const healthValueEl = document.getElementById("healthValue");
+    const livesValueEl = document.getElementById("livesValue");
     const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
@@ -2237,12 +2240,13 @@
 
   function psCompactStatsLine() {
     const art = ps.articulation ? ps.articulation.symbol : "-";
-    return `:|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
+    return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
   }
 
   function psUpdateHud() {
     if (!ps) return;
     if (healthValueEl) healthValueEl.textContent = `${ps.hp}/${ps.maxHp}`;
+    if (livesValueEl) livesValueEl.textContent = String(ps.repeats);
     if (ps.messageTimer > 0) {
       questionBox.textContent = ps.message;
     } else {
