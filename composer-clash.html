@@ -1,9 +1,10 @@
 <!DOCTYPE html>
+<!-- Composer Clash mobile overhaul v1.1: desktop 720x520 world, corrected proportional card overlay. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Composer Clash Mobile</title>
+  <title>Composer Clash Mobile — Desktop World Overhaul</title>
 
   <style>
     * {
@@ -18,6 +19,8 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
@@ -41,7 +44,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -241,21 +245,32 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    #screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      pointer-events: none;
     }
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
       background: #f7fbff;
       image-rendering: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #gameOverBox {
@@ -318,7 +333,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -361,9 +376,9 @@
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
+      height: 340.333px;
       background: linear-gradient(180deg, #303030, #181818);
       touch-action: auto;
       user-select: none;
@@ -457,10 +472,10 @@
     #buttonA { left: 92px; top: 46px; }
     #buttonB { left: 46px; top: 92px; }
 
-    /* Composer Clash mobile layout: one joystick plus the main battle buttons. */
-    #buttonY {
-      display: none;
-    }
+    /* Composer Clash: preserve every meaningful mobile input at full size.
+       D-pad and face buttons occupy the first row, the redundant-but-useful
+       joystick is centered below, and CARD / MENU remain at the bottom. */
+    #buttonY { display: none !important; }
 
     #buttonA,
     #buttonB,
@@ -1042,6 +1057,210 @@
       touch-action: none;
     }
 
+
+
+    /* =========================
+       COMPOSER CLASH STANDARD MOBILE OVERRIDES
+       ========================= */
+
+    #gameScreen,
+    #screen,
+    #gameCanvas,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
+    }
+
+    #controls {
+      padding: 0;
+      overflow: hidden;
+      touch-action: pan-y;
+    }
+
+    #dpad {
+      left: 18px;
+      top: 9px;
+      width: 150px;
+      height: 150px;
+    }
+
+    #faceButtons {
+      right: 18px;
+      top: 9px;
+      width: 150px;
+      height: 150px;
+    }
+
+    #leftJoystickPad {
+      left: 139px;
+      top: 166px;
+    }
+
+    #rightJoystickPad {
+      display: none !important;
+    }
+
+    #systemButtons {
+      left: 50%;
+      top: 300px;
+      width: 164px;
+      height: 32px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    #selectButton,
+    #startButton {
+      width: 76px;
+    }
+
+
+
+    /* Composer Clash mobile v1.1
+       Keep the desktop collectible-card overlay at its original proportions.
+       The entire 360 x 480 desktop overlay is scaled by the same 390 / 720
+       factor as the 720 x 520 desktop game world. */
+    #cardDetailBox {
+      left: 50%;
+      right: auto;
+      top: 50%;
+      width: 360px;
+      height: auto;
+      min-height: 480px;
+      max-height: none;
+      padding: 12px;
+      overflow: visible;
+      transform: translate(-50%, -50%) scale(0.5416666667);
+      transform-origin: center center;
+      background:
+        linear-gradient(45deg, rgba(0,0,0,0.035) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.035) 75%),
+        linear-gradient(45deg, rgba(0,0,0,0.035) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.035) 75%),
+        #ead38c;
+      background-position: 0 0, 4px 4px, 0 0;
+      background-size: 8px 8px, 8px 8px, auto;
+      border: 5px solid #111827;
+      outline: 4px solid #facc15;
+      border-radius: 5px;
+      box-shadow: 9px 9px 0 rgba(0,0,0,0.78), 0 26px 55px rgba(0,0,0,0.55);
+      color: #111827;
+      font-family: "Courier New", monospace;
+      image-rendering: pixelated;
+      text-align: center;
+    }
+
+    #cardDetailTitle {
+      min-height: 54px;
+      margin: 0 0 8px;
+      padding: 8px 10px;
+      background: #111827;
+      color: #f8fafc;
+      border: 3px solid #f8fafc;
+      border-radius: 0;
+      font-family: "Courier New", monospace;
+      font-size: 21px;
+      line-height: 1.05;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      box-shadow: 3px 3px 0 #000;
+    }
+
+    #cardDetailMeta {
+      display: block;
+      margin: 0 0 10px;
+      padding: 0;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      color: #111827;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: normal;
+    }
+
+    #cardDetailMeta::before {
+      height: 150px;
+      margin: 0 0 9px;
+      background-size: 12px 12px, 12px 12px, auto, auto;
+      border: 4px solid #111827;
+      box-shadow: inset 0 0 0 3px rgba(255,255,255,0.55), 4px 4px 0 #000;
+    }
+
+    #cardDetailBox[data-card-type="piece"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 42%, #ef7777 0 16px, transparent 17px),
+        linear-gradient(135deg, #ffc9c9, #fff1f1 52%, #f28b8b);
+      background-size: 12px 12px, 12px 12px, auto, auto;
+    }
+
+    #cardDetailBox[data-card-type="energy"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 45%, #7bd878 0 18px, transparent 19px),
+        linear-gradient(135deg, #c8f7c5, #ecffea 56%, #7bd878);
+      background-size: 12px 12px, 12px 12px, auto, auto;
+    }
+
+    #cardDetailBox[data-card-type="item"] #cardDetailMeta::before {
+      background:
+        linear-gradient(90deg, rgba(17,24,39,0.22) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(17,24,39,0.18) 1px, transparent 1px),
+        radial-gradient(circle at 50% 42%, #80aef2 0 16px, transparent 17px),
+        linear-gradient(135deg, #c7ddff, #edf5ff 52%, #80aef2);
+      background-size: 12px 12px, 12px 12px, auto, auto;
+    }
+
+    #cardDetailRules {
+      min-height: 100px;
+      max-height: none;
+      overflow: visible;
+      margin: 0 0 12px;
+      padding: 10px;
+      background: #f8fafc;
+      color: #111827;
+      border: 3px solid #111827;
+      border-radius: 0;
+      box-shadow: 3px 3px 0 #000;
+      font-family: "Courier New", monospace;
+      font-size: 14px;
+      line-height: 1.25;
+    }
+
+    #cardDetailActions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    #cardDetailActions button {
+      min-height: 0;
+      padding: 9px 13px;
+      border-radius: 0;
+      border: 3px solid #111827;
+      box-shadow: 3px 3px 0 #000;
+      font-family: "Courier New", monospace;
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    #cardDetailActions button.is-selected,
+    #cardDetailActions button:focus-visible {
+      background: #fff7d6 !important;
+      outline: 4px solid #ffe08a;
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 #000;
+    }
+
 </style>
 </head>
 
@@ -1077,7 +1296,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1 id="gameOverTitle">Defeat!</h1>
@@ -1180,8 +1399,50 @@
     const selectedPlayerText = document.getElementById("selectedPlayerText");
     const difficultySelect = document.getElementById("difficultySelect");
 
-    const canvas = document.getElementById("gameCanvas");
+    const displayCanvas = document.getElementById("gameCanvas");
+    const displayCtx = displayCanvas.getContext("2d");
+
+    // Composer Clash draws into the exact desktop 720 x 520 world.
+    // A separate high-resolution display canvas presents that world on mobile,
+    // so desktop coordinates and proportions remain untouched.
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+    const MAX_DISPLAY_PIXEL_RATIO = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = GAME_CANVAS_LOGICAL_WIDTH;
+    canvas.height = GAME_CANVAS_LOGICAL_HEIGHT;
     const ctx = canvas.getContext("2d");
+
+    function configureDisplayCanvasResolution() {
+      displayCanvas.style.width = `${GAME_CANVAS_DISPLAY_WIDTH}px`;
+      displayCanvas.style.height = `${GAME_CANVAS_DISPLAY_HEIGHT}px`;
+
+      const rect = displayCanvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.min(MAX_DISPLAY_PIXEL_RATIO, Math.max(2, window.devicePixelRatio || 1));
+
+      const targetWidth = Math.max(1, Math.round(cssWidth * dpr));
+      const targetHeight = Math.max(1, Math.round(cssHeight * dpr));
+      if (displayCanvas.width !== targetWidth || displayCanvas.height !== targetHeight) {
+        displayCanvas.width = targetWidth;
+        displayCanvas.height = targetHeight;
+      }
+      displayCtx.imageSmoothingEnabled = true;
+    }
+
+    function presentGameFrame() {
+      configureDisplayCanvasResolution();
+      displayCtx.setTransform(1, 0, 0, 1, 0, 0);
+      displayCtx.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
+      displayCtx.imageSmoothingEnabled = true;
+      displayCtx.drawImage(canvas, 0, 0, displayCanvas.width, displayCanvas.height);
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
     const scoreEl = document.getElementById("score");
@@ -1227,6 +1488,8 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
 
@@ -1386,7 +1649,7 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        scheduleGameLoop();
       }
 
       shellMenuWasRunning = false;
@@ -1421,6 +1684,7 @@
       const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      configureDisplayCanvasResolution();
     }
 
     function setMessage(text) {
@@ -1852,15 +2116,43 @@
 
     document.querySelectorAll("button[data-action]").forEach(bindButton);
 
-    canvas.addEventListener("pointerdown", event => {
+    let canvasTap = null;
+
+    displayCanvas.addEventListener("pointerdown", event => {
       if (!running || shellMenu.classList.contains("open")) return;
-      event.preventDefault();
-      const rect = canvas.getBoundingClientRect();
+      canvasTap = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        moved: false
+      };
+    });
+
+    displayCanvas.addEventListener("pointermove", event => {
+      if (!canvasTap || canvasTap.pointerId !== event.pointerId) return;
+      const dx = event.clientX - canvasTap.startX;
+      const dy = event.clientY - canvasTap.startY;
+      if (Math.hypot(dx, dy) > 9) canvasTap.moved = true;
+    });
+
+    displayCanvas.addEventListener("pointerup", event => {
+      if (!canvasTap || canvasTap.pointerId !== event.pointerId) return;
+      const tap = canvasTap;
+      canvasTap = null;
+      if (tap.moved || !running || shellMenu.classList.contains("open")) return;
+
+      const rect = displayCanvas.getBoundingClientRect();
       gamePointer({
-        x: (event.clientX - rect.left) * (canvas.width / rect.width),
-        y: (event.clientY - rect.top) * (canvas.height / rect.height),
+        x: (event.clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (event.clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height),
         originalEvent: event
       });
+      gameDraw();
+      presentGameFrame();
+    });
+
+    displayCanvas.addEventListener("pointercancel", () => {
+      canvasTap = null;
     });
 
     let leftStickLastInput = 0;
@@ -1897,9 +2189,11 @@
       gameOverBox.style.display = "none";
 
       setMessage("");
+      configureDisplayCanvasResolution();
       gameInit();
-
-      loop();
+      gameDraw();
+      presentGameFrame();
+      scheduleGameLoop();
     }
 
     function returnToCharacterSelect() {
@@ -1931,15 +2225,34 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
+      if (!running) return;
+      if (loopId) cancelAnimationFrame(loopId);
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
       if (!running) return;
 
-      gameUpdate();
-      gameDraw();
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
 
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      gameDraw();
+      presentGameFrame();
       loopId = requestAnimationFrame(loop);
     }
 
@@ -2033,1455 +2346,1455 @@
       });
     }
 
-    /* =========================
-       GAME MODULE — Composer Clash Expansion Foundation
-       ========================= */
+  /* =========================
+     GAME MODULE — Composer Clash Expansion Foundation
+     ========================= */
 
-    const COMPOSERS = [
-      {
-        "name": "Bach",
-        "style": "Counterpoint",
-        "color": "#2563eb",
-        "focus": "synergy",
-        "pieces": [
-          "Minuet in G",
-          "Prelude in C",
-          "Invention No. 1",
-          "Little Prelude",
-          "Sinfonia No. 15",
-          "French Suite",
-          "English Suite",
-          "Partita No. 1",
-          "Italian Concerto",
-          "Chromatic Fantasy",
-          "Toccata in E minor",
-          "Goldberg Aria",
-          "Well-Tempered Clavier",
-          "Goldberg Variations",
-          "Art of Fugue",
-          "Bach-Busoni Chaconne"
-        ],
-        "items": [
-          {
-            "name": "Fugue Subject",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Counterpoint",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Leipzig Cantor",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Pedal Point",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Church Organ",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Well-Tempered Study",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Kapellmeister",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Cantata Workshop",
-            "cost": 3,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Family Ensemble",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Final Cadence",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Mozart",
-        "style": "Efficiency",
-        "color": "#7c3aed",
-        "focus": "speed",
-        "pieces": [
-          "Minuet in F",
-          "Sonata in C",
-          "K. 545 Allegro",
-          "Rondo alla Turca",
-          "Fantasia in D minor",
-          "Sonata in A minor",
-          "Sonata in F",
-          "Sonata in B-flat",
-          "Variations on Ah vous dirai-je",
-          "Adagio in B minor",
-          "Piano Concerto No. 20",
-          "Piano Concerto No. 21",
-          "Piano Concerto No. 23",
-          "Piano Concerto No. 24",
-          "Piano Concerto No. 27",
-          "D minor Fantasy"
-        ],
-        "items": [
-          {
-            "name": "Child Prodigy",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Clear Phrase",
-            "cost": 1,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Opera Spark",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Royal Lesson",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Improvisation",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Vienna Stage",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Comic Timing",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Fast Passagework",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Elegant Cadence",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Finale Burst",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Beethoven",
-        "style": "Power",
-        "color": "#dc2626",
-        "focus": "power",
-        "pieces": [
-          "Ecossaise",
-          "Für Elise",
-          "Sonatina in G",
-          "Moonlight Sonata",
-          "Pathétique Sonata",
-          "Tempest Sonata",
-          "Waldstein Sonata",
-          "Appassionata",
-          "Les Adieux",
-          "Diabelli Variations",
-          "Rage Over a Lost Penny",
-          "Eroica Variations",
-          "Piano Concerto No. 3",
-          "Emperor Concerto",
-          "Hammerklavier",
-          "Late Sonata Op. 111"
-        ],
-        "items": [
-          {
-            "name": "Hearing Loss",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Fate Motif",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Vienna Premiere",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Immortal Beloved",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Stormy Temper",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Sketchbook",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Heroic Resolve",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Cadenza",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Patron Support",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Thunderous Finale",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Schubert",
-        "style": "Lyric Endurance",
-        "color": "#059669",
-        "focus": "endurance",
-        "pieces": [
-          "German Dance",
-          "Moment Musical",
-          "Impromptu in G-flat",
-          "Impromptu in A-flat",
-          "Impromptu in E-flat",
-          "Impromptu in B-flat",
-          "Drei Klavierstücke",
-          "Sonata in A minor",
-          "Sonata in A major",
-          "Sonata in B-flat",
-          "Wanderer Fantasy",
-          "Military March",
-          "Lebensstürme",
-          "Fantasy in F minor",
-          "Sonata in C minor",
-          "Great C Major Sonata"
-        ],
-        "items": [
-          {
-            "name": "Lied Melody",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Song Circle",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Wandering Theme",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Vienna Salon",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Long Line",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Warm Cadence",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Dramatic Turn",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Four-Hand Friends",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Hidden Strength",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Wanderer Strike",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Chopin",
-        "style": "Precision",
-        "color": "#db2777",
-        "focus": "precision",
-        "pieces": [
-          "Prelude in E minor",
-          "Waltz in A minor",
-          "Minute Waltz",
-          "Nocturne in E-flat",
-          "Raindrop Prelude",
-          "Mazurka in A minor",
-          "Polonaise in A major",
-          "Revolutionary Étude",
-          "Black Key Étude",
-          "Fantaisie-Impromptu",
-          "Scherzo No. 2",
-          "Ballade No. 1",
-          "Heroic Polonaise",
-          "Barcarolle",
-          "Sonata No. 2",
-          "Ballade No. 4"
-        ],
-        "items": [
-          {
-            "name": "Rubato",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Salon Poise",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Bel Canto Line",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Paris Lesson",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Polish Dance",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Étude Focus",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Sharp Turn",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Nocturne Calm",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Brilliant Passage",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Final Flourish",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Robert Schumann",
-        "style": "Character Pieces",
-        "color": "#9333ea",
-        "focus": "swing",
-        "pieces": [
-          "Melody",
-          "Träumerei",
-          "The Wild Horseman",
-          "Arabeske",
-          "Papillons",
-          "Kinderszenen",
-          "Album for the Young",
-          "Carnaval",
-          "Kreisleriana",
-          "Fantasiestücke",
-          "Novelette",
-          "Humoreske",
-          "Symphonic Études",
-          "Fantasy in C",
-          "Toccata",
-          "Piano Concerto"
-        ],
-        "items": [
-          {
-            "name": "Florestan",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Eusebius",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Carnival Mask",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Character Sketch",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Clara Theme",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Dichterliebe",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Davidsbund",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Sudden Mood",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "March Attack",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Grand Finale",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Clara Schumann",
-        "style": "Romantic Command",
-        "color": "#0891b2",
-        "focus": "precision",
-        "pieces": [
-          "Romance",
-          "Scherzo No. 1",
-          "Scherzo No. 2",
-          "Soirées Musicales",
-          "Variations",
-          "Prelude and Fugue",
-          "Nocturne",
-          "Mazurka",
-          "Piano Trio",
-          "Romances Op. 21",
-          "Piano Concerto",
-          "Quatre pièces fugitives",
-          "Polonaise",
-          "Caprice",
-          "Concert Variations",
-          "Impromptu"
-        ],
-        "items": [
-          {
-            "name": "Concert Pianist",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Romantic Line",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Teaching Studio",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Family Strength",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Touring Star",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Album Leaf",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Supportive Voice",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Resilience",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Brilliant Touch",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Encore Applause",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Liszt",
-        "style": "Virtuoso Finishers",
-        "color": "#ea580c",
-        "focus": "finish",
-        "pieces": [
-          "Consolation No. 3",
-          "Liebestraum",
-          "Un Sospiro",
-          "La Campanella",
-          "Hungarian Rhapsody No. 2",
-          "Mephisto Waltz",
-          "Funérailles",
-          "B minor Sonata",
-          "Transcendental Étude",
-          "Mazeppa",
-          "Feux follets",
-          "Totentanz",
-          "Dante Sonata",
-          "Spanish Rhapsody",
-          "Don Juan Fantasy",
-          "Réminiscences de Norma"
-        ],
-        "items": [
-          {
-            "name": "Virtuoso Tour",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Piano Thunder",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Transcendental Technique",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Showpiece Cadenza",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Salon Fame",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Hungarian Fire",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Sight-Reading Stunt",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Octave Blast",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Late Reflection",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Virtuoso Finale",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Brahms",
-        "style": "Durable Midrange",
-        "color": "#4b5563",
-        "focus": "endurance",
-        "pieces": [
-          "Waltz in A-flat",
-          "Intermezzo in A",
-          "Intermezzo in E-flat",
-          "Rhapsody in G minor",
-          "Ballade",
-          "Klavierstücke",
-          "Paganini Variations",
-          "Handel Variations",
-          "Rhapsody in B minor",
-          "Capriccio in D minor",
-          "Intermezzo in B-flat",
-          "Sonata No. 3",
-          "Piano Quartet",
-          "Piano Concerto No. 1",
-          "Piano Concerto No. 2",
-          "Variations on a Theme by Schumann"
-        ],
-        "items": [
-          {
-            "name": "Warm Intermezzo",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Thick Texture",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Variation Craft",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Autumn Color",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Rhythmic Weight",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Chorale Strength",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Inner Voice",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Deep Bass",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Quiet Resolve",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Grand Sonata",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Debussy",
-        "style": "Color & Evasion",
-        "color": "#0ea5e9",
-        "focus": "evasion",
-        "pieces": [
-          "The Little Shepherd",
-          "Arabesque No. 1",
-          "Clair de lune",
-          "Doctor Gradus",
-          "Golliwog's Cakewalk",
-          "La fille aux cheveux de lin",
-          "La cathédrale engloutie",
-          "Jardins sous la pluie",
-          "Reflets dans l'eau",
-          "Poissons d'or",
-          "L'isle joyeuse",
-          "Feux d'artifice",
-          "Ondine",
-          "Estampes",
-          "Pour le piano",
-          "Études"
-        ],
-        "items": [
-          {
-            "name": "Whole-Tone Mist",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Soft Pedal",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Color Wash",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Impressionist Blur",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Bell Sonority",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Paris Exposition",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Water Reflection",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Layered Color",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Fireworks",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Sunken Cathedral",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Ravel",
-        "style": "Technical Timing",
-        "color": "#14b8a6",
-        "focus": "precision",
-        "pieces": [
-          "Pavane",
-          "Sonatine",
-          "Jeux d'eau",
-          "Menuet antique",
-          "Ondine",
-          "Le gibet",
-          "Scarbo",
-          "Alborada",
-          "Oiseaux tristes",
-          "Une barque sur l'océan",
-          "La vallée des cloches",
-          "Miroirs",
-          "Gaspard de la nuit",
-          "Valses nobles",
-          "Piano Concerto in G",
-          "Left Hand Concerto"
-        ],
-        "items": [
-          {
-            "name": "Clockwork Detail",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Orchestral Color",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Precise Pedal",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Water Mechanism",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Spanish Spark",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Elegant Distance",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Left-Hand Strength",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Brilliant Surface",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Scarbo Trick",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Gaspard Strike",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Joplin",
-        "style": "Rhythm Tempo",
-        "color": "#ca8a04",
-        "focus": "speed",
-        "pieces": [
-          "Maple Leaf Rag",
-          "The Entertainer",
-          "Elite Syncopations",
-          "Solace",
-          "Bethena",
-          "Pine Apple Rag",
-          "Easy Winners",
-          "Magnetic Rag",
-          "The Chrysanthemum",
-          "Fig Leaf Rag",
-          "Gladiolus Rag",
-          "Peacherine Rag",
-          "Sugar Cane",
-          "Euphonic Sounds",
-          "Heliotrope Bouquet",
-          "Treemonisha Rag"
-        ],
-        "items": [
-          {
-            "name": "Syncopation",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Ragtime Bounce",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Maple Leaf Club",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Left-Hand Stride",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Piano Roll",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 2,
-            "text": "Restore 2 HP."
-          },
-          {
-            "name": "Dance Hall",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Sharp Syncopation",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Missouri Rhythm",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Cakewalk Kick",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Ragtime Finale",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Florence Price",
-        "style": "Symphonic Voice",
-        "color": "#16a34a",
-        "focus": "synergy",
-        "pieces": [
-          "Ticklin' Toes",
-          "Nimble Feet",
-          "Clouds",
-          "The Goblin",
-          "Silk Hat and Walking Cane",
-          "Dances in the Canebrakes",
-          "Fantasie Nègre No. 1",
-          "Fantasie Nègre No. 2",
-          "Fantasie Nègre No. 3",
-          "Piano Sonata",
-          "Thumbnail Sketches",
-          "Juba Dance",
-          "Cotton Dance",
-          "Negro Folksongs in Counterpoint",
-          "Piano Concerto",
-          "Symphony Themes"
-        ],
-        "items": [
-          {
-            "name": "Juba Rhythm",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Chicago Support",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Canebrake Dance",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Spiritual Melody",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Teaching Studio",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Orchestral Voice",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Prize Winner",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Quiet Strength",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Dance Accent",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Concert Finale",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Amy Beach",
-        "style": "Lyric Power",
-        "color": "#e11d48",
-        "focus": "power",
-        "pieces": [
-          "Children's Carnival",
-          "Fireflies",
-          "Dreaming",
-          "Scottish Legend",
-          "Hermit Thrush",
-          "From Blackbird Hills",
-          "Sketches",
-          "A Hermit Thrush at Eve",
-          "A Hermit Thrush at Morn",
-          "Variations on Balkan Themes",
-          "Piano Concerto",
-          "Ballad",
-          "Tyrolean Valse-Fantaisie",
-          "From Grandmother's Garden",
-          "Improvisation",
-          "Prelude and Fugue"
-        ],
-        "items": [
-          {
-            "name": "Self-Taught Drive",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Boston Stage",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Gaelic Theme",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Birdsong",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Concert Strength",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Adaptive Voice",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Festival Color",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Quiet Study",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Brilliant Run",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Grand Concerto",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      },
-      {
-        "name": "Rachmaninoff",
-        "style": "Late-Game Force",
-        "color": "#1e40af",
-        "focus": "finish",
-        "pieces": [
-          "Prelude in C-sharp",
-          "Prelude in G minor",
-          "Elegie",
-          "Moment Musical",
-          "Étude-tableau",
-          "Corelli Variations",
-          "Vocalise",
-          "Lilacs",
-          "Daisies",
-          "Piano Concerto No. 2",
-          "Piano Concerto No. 3",
-          "Rhapsody on Paganini",
-          "Sonata No. 2",
-          "Études-tableaux Op. 39",
-          "Variations on Chopin",
-          "Symphonic Dances"
-        ],
-        "items": [
-          {
-            "name": "Huge Hands",
-            "cost": 2,
-            "effect": "buff",
-            "amount": 1,
-            "text": "Give your first Piece +1 Attack and +1 HP."
-          },
-          {
-            "name": "Bell Tone",
-            "cost": 2,
-            "effect": "direct",
-            "amount": 2,
-            "text": "Deal 2 damage."
-          },
-          {
-            "name": "Dark Lyricism",
-            "cost": 1,
-            "effect": "heal",
-            "amount": 3,
-            "text": "Restore 3 HP."
-          },
-          {
-            "name": "Virtuoso Return",
-            "cost": 2,
-            "effect": "ready",
-            "amount": 1,
-            "text": "Ready one Piece."
-          },
-          {
-            "name": "Romantic Surge",
-            "cost": 3,
-            "effect": "allBuff",
-            "amount": 1,
-            "text": "All your Pieces gain +1 Attack."
-          },
-          {
-            "name": "Practice Discipline",
-            "cost": 1,
-            "effect": "draw",
-            "amount": 1,
-            "text": "Draw 1 card."
-          },
-          {
-            "name": "Concert Hall",
-            "cost": 2,
-            "effect": "draw",
-            "amount": 2,
-            "text": "Draw 2 cards."
-          },
-          {
-            "name": "Deep Bass Strike",
-            "cost": 3,
-            "effect": "direct",
-            "amount": 3,
-            "text": "Deal 3 damage."
-          },
-          {
-            "name": "Resonance",
-            "cost": 2,
-            "effect": "heal",
-            "amount": 4,
-            "text": "Restore 4 HP."
-          },
-          {
-            "name": "Final Bell",
-            "cost": 4,
-            "effect": "direct",
-            "amount": 4,
-            "text": "Deal 4 damage."
-          }
-        ]
-      }
-    ];
+  const COMPOSERS = [
+    {
+      "name": "Bach",
+      "style": "Counterpoint",
+      "color": "#2563eb",
+      "focus": "synergy",
+      "pieces": [
+        "Minuet in G",
+        "Prelude in C",
+        "Invention No. 1",
+        "Little Prelude",
+        "Sinfonia No. 15",
+        "French Suite",
+        "English Suite",
+        "Partita No. 1",
+        "Italian Concerto",
+        "Chromatic Fantasy",
+        "Toccata in E minor",
+        "Goldberg Aria",
+        "Well-Tempered Clavier",
+        "Goldberg Variations",
+        "Art of Fugue",
+        "Bach-Busoni Chaconne"
+      ],
+      "items": [
+        {
+          "name": "Fugue Subject",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Counterpoint",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Leipzig Cantor",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Pedal Point",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Church Organ",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Well-Tempered Study",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Kapellmeister",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Cantata Workshop",
+          "cost": 3,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Family Ensemble",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Final Cadence",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Mozart",
+      "style": "Efficiency",
+      "color": "#7c3aed",
+      "focus": "speed",
+      "pieces": [
+        "Minuet in F",
+        "Sonata in C",
+        "K. 545 Allegro",
+        "Rondo alla Turca",
+        "Fantasia in D minor",
+        "Sonata in A minor",
+        "Sonata in F",
+        "Sonata in B-flat",
+        "Variations on Ah vous dirai-je",
+        "Adagio in B minor",
+        "Piano Concerto No. 20",
+        "Piano Concerto No. 21",
+        "Piano Concerto No. 23",
+        "Piano Concerto No. 24",
+        "Piano Concerto No. 27",
+        "D minor Fantasy"
+      ],
+      "items": [
+        {
+          "name": "Child Prodigy",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Clear Phrase",
+          "cost": 1,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Opera Spark",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Royal Lesson",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Improvisation",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Vienna Stage",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Comic Timing",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Fast Passagework",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Elegant Cadence",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Finale Burst",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Beethoven",
+      "style": "Power",
+      "color": "#dc2626",
+      "focus": "power",
+      "pieces": [
+        "Ecossaise",
+        "Für Elise",
+        "Sonatina in G",
+        "Moonlight Sonata",
+        "Pathétique Sonata",
+        "Tempest Sonata",
+        "Waldstein Sonata",
+        "Appassionata",
+        "Les Adieux",
+        "Diabelli Variations",
+        "Rage Over a Lost Penny",
+        "Eroica Variations",
+        "Piano Concerto No. 3",
+        "Emperor Concerto",
+        "Hammerklavier",
+        "Late Sonata Op. 111"
+      ],
+      "items": [
+        {
+          "name": "Hearing Loss",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Fate Motif",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Vienna Premiere",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Immortal Beloved",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Stormy Temper",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Sketchbook",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Heroic Resolve",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Cadenza",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Patron Support",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Thunderous Finale",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Schubert",
+      "style": "Lyric Endurance",
+      "color": "#059669",
+      "focus": "endurance",
+      "pieces": [
+        "German Dance",
+        "Moment Musical",
+        "Impromptu in G-flat",
+        "Impromptu in A-flat",
+        "Impromptu in E-flat",
+        "Impromptu in B-flat",
+        "Drei Klavierstücke",
+        "Sonata in A minor",
+        "Sonata in A major",
+        "Sonata in B-flat",
+        "Wanderer Fantasy",
+        "Military March",
+        "Lebensstürme",
+        "Fantasy in F minor",
+        "Sonata in C minor",
+        "Great C Major Sonata"
+      ],
+      "items": [
+        {
+          "name": "Lied Melody",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Song Circle",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Wandering Theme",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Vienna Salon",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Long Line",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Warm Cadence",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Dramatic Turn",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Four-Hand Friends",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Hidden Strength",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Wanderer Strike",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Chopin",
+      "style": "Precision",
+      "color": "#db2777",
+      "focus": "precision",
+      "pieces": [
+        "Prelude in E minor",
+        "Waltz in A minor",
+        "Minute Waltz",
+        "Nocturne in E-flat",
+        "Raindrop Prelude",
+        "Mazurka in A minor",
+        "Polonaise in A major",
+        "Revolutionary Étude",
+        "Black Key Étude",
+        "Fantaisie-Impromptu",
+        "Scherzo No. 2",
+        "Ballade No. 1",
+        "Heroic Polonaise",
+        "Barcarolle",
+        "Sonata No. 2",
+        "Ballade No. 4"
+      ],
+      "items": [
+        {
+          "name": "Rubato",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Salon Poise",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Bel Canto Line",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Paris Lesson",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Polish Dance",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Étude Focus",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Sharp Turn",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Nocturne Calm",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Brilliant Passage",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Final Flourish",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Robert Schumann",
+      "style": "Character Pieces",
+      "color": "#9333ea",
+      "focus": "swing",
+      "pieces": [
+        "Melody",
+        "Träumerei",
+        "The Wild Horseman",
+        "Arabeske",
+        "Papillons",
+        "Kinderszenen",
+        "Album for the Young",
+        "Carnaval",
+        "Kreisleriana",
+        "Fantasiestücke",
+        "Novelette",
+        "Humoreske",
+        "Symphonic Études",
+        "Fantasy in C",
+        "Toccata",
+        "Piano Concerto"
+      ],
+      "items": [
+        {
+          "name": "Florestan",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Eusebius",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Carnival Mask",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Character Sketch",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Clara Theme",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Dichterliebe",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Davidsbund",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Sudden Mood",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "March Attack",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Grand Finale",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Clara Schumann",
+      "style": "Romantic Command",
+      "color": "#0891b2",
+      "focus": "precision",
+      "pieces": [
+        "Romance",
+        "Scherzo No. 1",
+        "Scherzo No. 2",
+        "Soirées Musicales",
+        "Variations",
+        "Prelude and Fugue",
+        "Nocturne",
+        "Mazurka",
+        "Piano Trio",
+        "Romances Op. 21",
+        "Piano Concerto",
+        "Quatre pièces fugitives",
+        "Polonaise",
+        "Caprice",
+        "Concert Variations",
+        "Impromptu"
+      ],
+      "items": [
+        {
+          "name": "Concert Pianist",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Romantic Line",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Teaching Studio",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Family Strength",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Touring Star",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Album Leaf",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Supportive Voice",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Resilience",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Brilliant Touch",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Encore Applause",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Liszt",
+      "style": "Virtuoso Finishers",
+      "color": "#ea580c",
+      "focus": "finish",
+      "pieces": [
+        "Consolation No. 3",
+        "Liebestraum",
+        "Un Sospiro",
+        "La Campanella",
+        "Hungarian Rhapsody No. 2",
+        "Mephisto Waltz",
+        "Funérailles",
+        "B minor Sonata",
+        "Transcendental Étude",
+        "Mazeppa",
+        "Feux follets",
+        "Totentanz",
+        "Dante Sonata",
+        "Spanish Rhapsody",
+        "Don Juan Fantasy",
+        "Réminiscences de Norma"
+      ],
+      "items": [
+        {
+          "name": "Virtuoso Tour",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Piano Thunder",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Transcendental Technique",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Showpiece Cadenza",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Salon Fame",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Hungarian Fire",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Sight-Reading Stunt",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Octave Blast",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Late Reflection",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Virtuoso Finale",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Brahms",
+      "style": "Durable Midrange",
+      "color": "#4b5563",
+      "focus": "endurance",
+      "pieces": [
+        "Waltz in A-flat",
+        "Intermezzo in A",
+        "Intermezzo in E-flat",
+        "Rhapsody in G minor",
+        "Ballade",
+        "Klavierstücke",
+        "Paganini Variations",
+        "Handel Variations",
+        "Rhapsody in B minor",
+        "Capriccio in D minor",
+        "Intermezzo in B-flat",
+        "Sonata No. 3",
+        "Piano Quartet",
+        "Piano Concerto No. 1",
+        "Piano Concerto No. 2",
+        "Variations on a Theme by Schumann"
+      ],
+      "items": [
+        {
+          "name": "Warm Intermezzo",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Thick Texture",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Variation Craft",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Autumn Color",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Rhythmic Weight",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Chorale Strength",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Inner Voice",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Deep Bass",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Quiet Resolve",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Grand Sonata",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Debussy",
+      "style": "Color & Evasion",
+      "color": "#0ea5e9",
+      "focus": "evasion",
+      "pieces": [
+        "The Little Shepherd",
+        "Arabesque No. 1",
+        "Clair de lune",
+        "Doctor Gradus",
+        "Golliwog's Cakewalk",
+        "La fille aux cheveux de lin",
+        "La cathédrale engloutie",
+        "Jardins sous la pluie",
+        "Reflets dans l'eau",
+        "Poissons d'or",
+        "L'isle joyeuse",
+        "Feux d'artifice",
+        "Ondine",
+        "Estampes",
+        "Pour le piano",
+        "Études"
+      ],
+      "items": [
+        {
+          "name": "Whole-Tone Mist",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Soft Pedal",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Color Wash",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Impressionist Blur",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Bell Sonority",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Paris Exposition",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Water Reflection",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Layered Color",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Fireworks",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Sunken Cathedral",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Ravel",
+      "style": "Technical Timing",
+      "color": "#14b8a6",
+      "focus": "precision",
+      "pieces": [
+        "Pavane",
+        "Sonatine",
+        "Jeux d'eau",
+        "Menuet antique",
+        "Ondine",
+        "Le gibet",
+        "Scarbo",
+        "Alborada",
+        "Oiseaux tristes",
+        "Une barque sur l'océan",
+        "La vallée des cloches",
+        "Miroirs",
+        "Gaspard de la nuit",
+        "Valses nobles",
+        "Piano Concerto in G",
+        "Left Hand Concerto"
+      ],
+      "items": [
+        {
+          "name": "Clockwork Detail",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Orchestral Color",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Precise Pedal",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Water Mechanism",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Spanish Spark",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Elegant Distance",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Left-Hand Strength",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Brilliant Surface",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Scarbo Trick",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Gaspard Strike",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Joplin",
+      "style": "Rhythm Tempo",
+      "color": "#ca8a04",
+      "focus": "speed",
+      "pieces": [
+        "Maple Leaf Rag",
+        "The Entertainer",
+        "Elite Syncopations",
+        "Solace",
+        "Bethena",
+        "Pine Apple Rag",
+        "Easy Winners",
+        "Magnetic Rag",
+        "The Chrysanthemum",
+        "Fig Leaf Rag",
+        "Gladiolus Rag",
+        "Peacherine Rag",
+        "Sugar Cane",
+        "Euphonic Sounds",
+        "Heliotrope Bouquet",
+        "Treemonisha Rag"
+      ],
+      "items": [
+        {
+          "name": "Syncopation",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Ragtime Bounce",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Maple Leaf Club",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Left-Hand Stride",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Piano Roll",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 2,
+          "text": "Restore 2 HP."
+        },
+        {
+          "name": "Dance Hall",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Sharp Syncopation",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Missouri Rhythm",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Cakewalk Kick",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Ragtime Finale",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Florence Price",
+      "style": "Symphonic Voice",
+      "color": "#16a34a",
+      "focus": "synergy",
+      "pieces": [
+        "Ticklin' Toes",
+        "Nimble Feet",
+        "Clouds",
+        "The Goblin",
+        "Silk Hat and Walking Cane",
+        "Dances in the Canebrakes",
+        "Fantasie Nègre No. 1",
+        "Fantasie Nègre No. 2",
+        "Fantasie Nègre No. 3",
+        "Piano Sonata",
+        "Thumbnail Sketches",
+        "Juba Dance",
+        "Cotton Dance",
+        "Negro Folksongs in Counterpoint",
+        "Piano Concerto",
+        "Symphony Themes"
+      ],
+      "items": [
+        {
+          "name": "Juba Rhythm",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Chicago Support",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Canebrake Dance",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Spiritual Melody",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Teaching Studio",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Orchestral Voice",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Prize Winner",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Quiet Strength",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Dance Accent",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Concert Finale",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Amy Beach",
+      "style": "Lyric Power",
+      "color": "#e11d48",
+      "focus": "power",
+      "pieces": [
+        "Children's Carnival",
+        "Fireflies",
+        "Dreaming",
+        "Scottish Legend",
+        "Hermit Thrush",
+        "From Blackbird Hills",
+        "Sketches",
+        "A Hermit Thrush at Eve",
+        "A Hermit Thrush at Morn",
+        "Variations on Balkan Themes",
+        "Piano Concerto",
+        "Ballad",
+        "Tyrolean Valse-Fantaisie",
+        "From Grandmother's Garden",
+        "Improvisation",
+        "Prelude and Fugue"
+      ],
+      "items": [
+        {
+          "name": "Self-Taught Drive",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Boston Stage",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Gaelic Theme",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Birdsong",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Concert Strength",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Adaptive Voice",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Festival Color",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Quiet Study",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Brilliant Run",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Grand Concerto",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    },
+    {
+      "name": "Rachmaninoff",
+      "style": "Late-Game Force",
+      "color": "#1e40af",
+      "focus": "finish",
+      "pieces": [
+        "Prelude in C-sharp",
+        "Prelude in G minor",
+        "Elegie",
+        "Moment Musical",
+        "Étude-tableau",
+        "Corelli Variations",
+        "Vocalise",
+        "Lilacs",
+        "Daisies",
+        "Piano Concerto No. 2",
+        "Piano Concerto No. 3",
+        "Rhapsody on Paganini",
+        "Sonata No. 2",
+        "Études-tableaux Op. 39",
+        "Variations on Chopin",
+        "Symphonic Dances"
+      ],
+      "items": [
+        {
+          "name": "Huge Hands",
+          "cost": 2,
+          "effect": "buff",
+          "amount": 1,
+          "text": "Give your first Piece +1 Attack and +1 HP."
+        },
+        {
+          "name": "Bell Tone",
+          "cost": 2,
+          "effect": "direct",
+          "amount": 2,
+          "text": "Deal 2 damage."
+        },
+        {
+          "name": "Dark Lyricism",
+          "cost": 1,
+          "effect": "heal",
+          "amount": 3,
+          "text": "Restore 3 HP."
+        },
+        {
+          "name": "Virtuoso Return",
+          "cost": 2,
+          "effect": "ready",
+          "amount": 1,
+          "text": "Ready one Piece."
+        },
+        {
+          "name": "Romantic Surge",
+          "cost": 3,
+          "effect": "allBuff",
+          "amount": 1,
+          "text": "All your Pieces gain +1 Attack."
+        },
+        {
+          "name": "Practice Discipline",
+          "cost": 1,
+          "effect": "draw",
+          "amount": 1,
+          "text": "Draw 1 card."
+        },
+        {
+          "name": "Concert Hall",
+          "cost": 2,
+          "effect": "draw",
+          "amount": 2,
+          "text": "Draw 2 cards."
+        },
+        {
+          "name": "Deep Bass Strike",
+          "cost": 3,
+          "effect": "direct",
+          "amount": 3,
+          "text": "Deal 3 damage."
+        },
+        {
+          "name": "Resonance",
+          "cost": 2,
+          "effect": "heal",
+          "amount": 4,
+          "text": "Restore 4 HP."
+        },
+        {
+          "name": "Final Bell",
+          "cost": 4,
+          "effect": "direct",
+          "amount": 4,
+          "text": "Deal 4 damage."
+        }
+      ]
+    }
+  ];
 
-    const IS_MOBILE_CANVAS = canvas.width <= 420;
-    const HAND_SIZE = 5;
+  const IS_MOBILE_CANVAS = canvas.width <= 420;
+  const HAND_SIZE = 5;
   const MAX_BOARD = 999;
   const ANIMATION_SLOWDOWN = 1.85;
   const CPU_ACTION_DELAY_MULTIPLIER = 3;
@@ -3492,21 +3805,81 @@
   function getSelectedDifficultyKey() {
     return "normal";
   }
-    const STARTING_HP = 30;
-    const ENERGY_CARDS = 14;
-    const PIECE_COSTS = [1,1,2,2,2,3,3,3,4,4,4,5,5,6,6,7];
-    const ITEM_TEMPLATES = [
-      { "name": "Practice Run", "cost": 1, "effect": "buff", "amount": 1, "text": "Give your first Piece +1 Attack and +1 HP." },
-      { "name": "Quiet Focus", "cost": 1, "effect": "heal", "amount": 3, "text": "Restore 3 HP." },
-      { "name": "Encore", "cost": 2, "effect": "draw", "amount": 2, "text": "Draw 2 cards." },
-      { "name": "Crescendo", "cost": 3, "effect": "allBuff", "amount": 1, "text": "All your Pieces gain +1 Attack." },
-      { "name": "Sharp Accent", "cost": 2, "effect": "direct", "amount": 2, "text": "Deal 2 damage." },
-      { "name": "Second Theme", "cost": 2, "effect": "draw", "amount": 1, "text": "Draw 1 card." },
-      { "name": "Steady Pulse", "cost": 1, "effect": "heal", "amount": 2, "text": "Restore 2 HP." },
-      { "name": "Rehearsal", "cost": 2, "effect": "ready", "amount": 1, "text": "Ready one Piece." },
-      { "name": "Fortissimo", "cost": 3, "effect": "direct", "amount": 3, "text": "Deal 3 damage." },
-      { "name": "Bravura Finish", "cost": 4, "effect": "direct", "amount": 4, "text": "Deal 4 damage." }
-    ];
+  const STARTING_HP = 30;
+  const ENERGY_CARDS = 14;
+  const PIECE_COSTS = [1,1,2,2,2,3,3,3,4,4,4,5,5,6,6,7];
+  const ITEM_TEMPLATES = [
+    {
+      "name": "Practice Run",
+      "cost": 1,
+      "effect": "buff",
+      "amount": 1,
+      "text": "Give your first Piece +1 Attack and +1 HP."
+    },
+    {
+      "name": "Quiet Focus",
+      "cost": 1,
+      "effect": "heal",
+      "amount": 3,
+      "text": "Restore 3 HP."
+    },
+    {
+      "name": "Encore",
+      "cost": 2,
+      "effect": "draw",
+      "amount": 2,
+      "text": "Draw 2 cards."
+    },
+    {
+      "name": "Crescendo",
+      "cost": 3,
+      "effect": "allBuff",
+      "amount": 1,
+      "text": "All your Pieces gain +1 Attack."
+    },
+    {
+      "name": "Sharp Accent",
+      "cost": 2,
+      "effect": "direct",
+      "amount": 2,
+      "text": "Deal 2 damage."
+    },
+    {
+      "name": "Second Theme",
+      "cost": 2,
+      "effect": "draw",
+      "amount": 1,
+      "text": "Draw 1 card."
+    },
+    {
+      "name": "Steady Pulse",
+      "cost": 1,
+      "effect": "heal",
+      "amount": 2,
+      "text": "Restore 2 HP."
+    },
+    {
+      "name": "Rehearsal",
+      "cost": 2,
+      "effect": "ready",
+      "amount": 1,
+      "text": "Ready one Piece."
+    },
+    {
+      "name": "Fortissimo",
+      "cost": 3,
+      "effect": "direct",
+      "amount": 3,
+      "text": "Deal 3 damage."
+    },
+    {
+      "name": "Bravura Finish",
+      "cost": 4,
+      "effect": "direct",
+      "amount": 4,
+      "text": "Deal 4 damage."
+    }
+  ];
   const BALANCED_ITEM_SLOTS = [
     {
       "cost": 1,
@@ -3571,38 +3944,38 @@
   ];
 
 
-    const KEYWORD_TEXT = {
-      quick: "Ready right away",
-      echo: "Draw 1 card when played",
-      inspire: "+1 Attack to another Piece",
-      pierce: "Extra damage spills through",
-      steady: "+1 HP when played"
-    };
+  const KEYWORD_TEXT = {
+    quick: "Ready right away",
+    echo: "Draw 1 card when played",
+    inspire: "+1 Attack to another Piece",
+    pierce: "Extra damage spills through",
+    steady: "+1 HP when played"
+  };
 
-    const CARD_TYPE_LABELS = {
-      energy: "Staff",
-      piece: "Piece",
-      item: "Item"
-    };
+  const CARD_TYPE_LABELS = {
+    energy: "Staff",
+    piece: "Piece",
+    item: "Item"
+  };
 
-    function keywordName(keyword) {
-      if (!keyword) return "";
-      return keyword.charAt(0).toUpperCase() + keyword.slice(1);
+  function keywordName(keyword) {
+    if (!keyword) return "";
+    return keyword.charAt(0).toUpperCase() + keyword.slice(1);
+  }
+
+  function cardRulesText(card) {
+    if (!card) return "";
+    if (card.type === "energy") return "Adds 1 staff for future turns.";
+    if (card.type === "piece") {
+      const parts = [];
+      parts.push(`ATK ${card.atk} / DEF ${card.hp}`);
+      if (card.keyword) parts.push(`${keywordName(card.keyword)}: ${KEYWORD_TEXT[card.keyword] || card.abilityText || "Special effect"}`);
+      return parts.join(" • ");
     }
+    return card.text || "";
+  }
 
-    function cardRulesText(card) {
-      if (!card) return "";
-      if (card.type === "energy") return "Adds 1 staff for future turns.";
-      if (card.type === "piece") {
-        const parts = [];
-        parts.push(`ATK ${card.atk} / DEF ${card.hp}`);
-        if (card.keyword) parts.push(`${keywordName(card.keyword)}: ${KEYWORD_TEXT[card.keyword] || card.abilityText || "Special effect"}`);
-        return parts.join(" • ");
-      }
-      return card.text || "";
-    }
-
-    
+  
 function selectedCardForDisplay() {
     if (!state || phaseScreen !== "battle") return null;
     if (selectedZone === "hand") return state.player.hand[selectedIndex] || null;
@@ -3816,14 +4189,14 @@ function confirmCardDetail() {
     updateShellMenuTab("controls", `
       <h3>Controls</h3>
       <ul>
-        <li><strong>D-pad / left joystick:</strong> Move the highlight between cards and buttons.</li>
-        <li><strong>PLAY:</strong> Choose the highlighted card or button. If a card is open, PLAY uses it.</li>
-        <li><strong>BACK:</strong> Close a card, cancel an attack, or end your turn.</li>
-        <li><strong>ZONE:</strong> Jump to another group, such as your hand, your played cards, or the action buttons.</li>
-        <li><strong>CARD:</strong> Open the highlighted card to read it.</li>
-        <li><strong>MENU:</strong> Open help and exit options.</li>
+        <li><strong>Move selection:</strong> Arrow keys or WASD.</li>
+        <li><strong>Choose / play:</strong> Space or Enter.</li>
+        <li><strong>View a card:</strong> Click a card, or move to it and press Space/Enter.</li>
+        <li><strong>Close card view:</strong> Click Close or press E.</li>
+        <li><strong>End your turn:</strong> Choose End Turn, or press E when you are not viewing a card.</li>
+        <li><strong>Help:</strong> Click Help or press M.</li>
       </ul>
-      <p>You can also tap cards and buttons directly on the screen.</p>
+      <p>Selectable cards and buttons are highlighted. Move to the thing you want, then choose it.</p>
     `);
 
     updateShellMenuTab("instructions", `
@@ -3894,9 +4267,9 @@ function setStatus(text, options = {}) {
     }
   }
 
-    function clampValue(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }  function shortText(text, maxChars) {
+  function clampValue(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }  function shortText(text, maxChars) {
     const s = String(text || "");
     return s.length > maxChars ? s.slice(0, maxChars - 1) + "…" : s;
   }
@@ -3970,19 +4343,19 @@ function setStatus(text, options = {}) {
   }
 
   function shuffle(array) {
-      const copy = array.slice();
-      for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [copy[i], copy[j]] = [copy[j], copy[i]];
-      }
-      return copy;
+    const copy = array.slice();
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j], copy[i]];
     }
+    return copy;
+  }
 
-    function makeCard(base) {
-      return { ...base, id: nextCardId++ };
-    }
+  function makeCard(base) {
+    return { ...base, id: nextCardId++ };
+  }
 
-    function pieceKeywordFor(cost, composer, index) {
+  function pieceKeywordFor(cost, composer, index) {
     return "";
   }
 
@@ -4227,48 +4600,47 @@ function startBattle() {
     soundCorrect();
   }
 
-    function gameInit() {
-      registerComposerClashHelp();
-      phaseScreen = "composerSelect";
-      composerIndex = 0;
-      selectedComposerCard = COMPOSERS[0];
-      cursorPulse = 0;
-      state = null;
-      selectedZone = "hand";
-      selectedIndex = 0;
-      lastHitboxes = [];
-      setScore(0);
-      setStatus("Choose your composer.");
-    }
-
-    
-function gameUpdate() {
-    cursorPulse += 0.035;
-    if (typeof sticks !== "undefined" && sticks.left?.active) maybeSendLeftJoystickInput(sticks.left);
+  function gameInit() {
+    registerComposerClashHelp();
+    phaseScreen = "composerSelect";
+    composerIndex = 0;
+    selectedComposerCard = COMPOSERS[0];
+    cursorPulse = 0;
+    state = null;
+    selectedZone = "hand";
+    selectedIndex = 0;
+    lastHitboxes = [];
+    setScore(0);
+    setStatus("Choose your composer.");
   }
 
-    function drawRoundedRect(x, y, w, h, r, fill, stroke = null, lineWidth = 2) {
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + w - r, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-      ctx.lineTo(x + w, y + h - r);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-      ctx.lineTo(x + r, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-      ctx.fillStyle = fill;
-      ctx.fill();
-      if (stroke) {
-        ctx.strokeStyle = stroke;
-        ctx.lineWidth = lineWidth;
-        ctx.stroke();
-      }
-    }
-
   
+function gameUpdate() {
+    cursorPulse += 0.035;
+  }
+
+  function drawRoundedRect(x, y, w, h, r, fill, stroke = null, lineWidth = 2) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke) {
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = lineWidth;
+      ctx.stroke();
+    }
+  }
+
+
 
   
 function queueBattleEffect(kind, side = "player", label = "", amount = 0) {
@@ -4517,65 +4889,65 @@ function queueBattleEffect(kind, side = "player", label = "", amount = 0) {
   }
 
 function drawComposerGrid() {
-      lastHitboxes = [];
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#101827";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    lastHitboxes = [];
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#101827";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#f8fbff";
-      ctx.textAlign = "center";
-      ctx.font = IS_MOBILE_CANVAS ? "bold 18px Arial, sans-serif" : "bold 34px Arial, sans-serif";
-      ctx.fillText("Composer Clash", canvas.width / 2, IS_MOBILE_CANVAS ? 22 : 45);
-      const cols = IS_MOBILE_CANVAS ? 3 : 5;
-      const cardW = IS_MOBILE_CANVAS ? 112 : 126;
-      const cardH = IS_MOBILE_CANVAS ? 31 : 92;
-      const gapX = IS_MOBILE_CANVAS ? 8 : 12;
-      const gapY = IS_MOBILE_CANVAS ? 6 : 12;
-      const startX = (canvas.width - (cols * cardW + (cols - 1) * gapX)) / 2;
-      const startY = IS_MOBILE_CANVAS ? 34 : 98;
+    ctx.fillStyle = "#f8fbff";
+    ctx.textAlign = "center";
+    ctx.font = IS_MOBILE_CANVAS ? "bold 18px Arial, sans-serif" : "bold 34px Arial, sans-serif";
+    ctx.fillText("Composer Clash", canvas.width / 2, IS_MOBILE_CANVAS ? 22 : 45);
+    const cols = IS_MOBILE_CANVAS ? 3 : 5;
+    const cardW = IS_MOBILE_CANVAS ? 112 : 126;
+    const cardH = IS_MOBILE_CANVAS ? 31 : 92;
+    const gapX = IS_MOBILE_CANVAS ? 8 : 12;
+    const gapY = IS_MOBILE_CANVAS ? 6 : 12;
+    const startX = (canvas.width - (cols * cardW + (cols - 1) * gapX)) / 2;
+    const startY = IS_MOBILE_CANVAS ? 34 : 98;
 
-      COMPOSERS.forEach((composer, i) => {
-        const col = i % cols;
-        const row = Math.floor(i / cols);
-        const x = startX + col * (cardW + gapX);
-        const y = startY + row * (cardH + gapY);
-        const selected = i === composerIndex;
-        const glow = selected ? 4 + Math.sin(cursorPulse) * 1.5 : 0;
+    COMPOSERS.forEach((composer, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      const x = startX + col * (cardW + gapX);
+      const y = startY + row * (cardH + gapY);
+      const selected = i === composerIndex;
+      const glow = selected ? 4 + Math.sin(cursorPulse) * 1.5 : 0;
 
-        drawRoundedRect(x, y, cardW, cardH, IS_MOBILE_CANVAS ? 8 : 14, selected ? "#fff7d6" : "#f8fbff", selected ? "#ffe08a" : "#334155", selected ? 3 : 1.5);
-        ctx.fillStyle = composer.color;
-        if (IS_MOBILE_CANVAS) ctx.fillRect(x + 5, y + 5, 12, cardH - 10);
-        else ctx.fillRect(x + 10, y + 10, cardW - 20, 16 + glow * 0.2);
+      drawRoundedRect(x, y, cardW, cardH, IS_MOBILE_CANVAS ? 8 : 14, selected ? "#fff7d6" : "#f8fbff", selected ? "#ffe08a" : "#334155", selected ? 3 : 1.5);
+      ctx.fillStyle = composer.color;
+      if (IS_MOBILE_CANVAS) ctx.fillRect(x + 5, y + 5, 12, cardH - 10);
+      else ctx.fillRect(x + 10, y + 10, cardW - 20, 16 + glow * 0.2);
 
-        ctx.fillStyle = "#111827";
-        ctx.textAlign = IS_MOBILE_CANVAS ? "left" : "center";
-        ctx.font = IS_MOBILE_CANVAS
-          ? (composer.name.length > 13 ? "bold 9px Arial, sans-serif" : "bold 11px Arial, sans-serif")
-          : (composer.name.length > 14 ? "bold 14px Arial, sans-serif" : "bold 16px Arial, sans-serif");
-        ctx.fillText(composer.name, IS_MOBILE_CANVAS ? x + 22 : x + cardW / 2, IS_MOBILE_CANVAS ? y + 14 : y + 44);
+      ctx.fillStyle = "#111827";
+      ctx.textAlign = IS_MOBILE_CANVAS ? "left" : "center";
+      ctx.font = IS_MOBILE_CANVAS
+        ? (composer.name.length > 13 ? "bold 9px Arial, sans-serif" : "bold 11px Arial, sans-serif")
+        : (composer.name.length > 14 ? "bold 14px Arial, sans-serif" : "bold 16px Arial, sans-serif");
+      ctx.fillText(composer.name, IS_MOBILE_CANVAS ? x + 22 : x + cardW / 2, IS_MOBILE_CANVAS ? y + 14 : y + 44);
 
-        ctx.fillStyle = "#475569";
-        ctx.font = IS_MOBILE_CANVAS ? "8px Arial, sans-serif" : "12px Arial, sans-serif";
-        ctx.fillText(composer.style, IS_MOBILE_CANVAS ? x + 22 : x + cardW / 2, IS_MOBILE_CANVAS ? y + 25 : y + 68);
+      ctx.fillStyle = "#475569";
+      ctx.font = IS_MOBILE_CANVAS ? "8px Arial, sans-serif" : "12px Arial, sans-serif";
+      ctx.fillText(composer.style, IS_MOBILE_CANVAS ? x + 22 : x + cardW / 2, IS_MOBILE_CANVAS ? y + 25 : y + 68);
 
-        lastHitboxes.push({ type: "composer", index: i, x, y, w: cardW, h: cardH });
-      });
+      lastHitboxes.push({ type: "composer", index: i, x, y, w: cardW, h: cardH });
+    });
     // Composer cards now speak for themselves; no extra instruction/details line at the bottom.
-    }
+  }
 
-    function drawHealthBar(x, y, w, h, hp, label, color) {
-      ctx.fillStyle = "#0f172a";
-      ctx.fillRect(x, y, w, h);
-      ctx.fillStyle = color;
-      ctx.fillRect(x, y, w * clampValue(hp / STARTING_HP, 0, 1), h);
-      ctx.strokeStyle = "#f8fbff";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, w, h);
-      ctx.fillStyle = "#f8fbff";
-      ctx.textAlign = "left";
-      ctx.font = IS_MOBILE_CANVAS ? "bold 9px Arial, sans-serif" : "bold 15px Arial, sans-serif";
-      ctx.fillText(`${label} HP ${Math.max(0, hp)}`, x, y - (IS_MOBILE_CANVAS ? 3 : 6));
-    }  
+  function drawHealthBar(x, y, w, h, hp, label, color) {
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(x, y, w, h);
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, w * clampValue(hp / STARTING_HP, 0, 1), h);
+    ctx.strokeStyle = "#f8fbff";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = "#f8fbff";
+    ctx.textAlign = "left";
+    ctx.font = IS_MOBILE_CANVAS ? "bold 9px Arial, sans-serif" : "bold 15px Arial, sans-serif";
+    ctx.fillText(`${label} HP ${Math.max(0, hp)}`, x, y - (IS_MOBILE_CANVAS ? 3 : 6));
+  }  
 function cardFont(size, weight = "bold") {
     return `${weight} ${Math.max(5, size).toFixed(1)}px "Courier New", monospace`;
   }
@@ -4839,17 +5211,17 @@ function cardCostLabel(card) {
       drawComposerFigure(c.composer, "cpu");
       drawBattleEffects();
 
-      drawCardsFitRow(p.hand, 8, 154, 276, 60, 60, 5, 36, "hand", "player");
+      drawCardsFitRow(p.hand, 8, 146, 276, 60, 60, 5, 36, "hand", "player");
 
       if (forcedDiscardCount > 0) {
         ctx.fillStyle = "#fef3c7";
         ctx.font = "bold 8.5px Arial, sans-serif";
         ctx.fillText(`Discard ${forcedDiscardCount}`, 344, 210);
       } else if (discardMode) {
-        drawActionButton("end", "Done", 304, 190, 78, 22, 0);
+        drawActionButton("end", "Done", 304, 166, 78, 22, 0);
       } else {
-        drawActionButton("discard", "Discard", 304, 162, 78, 22, 0);
-        drawActionButton("end", "End Turn", 304, 190, 78, 22, 1);
+        drawActionButton("discard", "Discard", 304, 137, 78, 22, 0);
+        drawActionButton("end", "End Turn", 304, 166, 78, 22, 1);
       }
     } else {
       drawHealthBar(34, 40, 220, 16, p.hp, p.composer.name, p.composer.color);
@@ -4866,27 +5238,27 @@ function cardCostLabel(card) {
       drawComposerFigure(c.composer, "cpu");
       drawBattleEffects();
 
-      drawCardsFitRow(p.hand, 34, 366, 500, 120, 100, 8, 60, "hand", "player");
+      drawCardsFitRow(p.hand, 34, 382, 500, 120, 100, 8, 60, "hand", "player");
 
       if (forcedDiscardCount > 0) {
         ctx.fillStyle = "#fef3c7";
         ctx.font = "bold 16px Arial, sans-serif";
-        ctx.fillText(`Discard ${forcedDiscardCount} card${forcedDiscardCount === 1 ? "" : "s"}`, canvas.width - 98, 488);
+        ctx.fillText(`Discard ${forcedDiscardCount} card${forcedDiscardCount === 1 ? "" : "s"}`, canvas.width - 98, 502);
       } else if (discardMode) {
-        drawActionButton("end", "Done", canvas.width - 163, 426, 126, 44, 0);
+        drawActionButton("end", "Done", canvas.width - 163, 440, 126, 44, 0);
       } else {
-        drawActionButton("discard", "Discard", canvas.width - 163, 374, 126, 44, 0);
-        drawActionButton("end", "End Turn", canvas.width - 163, 426, 126, 44, 1);
+        drawActionButton("discard", "Discard", canvas.width - 163, 388, 126, 44, 0);
+        drawActionButton("end", "End Turn", canvas.width - 163, 440, 126, 44, 1);
       }
     }
   }
 
 function gameDraw() {
-      if (phaseScreen === "composerSelect") drawComposerGrid();
-      else drawBattle();
-    }
+    if (phaseScreen === "composerSelect") drawComposerGrid();
+    else drawBattle();
+  }
 
-    
+  
 function moveComposer(dx, dy) {
     const cols = IS_MOBILE_CANVAS ? 3 : 5;
     const maxRows = Math.ceil(COMPOSERS.length / cols) - 1;
@@ -5345,35 +5717,36 @@ function calculateFinalScore(won) {
 
   function finishBattle(won) {
     closeCardDetail();
-      if (!state || state.battleOver) return;
-      state.battleOver = true;
-      if (won) {
-        addScore(calculateFinalScore(true));
-        queueBattleEffect("summon", "player", "Victory!", 0);
-        setStatus("Victory!");
-        setTimeout(() => endGame("Victory!"), Math.round(900 * ANIMATION_SLOWDOWN));
-      } else {
-        calculateFinalScore(false);
-        queueBattleEffect("defeat", "cpu", "Defeat", 0);
-        setStatus("Defeat.");
-        setTimeout(() => endGame("Defeat."), Math.round(900 * ANIMATION_SLOWDOWN));
-      }
-    }
+    if (!state || state.battleOver) return;
+    state.battleOver = true;
 
-    function checkGameOver() {
-      if (!state || state.battleOver) return false;
-      if (state.cpu.hp <= 0) {
-        finishBattle(true);
-        return true;
-      }
-      if (state.player.hp <= 0) {
-        finishBattle(false);
-        return true;
-      }
-      return false;
+    if (won) {
+      calculateFinalScore(true);
+      queueBattleEffect("summon", "player", "Victory!", 0);
+      setStatus("Victory!");
+      setTimeout(() => endGame("Victory!"), Math.round(900 * ANIMATION_SLOWDOWN));
+    } else {
+      calculateFinalScore(false);
+      queueBattleEffect("defeat", "cpu", "Defeat", 0);
+      setStatus("Defeat.");
+      setTimeout(() => endGame("Defeat."), Math.round(900 * ANIMATION_SLOWDOWN));
     }
+  }
 
-    
+  function checkGameOver() {
+    if (!state || state.battleOver) return false;
+    if (state.cpu.hp <= 0) {
+      finishBattle(true);
+      return true;
+    }
+    if (state.player.hp <= 0) {
+      finishBattle(false);
+      return true;
+    }
+    return false;
+  }
+
+  
 function playerAction() {
     if (!state || state.turn !== "player" || state.battleOver) return;
     normalizeSelection();
@@ -5539,17 +5912,20 @@ function gameInput(action) {
   }
 
   function gameStop() {
-      if (typeof sticks !== "undefined") {
-        resetJoystick(sticks.left);
-        resetJoystick(sticks.right);
-      }
+    if (typeof sticks !== "undefined") {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
     }
+  }
 
     const resizeObserver = new ResizeObserver(() => {
       scaleAppToFrame();
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
-      if (!running) gameDraw();
+      if (!running) {
+        gameDraw();
+        presentGameFrame();
+      }
     });
 
     resizeObserver.observe(appFrame);
@@ -5559,7 +5935,10 @@ function gameInput(action) {
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+        if (!running) {
+          gameDraw();
+          presentGameFrame();
+        }
       }, 250);
     });
 
@@ -5644,8 +6023,10 @@ function gameInput(action) {
   window.ComposerClashExpansion = composerClashExpansionApi;
 
     window.MobileArcadeShell = {
-      canvas,
-      ctx,
+      canvas: displayCanvas,
+      ctx: displayCtx,
+      logicalCanvas: canvas,
+      logicalCtx: ctx,
       sticks,
       setScore,
       addScore,
@@ -5665,8 +6046,10 @@ function gameInput(action) {
     loadPlayers();
     resetJoystick(sticks.left);
     resetJoystick(sticks.right);
+    configureDisplayCanvasResolution();
     gameInit();
     gameDraw();
+    presentGameFrame();
   </script>
 </body>
 </html>
