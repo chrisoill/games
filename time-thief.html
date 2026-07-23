@@ -18,6 +18,8 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
@@ -41,7 +43,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -64,6 +67,19 @@
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #appFrame,
+    #menuScreen,
+    #screen,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
     }
 
     input,
@@ -223,8 +239,11 @@
       min-width: 110px;
     }
 
+
     /* =========================
-       GAME / EMULATOR
+       GAME / MOBILE CONTROLLER
+       The game world uses the desktop template's full 720 x 520 coordinates.
+       Only the displayed canvas is reduced to fit the 390px mobile shell.
        ========================= */
 
     #gameScreen {
@@ -233,7 +252,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: none;
+      overflow: hidden;
     }
 
     #screen {
@@ -241,29 +261,41 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: none;
+    }
+
+    /* Overlay the old mobile-style frame on top of the canvas.
+       Because it does not participate in layout, the 720 x 520 game world
+       keeps exactly the same displayed size and aspect ratio. */
+    #screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      pointer-events: none;
     }
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
+      touch-action: none;
       background: #f7fbff;
-      image-rendering: pixelated;
+      image-rendering: auto;
     }
 
     #gameOverBox {
       display: none;
       position: absolute;
-      left: 34px;
-      right: 34px;
-      top: 35px;
+      left: 38px;
+      right: 38px;
+      top: 60px;
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -297,7 +329,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -312,15 +344,16 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       grid-template-rows: 1fr 1fr;
+      column-gap: 12px;
       align-items: center;
-      padding: 5px 16px;
+      padding: 5px 14px;
       pointer-events: none;
     }
 
     #lcdMessage {
-      grid-column: 1 / 3;
+      grid-column: 1 / 4;
       font-size: 14px;
       font-weight: bold;
       white-space: nowrap;
@@ -328,23 +361,42 @@
       text-overflow: ellipsis;
     }
 
-    #lcdScore {
+    #lcdPlayer,
+    #lcdScore,
+    #lcdBest {
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    #lcdScore {
+      text-align: center;
     }
 
     #lcdBest {
-      font-size: 13px;
       text-align: right;
     }
 
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
-      background: linear-gradient(180deg, #303030, #181818);
-      touch-action: auto;
+      height: 340.333px;
+      /*
+        FULL-SIZE CONTROLLER DEFAULT:
+        All controller hardware below uses the original mobile dimensions.
+        Fit complete control sets by compressing shell padding and row gaps,
+        not by shrinking the controls themselves.
+      */
+      padding: 3px 14px 15px;
+      background: #242424;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: stretch;
+      gap: 2px;
+      overflow: hidden;
+      touch-action: pan-y;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -360,15 +412,37 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .controlRow {
+      width: 100%;
+      touch-action: pan-y;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 54px;
+      flex: 0 0 auto;
+    }
+
+    #primaryControlsRow {
+      min-height: 150px;
+    }
+
+    #stickControlsRow {
+      min-height: 112px;
+      gap: 94px;
+    }
+
+    #systemControlsRow {
+      min-height: 34px;
+    }
+
     /* D-PAD */
 
     #dpad {
-      position: absolute;
-      left: 17px;
-      top: 19px;
+      position: relative;
       width: 150px;
       height: 150px;
-      touch-action: manipulation;
+      flex: 0 0 150px;
+      touch-action: none;
     }
 
     .dpadBtn {
@@ -403,11 +477,10 @@
     /* FACE BUTTONS */
 
     #faceButtons {
-      position: absolute;
-      right: 18px;
-      top: 20px;
+      position: relative;
       width: 150px;
       height: 150px;
+      flex: 0 0 150px;
     }
 
     .faceBtn {
@@ -436,26 +509,29 @@
     #buttonA { left: 92px; top: 46px; }
     #buttonB { left: 46px; top: 92px; }
 
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 76px;
+      height: 76px;
+      left: 37px !important;
+      top: 37px !important;
+      border-radius: 22px;
+      padding: 0 8px;
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: normal;
+    }
+
     /* JOYSTICKS */
 
     .joystickPad {
-      position: absolute;
+      position: relative;
       width: 112px;
       height: 112px;
+      flex: 0 0 112px;
       border-radius: 18px;
       background: rgba(255,255,255,0.035);
       box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
       touch-action: none;
-    }
-
-    #leftJoystickPad {
-      left: 36px;
-      top: 188px;
-    }
-
-    #rightJoystickPad {
-      right: 37px;
-      top: 188px;
     }
 
     .joystickBase {
@@ -488,19 +564,15 @@
     /* START / SELECT */
 
     #systemButtons {
-      position: absolute;
-      left: 50%;
-      top: 326px;
-      width: 164px;
-      height: 34px;
-      transform: translateX(-50%);
+      min-height: 34px;
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 12px;
     }
 
     .systemBtn {
-      width: 76px;
+      width: 82px;
       height: 32px;
       border-radius: 999px;
       border: none;
@@ -516,6 +588,10 @@
     .systemBtn:active {
       transform: scale(0.96);
       filter: brightness(1.2);
+    }
+
+    #systemButtons.singleSystem .systemBtn {
+      width: 104px;
     }
 
     /* =========================
@@ -654,27 +730,67 @@
       border-radius: 6px;
     }
 
-  
 
-    /* Time Thief Step 1: one-button layout */
-    #dpad, #leftJoystickPad, #rightJoystickPad, #buttonB, #buttonX, #buttonY { display: none !important; }
-    #faceButtons { left: 50%; right: auto; top: 54px; width: 170px; height: 170px; transform: translateX(-50%); }
-    #buttonA {
-      left: 50%; top: 50%; transform: translate(-50%, -50%);
-      width: 128px; height: 128px; font-size: 26px;
+    /* TIME THIEF MOBILE OVERRIDES */
+    #controls {
+      justify-content: center;
+      gap: 28px;
+      background: #242424;
+      touch-action: pan-y;
+    }
+
+    #primaryControlsRow {
+      min-height: 170px;
+      touch-action: pan-y;
+    }
+
+    #systemControlsRow {
+      min-height: 34px;
+      touch-action: pan-y;
+    }
+
+    #faceButtons.singleFace {
+      width: 170px;
+      height: 170px;
+      flex: 0 0 170px;
+    }
+
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 128px;
+      height: 128px;
+      left: 21px !important;
+      top: 21px !important;
+      border-radius: 50%;
+      padding: 0;
+      font-size: 28px;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
       background: radial-gradient(circle at 30% 30%, #ffe08a, #c27803);
       color: #111827;
     }
-    #buttonA::after { content: "TAP"; }
-    #buttonA { font-size: 0; }
-    #buttonA::after { font-size: 28px; font-weight: 900; }
-    #systemButtons { top: 312px; }
 
-    /* Time Thief uses one gameplay button plus MENU. */
-    #selectButton { display: none !important; }
-    #systemButtons { width: 92px; }
-    #startButton { width: 92px; }
-</style>
+    #systemButtons.singleSystem {
+      width: 92px;
+    }
+
+    #systemButtons.singleSystem .systemBtn {
+      width: 92px;
+    }
+
+    #screen,
+    #gameCanvas,
+    #controls,
+    .controlRow {
+      touch-action: pan-y;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
+    }
+
+  </style>
 </head>
 
 <body>
@@ -707,9 +823,10 @@
         <button id="startGameBtn">Start Game</button>
       </div>
 
+
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -721,39 +838,46 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdPlayer">PLAYER: <span id="playerName">—</span></div>
+          <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
 
         <div id="controls">
-          <div id="dpad">
-            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
-            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
-            <button id="dpadCenter" class="dpadBtn"></button>
-            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
-            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          <div id="primaryControlsRow" class="controlRow">
+            <div id="dpad">
+              <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+              <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+              <button id="dpadCenter" class="dpadBtn"></button>
+              <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+              <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+            </div>
+
+            <div id="faceButtons">
+              <button id="buttonX" class="faceBtn" data-action="x">X</button>
+              <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+              <button id="buttonA" class="faceBtn" data-action="a">A</button>
+              <button id="buttonB" class="faceBtn" data-action="b">B</button>
+            </div>
           </div>
 
-          <div id="faceButtons">
-            <button id="buttonX" class="faceBtn" data-action="x">X</button>
-            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
-            <button id="buttonA" class="faceBtn" data-action="a">A</button>
-            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          <div id="stickControlsRow" class="controlRow">
+            <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+              <div class="joystickBase"></div>
+              <div id="leftJoystickKnob" class="joystickKnob"></div>
+            </div>
+
+            <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+              <div class="joystickBase"></div>
+              <div id="rightJoystickKnob" class="joystickKnob"></div>
+            </div>
           </div>
 
-          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
-            <div class="joystickBase"></div>
-            <div id="leftJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
-            <div class="joystickBase"></div>
-            <div id="rightJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="systemButtons">
-            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
-            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
+          <div id="systemControlsRow" class="controlRow">
+            <div id="systemButtons">
+              <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+              <button id="startButton" class="systemBtn" data-action="start">START</button>
+            </div>
           </div>
         </div>
       </div>
@@ -775,6 +899,18 @@
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
 
+    // These must match the desktop template exactly.
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+
+    // The desktop world is displayed proportionally inside the mobile shell.
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
     /*
       Change STORAGE_KEY for each separate arcade game if you want each game
       to keep its own local player list/leaderboard.
@@ -784,6 +920,8 @@
     const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Watches";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "timeThiefMobileHowToPlay_v1";
+    let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
 
     const appFrame = document.getElementById("appFrame");
     const appStage = document.getElementById("appStage");
@@ -804,10 +942,66 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameCanvasPixelScale = 1;
+
+    function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
+      const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
+      const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
+    const playerNameEl = document.getElementById("playerName");
+    const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
+
+    // Desktop game modules commonly write to questionBox.
+    // On mobile, that same content appears in the compact LCD message row.
+    const questionBox = lcdMessage;
+    scoreLabelEl.textContent = String(SCORE_LABEL || "Score").toUpperCase();
 
     const gameOverBox = document.getElementById("gameOverBox");
     const gameOverScore = document.getElementById("gameOverScore");
@@ -818,6 +1012,12 @@
     const rightJoystickPad = document.getElementById("rightJoystickPad");
     const leftJoystickKnob = document.getElementById("leftJoystickKnob");
     const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+    const primaryControlsRow = document.getElementById("primaryControlsRow");
+    const stickControlsRow = document.getElementById("stickControlsRow");
+    const systemControlsRow = document.getElementById("systemControlsRow");
+    const dpad = document.getElementById("dpad");
+    const faceButtons = document.getElementById("faceButtons");
+    const systemButtons = document.getElementById("systemButtons");
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
@@ -830,11 +1030,11 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
-    let firstTimeHelpVersion = "howToPlay_v1";
-    let pendingFirstTimeHelpStart = false;
 
     const sticks = {
       left: {
@@ -874,7 +1074,7 @@
           <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
           <div class="pauseMenuActions">
             <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
-            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Score &amp; Exit</button>
             <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
           </div>
         `
@@ -885,10 +1085,13 @@
         html: `
           <h3>Controls</h3>
           <ul>
-            <li><strong>TAP:</strong> Take one step forward.</li>
-            <li><strong>MENU:</strong> Pause, read the help, or leave the run.</li>
+            <li><strong>Left joystick / D-pad:</strong> Movement when the game uses movement.</li>
+            <li><strong>Right joystick:</strong> Directional aiming and firing when the game uses twin-stick controls.</li>
+            <li><strong>A / B / X / Y:</strong> Game action buttons. Each game should explain what these do.</li>
+            <li><strong>START:</strong> Pause / open this menu.</li>
+            <li><strong>SELECT:</strong> Extra game/system action when a game uses it.</li>
           </ul>
-          <p>Try to tap in a steady quarter-note beat. If you stop, the moving floor pulls you backward.</p>
+          <p>The template exposes every mobile control by default. Each game should hide unused controls; the remaining rows recenter automatically.</p>
         `
       },
       {
@@ -896,14 +1099,13 @@
         label: "How to Play",
         html: `
           <h3>How to Play</h3>
+          <p>This is the quick-start screen for new players.</p>
           <ul>
-            <li>You are the Time Thief running through a laser corridor.</li>
-            <li>Each TAP is one step forward, like playing steady quarter notes.</li>
-            <li>Keep a steady beat so you stay near the safe opening between the red lasers.</li>
-            <li>Grab watches when they appear to score points.</li>
-            <li>The tempo changes in smooth waves, so feel when the corridor speeds up or slows down.</li>
-            <li>If the lasers catch you, the run ends.</li>
+            <li>Read the goal of the game.</li>
+            <li>Check which buttons actually matter.</li>
+            <li>Tap START any time you need help again.</li>
           </ul>
+          <p>Each game should replace this with short, concrete instructions.</p>
         `
       }
     ];
@@ -991,10 +1193,6 @@
       shellMenu.classList.remove("open");
       shellMenu.setAttribute("aria-hidden", "true");
 
-      if (!shouldResume) {
-        pendingFirstTimeHelpStart = false;
-      }
-
       if (
         shouldResume &&
         shellMenuWasRunning &&
@@ -1002,21 +1200,164 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        scheduleGameLoop();
       }
 
       shellMenuWasRunning = false;
-
-      if (
-        shouldResume &&
-        pendingFirstTimeHelpStart &&
-        gameScreen.style.display === "block" &&
-        gameOverBox.style.display !== "block"
-      ) {
-        pendingFirstTimeHelpStart = false;
-        startGame();
-      }
     }
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function shouldShowFirstTimeHelp() {
+      // Guest is a shared/new-visitor account, so it should open How to Play every time.
+      if (isGuestPlayerName()) return true;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      // Do not mark Guest as done. The next Guest player should still see How to Play.
+      if (isGuestPlayerName()) return;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function maybeOpenFirstTimeHelp() {
+      if (!shouldShowFirstTimeHelp()) return;
+      markFirstTimeHelpSeen();
+      openShellMenu("instructions");
+    }
+
+    /*
+      DEFAULT MOBILE CONTROLS
+      The template includes the full control inventory, but the layout now reflows.
+      Individual games should hide anything they do not use with
+      MobileArcadeShell.configureControls({...}) rather than resizing the game world.
+
+      Example future game-specific override:
+      MobileArcadeShell.configureControls({
+        showDpad: false,
+        showLeftJoystick: true,
+        showRightJoystick: false,
+        faceButtons: ["a"],
+        systemButtons: ["start"],
+        labels: { a: "REEL", start: "MENU" }
+      });
+    */
+    const defaultMobileControlConfig = {
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: ["a", "b", "x", "y"],
+      systemButtons: ["select", "start"],
+      labels: {
+        a: "A",
+        b: "B",
+        x: "X",
+        y: "Y",
+        select: "SELECT",
+        start: "START"
+      }
+    };
+
+    function setVisible(element, visible) {
+      if (!element) return;
+      element.classList.toggle("hidden", !visible);
+    }
+
+    function configureMobileControls(options = {}) {
+      const config = {
+        ...defaultMobileControlConfig,
+        ...options,
+        labels: {
+          ...defaultMobileControlConfig.labels,
+          ...(options.labels || {})
+        }
+      };
+
+      const showDpad = config.showDpad !== false;
+      const showLeftJoystick = config.showLeftJoystick !== false;
+      const showRightJoystick = config.showRightJoystick === true;
+      const visibleFaceButtons = new Set(
+        (config.faceButtons || []).map(action => String(action).toLowerCase())
+      );
+      const visibleSystemButtons = new Set(
+        (config.systemButtons || []).map(action => String(action).toLowerCase())
+      );
+
+      setVisible(dpad, showDpad);
+      setVisible(leftJoystickPad, showLeftJoystick);
+      setVisible(rightJoystickPad, showRightJoystick);
+      setVisible(faceButtons, visibleFaceButtons.size > 0);
+      setVisible(systemButtons, visibleSystemButtons.size > 0);
+
+      const faceButtonMap = {
+        a: document.getElementById("buttonA"),
+        b: document.getElementById("buttonB"),
+        x: document.getElementById("buttonX"),
+        y: document.getElementById("buttonY")
+      };
+
+      Object.entries(faceButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleFaceButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+        button.classList.toggle("singleAction", isVisible && visibleFaceButtons.size === 1);
+      });
+
+      faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
+
+      const systemButtonMap = {
+        select: document.getElementById("selectButton"),
+        start: document.getElementById("startButton")
+      };
+
+      Object.entries(systemButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleSystemButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+      });
+
+      systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
+
+      // Empty rows disappear entirely. Remaining rows automatically redistribute
+      // themselves vertically, so game-specific control sets stay centered.
+      setVisible(primaryControlsRow, showDpad || visibleFaceButtons.size > 0);
+      setVisible(stickControlsRow, showLeftJoystick || showRightJoystick);
+      setVisible(systemControlsRow, visibleSystemButtons.size > 0);
+
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
 
     function saveCurrentScoreForSelectedPlayer() {
       if (!selectedPlayer) return;
@@ -1091,6 +1432,7 @@
       const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1410,59 +1752,6 @@
       }
     });
 
-
-    function setFirstTimeHelpVersion(version) {
-      const cleanVersion = String(version || "").trim();
-      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
-    }
-
-    function isGuestPlayerName(name) {
-      return String(name || "").trim().toLowerCase() === "guest";
-    }
-
-    function ensureSelectedPlayerRecord() {
-      if (!selectedPlayer) return null;
-
-      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
-        players[selectedPlayer] = { best: 0 };
-      }
-
-      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
-        players[selectedPlayer].best = 0;
-      }
-
-      return players[selectedPlayer];
-    }
-
-    function shouldShowFirstTimeHelp() {
-      const playerData = ensureSelectedPlayerRecord();
-      if (!playerData) return false;
-      if (isGuestPlayerName(selectedPlayer)) return true;
-      return playerData.helpSeenVersion !== firstTimeHelpVersion;
-    }
-
-    function markFirstTimeHelpSeen() {
-      const playerData = ensureSelectedPlayerRecord();
-      if (!playerData || isGuestPlayerName(selectedPlayer)) return;
-      playerData.helpSeenVersion = firstTimeHelpVersion;
-      savePlayers();
-    }
-
-    function beginRunWithFirstTimeHelp() {
-      menuScreen.style.display = "none";
-      gameScreen.style.display = "block";
-      gameOverBox.style.display = "none";
-
-      if (shouldShowFirstTimeHelp()) {
-        markFirstTimeHelpSeen();
-        pendingFirstTimeHelpStart = true;
-        openShellMenu("instructions");
-        return;
-      }
-
-      startGame();
-    }
-
     startGameBtn.onclick = () => {
       closeShellMenu({ resume: false });
 
@@ -1472,12 +1761,16 @@
       }
 
       savePlayers();
-      beginRunWithFirstTimeHelp();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+      maybeOpenFirstTimeHelp();
     };
 
     playAgainBtn.onclick = () => {
-      closeShellMenu({ resume: false });
-      beginRunWithFirstTimeHelp();
+      startGame();
+      maybeOpenFirstTimeHelp();
     };
 
     backToMenuBtn.onclick = () => {
@@ -1505,13 +1798,17 @@
 
       const centerX = stick.pad.offsetWidth / 2;
       const centerY = stick.pad.offsetHeight / 2;
+      const rawDx = point.x - centerX;
+      const rawDy = point.y - centerY;
+      const rawDistance = Math.hypot(rawDx, rawDy);
+      const limitedDistance = Math.min(stick.maxDistance, rawDistance);
+      const directionX = rawDistance > 0 ? rawDx / rawDistance : 0;
+      const directionY = rawDistance > 0 ? rawDy / rawDistance : 0;
+      const dx = directionX * limitedDistance;
+      const dy = directionY * limitedDistance;
 
-      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
-      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
-
-      const dx = limitedX - centerX;
-      const dy = limitedY - centerY;
-
+      // Normalized analog values in the range -1 through 1.
+      // Game modules can read MobileArcadeShell.sticks.left/right continuously.
       stick.x = dx / stick.maxDistance;
       stick.y = dy / stick.maxDistance;
 
@@ -1591,14 +1888,16 @@
       score = 0;
       running = true;
 
+      playerNameEl.textContent = selectedPlayer || "Guest";
       scoreEl.textContent = score;
       bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
+      scheduleGameLoop();
     }
 
     function stopGame() {
@@ -1609,13 +1908,39 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
       if (!running) return;
 
-      gameUpdate();
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+      }
+
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+      if (!running) return;
+
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
+
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
       gameDraw();
 
       loopId = requestAnimationFrame(loop);
@@ -1654,6 +1979,63 @@
 
       gameInput(action);
     }
+
+    function canvasPointFromClient(clientX, clientY, originalEvent) {
+      const rect = canvas.getBoundingClientRect();
+
+      return {
+        x: (clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height),
+        originalEvent
+      };
+    }
+
+    canvas.addEventListener("click", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+
+      if (typeof gamePointer === "function") {
+        gamePointer(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+    });
+
+    document.addEventListener("keydown", event => {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+      if (shellMenu.classList.contains("open")) return;
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+
+      if (event.key === "ArrowUp" || key === "w") {
+        event.preventDefault();
+        handleInput("up");
+      }
+
+      if (event.key === "ArrowDown" || key === "s") {
+        event.preventDefault();
+        handleInput("down");
+      }
+
+      if (event.key === "ArrowLeft" || key === "a") {
+        event.preventDefault();
+        handleInput("left");
+      }
+
+      if (event.key === "ArrowRight" || key === "d") {
+        event.preventDefault();
+        handleInput("right");
+      }
+
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        handleInput("a");
+      }
+
+      if (key === "m") {
+        event.preventDefault();
+        openShellMenu("instructions");
+      }
+    });
 
     function getAudio() {
       if (!audioCtx) {
@@ -1706,1093 +2088,22 @@
       });
     }
 
-
-  /* =========================
-     GAME MODULE — TIME THIEF TEMPO WAVES
-     Lasers stay fixed on screen; corridor speed performs smooth tempo waves.
-     ========================= */
-
-  const TT_BG = "#07111f";
-  const TT_INK = "#f8fafc";
-  const TT_GOLD = "#facc15";
-  const TT_RED = "#ef4444";
-  const TT_BLUE = "#38bdf8";
-  const TT_FLOOR = "#1f2937";
-  const TT_BASE_TEMPO_BPM = 120;
-  const TT_MIN_TEMPO_BPM = 60;
-  const TT_MAX_TEMPO_BPM = 240;
-
-  let tt = null;
-  let ttHelpRegistered = false;
-
-  function ttClamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
-  function ttLerp(a, b, t) { return a + (b - a) * t; }
-
-  function ttRoundRect(x, y, w, h, r) {
-    const rr = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + rr, y);
-    ctx.lineTo(x + w - rr, y);
-    ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
-    ctx.lineTo(x + w, y + h - rr);
-    ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
-    ctx.lineTo(x + rr, y + h);
-    ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
-    ctx.lineTo(x, y + rr);
-    ctx.quadraticCurveTo(x, y, x + rr, y);
-    ctx.closePath();
-  }
-
-  function ttText(text, x, y, size, fill = TT_INK, align = "center", weight = "bold") {
-    ctx.fillStyle = fill;
-    ctx.textAlign = align;
-    ctx.textBaseline = "middle";
-    ctx.font = `${weight} ${size}px Arial, sans-serif`;
-    ctx.fillText(text, x, y);
-  }
-
-  function ttRegisterHelp() {
-    if (ttHelpRegistered) return;
-    ttHelpRegistered = true;
-
-    const controlsHtml = `
-      <h3>Controls</h3>
-      <ul>
-        <li><strong>TAP:</strong> Take one step forward.</li>
-        <li><strong>MENU:</strong> Pause, read the help, or leave the run.</li>
-      </ul>
-      <p>Try to tap in a steady quarter-note beat. If you stop, the moving floor pulls you backward.</p>
-    `;
-
-    const instructionsHtml = `
-      <h3>How to Play</h3>
-      <ul>
-        <li>You are the Time Thief running through a laser corridor.</li>
-        <li>Each TAP is one step forward, like playing steady quarter notes.</li>
-        <li>Keep a steady beat so you stay near the safe opening between the red lasers.</li>
-        <li>Grab watches when they appear to score points.</li>
-        <li>The tempo changes in smooth waves, so feel when the corridor speeds up or slows down.</li>
-        <li>If the lasers catch you, the run ends.</li>
-      </ul>
-    `;
-
-    if (typeof updateShellMenuTab === "function") {
-      updateShellMenuTab("controls", controlsHtml);
-      updateShellMenuTab("instructions", instructionsHtml);
-    }
-
-    const aBtn = typeof document !== "undefined" ? document.getElementById("buttonA") : null;
-    if (aBtn) aBtn.textContent = "TAP";
-  }
-
-  function ttFreshState() {
-    const now = performance.now();
-    return {
-      now,
-      lastMs: now,
-      floor: 1,
-      watches: 0,
-      worldX: 0,
-      nextWatchGap: 1550,
-      watchX: 1550,
-      runLevel: 1,
-      scrollSpeed: 100,
-      baselineSpeed: 100,
-      scrollTargetSpeed: 100,
-      scrollAccel: 0,
-      scrollMode: "steady",
-      tempoEvent: null,
-      nextTempoEventAt: now + 900,
-      playerOffset: 0,
-      playerRadius: 16,
-      stepSize: 50,
-      stepDuration: 0.15,
-      activeSteps: [],
-      lastTapAt: 0,
-      tapInterval: 0.46,
-      runIntensity: 0,
-      centerDrift: 0,
-      laserGap: 999,
-      laserGapTarget: 999,
-      laserGapStart: 999,
-      laserGapMin: 96,
-      laserTightness: 0,
-      laserOffset: 0,
-      laserTargetOffset: 0,
-      nextLaserTargetAt: now + 1800,
-      rubatoPhase: 0,
-      rubatoAmp: 0,
-      rubatoTargetAmp: 34,
-      rubatoSpeed: 0.9,
-      rubatoTargetSpeed: 0.9,
-      rubatoEase: 0.018,
-      nextRubatoChangeAt: now + 1900,
-      rubatoLabel: "Steady",
-      rubatoMode: "steady",
-      lastLaserOffset: 0,
-      laserVelocity: 0,
-      laserVelocityTarget: 0,
-      nextLaserNudgeAt: now + 260,
-      laserAcceleration: 0,
-      safeMs: 0,
-      caught: false,
-      footPulse: 0,
-      stepPhase: 0,
-      tapFlash: 0,
-      watchTaken: false,
-      stairsReached: false,
-      transitionMs: 0,
-      message: "",
-      baselineTempoBpm: 120,
-      tapTempoBpm: 120,
-      displayTempoBpm: 120,
-      messageMs: 0,
-      particles: [],
-      popups: [],
-      doorGlow: 0,
-      chimeCooldown: 0,
-      difficultyPressure: 0,
-      targetTempoBpm: 120,
-      previousTargetTempoBpm: 120,
-      lastTempoDirection: 0,
-      laserDanger: 0,
-      deathFlash: 0,
-      deathShakeMs: 0,
-      pickupFlash: 0
-    };
-  }
-
-  function ttSetStatus(text) {
-    if (typeof questionBox !== "undefined" && questionBox) questionBox.textContent = text;
-    if (typeof setMessage === "function") setMessage(text || "READY");
-  }
-
-  function ttLayout() {
-    const w = canvas.width;
-    const h = canvas.height;
-    const mobile = w <= 420;
-    const groundY = h * (mobile ? 0.77 : 0.78);
-    return {
-      w,
-      h,
-      mobile,
-      playerX: w * 0.5,
-      groundY,
-      hudH: mobile ? 34 : 54,
-      worldScale: mobile ? 0.78 : 1.0
-    };
-  }
-
-  function ttTap() {
-    if (!tt || tt.transitionMs > 0) return;
-    const now = performance.now();
-    const layout = ttLayout();
-    if (tt.lastTapAt > 0) {
-      tt.tapInterval = ttClamp((now - tt.lastTapAt) / 1000, 0.13, 1.4);
-      tt.tapTempoBpm = ttClamp(60 / tt.tapInterval, 20, 260);
-    }
-    tt.lastTapAt = now;
-    tt.footPulse = 1;
-    tt.tapFlash = 1;
-    tt.stepPhase += Math.PI;
-    tt.message = "";
-    tt.messageMs = 0;
-
-    const fastBonus = ttClamp((tt.scrollSpeed - tt.baselineSpeed) / Math.max(1, tt.baselineSpeed * 0.55), 0, 1);
-    const distance = tt.stepSize * (1 + fastBonus * 0.12);
-    const duration = tt.stepDuration * (1 - fastBonus * 0.26);
-    const leg = tt.stepPhase;
-    tt.activeSteps.push({ elapsed: 0, duration, distance, progress: 0, leg });
-    if (tt.activeSteps.length > 5) tt.activeSteps.shift();
-
-    const footX = layout.playerX + tt.playerOffset - 12 + Math.random() * 20;
-    const footY = layout.groundY + 4;
-    tt.particles.push({
-      kind: "foot",
-      x: footX,
-      y: footY,
-      vx: -42 - Math.random() * 42,
-      vy: -8 - Math.random() * 10,
-      life: 0.24,
-      maxLife: 0.24,
-      size: 7 + Math.random() * 5
-    });
-    tt.particles.push({
-      kind: "stepRing",
-      x: footX + 4,
-      y: footY - 1,
-      vx: -18,
-      vy: 0,
-      life: 0.18,
-      maxLife: 0.18,
-      size: 8
-    });
-    if (typeof beep === "function") beep(120 + fastBonus * 70 + Math.random() * 18, 0.032, "triangle", 0.021);
-  }
-
-  function ttUpdateLaserGap(layout, dt) {
-    // Difficulty curve step: lasers begin near the frame edges and glide inward
-    // continuously. The closing rate gets slightly more demanding with survival
-    // time and watch count, but the pressure itself eases in so there are no
-    // visible step-jumps.
-    const margin = layout.mobile ? 18 : 28;
-    const startGap = Math.max(140, layout.w - margin * 2);
-    const minGap = Math.max(
-      layout.mobile ? 72 : 104,
-      tt.playerRadius * (layout.mobile ? 5.6 : 6.3)
-    );
-    tt.laserGapStart = startGap;
-    tt.laserGapMin = minGap;
-
-    const survivalPressure = ttClamp(tt.worldX / (layout.mobile ? 26000 : 31000), 0, 0.24);
-    const watchPressure = ttClamp(tt.watches * 0.004, 0, 0.22);
-    const targetPressure = ttClamp(survivalPressure + watchPressure, 0, 0.40);
-    const ease = 1 - Math.pow(0.94, dt * 60);
-    tt.difficultyPressure = ttLerp(tt.difficultyPressure || 0, targetPressure, ease);
-
-    const baseDistanceConstant = layout.mobile ? 5200 : 6200;
-    const distanceConstant = baseDistanceConstant * (1 - tt.difficultyPressure * 0.45);
-    const distance = Math.max(0, tt.worldX);
-    const target = minGap + (startGap - minGap) * Math.exp(-distance / distanceConstant);
-
-    tt.laserGapTarget = target;
-    tt.laserGap = target;
-    tt.laserTightness = ttClamp(1 - ((target - minGap) / Math.max(1, startGap - minGap)), 0, 1);
-  }
-
-  function ttScheduleNextWatch() {
-    // One-active-watch loop: as soon as a watch is collected, the next one
-    // spawns just off the right edge so it visibly enters the corridor next.
-    const layout = ttLayout();
-    const offscreenMargin = layout.mobile ? 50 : 72;
-    const spawnScreenX = layout.w + offscreenMargin;
-    tt.nextWatchGap = (spawnScreenX - layout.playerX) / layout.worldScale;
-    tt.watchX = tt.worldX + tt.nextWatchGap;
-    tt.watchTaken = false;
-  }
-
-  function ttTakeWatch() {
-    tt.watchTaken = true;
-    tt.watches += 1;
-    tt.runLevel = tt.watches + 1;
-    tt.pickupFlash = 1;
-    setScore(tt.watches);
-    tt.message = "";
-    tt.messageMs = 0;
-    const pickupLayout = ttLayout();
-    const burstX = pickupLayout.playerX + 24;
-    const burstY = pickupLayout.groundY - 66 * pickupLayout.worldScale;
-    for (let i = 0; i < 28; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const speed = 45 + Math.random() * 135;
-      tt.particles.push({
-        kind: "spark",
-        x: burstX + Math.random() * 22,
-        y: burstY + Math.random() * 18,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 32,
-        life: 0.55 + Math.random() * 0.28,
-        maxLife: 0.83,
-        gold: true,
-        size: 2.5 + Math.random() * 2.5
-      });
-    }
-    tt.particles.push({
-      kind: "pickupRing",
-      x: burstX + 4,
-      y: burstY + 2,
-      vx: 0,
-      vy: 0,
-      life: 0.38,
-      maxLife: 0.38,
-      size: 18
-    });
-    tt.popups.push({
-      text: "+1",
-      x: pickupLayout.playerX + 20,
-      y: pickupLayout.groundY - 98 * pickupLayout.worldScale,
-      vy: -22,
-      life: 0.58,
-      maxLife: 0.58
-    });
-    if (tt.popups.length > 4) tt.popups.shift();
-    if (typeof soundCorrect === "function") soundCorrect();
-    ttScheduleNextWatch();
-  }
-
-  function ttReachStairs() {
-    // Stairs removed: this is now one continuous museum run.
-  }
-
-  function ttSmoothTempoBell(t) {
-    // Default symmetric raised-cosine bell. Used as a safe fallback.
-    const x = ttClamp(t, 0, 1);
-    return 0.5 - 0.5 * Math.cos(2 * Math.PI * x);
-  }
-
-  function ttEaseTempoSide(t, power) {
-    // Smoothstep gives musical endpoints; the power lets some waves feel broad
-    // and others feel more sudden without creating hard corners.
-    const x = ttClamp(t, 0, 1);
-    const smooth = x * x * (3 - 2 * x);
-    return Math.pow(smooth, Math.max(0.58, power || 1));
-  }
-
-  function ttTempoEventShape(t, event) {
-    const x = ttClamp(t, 0, 1);
-    const peakAt = ttClamp(event?.peakAt ?? 0.5, 0.22, 0.78);
-    if (x <= peakAt) {
-      return ttEaseTempoSide(x / peakAt, event?.attackPower ?? 1);
-    }
-    return ttEaseTempoSide(1 - ((x - peakAt) / Math.max(0.001, 1 - peakAt)), event?.releasePower ?? 1);
-  }
-
-  function ttStartTempoEvent() {
-    const difficulty = ttClamp(
-      (tt.laserTightness || 0) * 0.50 +
-      Math.min(0.34, tt.watches * 0.006) +
-      Math.min(0.22, tt.worldX / 54000),
-      0,
-      1
-    );
-
-    // Ratio-based tempo waves: 120 is the multiplicative center between
-    // 60 and 240. The possible maximum ratio grows over time, but each
-    // actual wave randomly chooses its own peak below that ceiling.
-    const baseTempo = tt.baselineTempoBpm || TT_BASE_TEMPO_BPM;
-    const absoluteMaxRatio = Math.min(
-      TT_MAX_TEMPO_BPM / baseTempo,
-      baseTempo / TT_MIN_TEMPO_BPM
-    );
-    const maxPossibleRatio = ttClamp(1.22 + difficulty * 0.78, 1.22, absoluteMaxRatio);
-    const minPeakRatio = ttClamp(1.08 + difficulty * 0.04, 1.06, maxPossibleRatio);
-    const weightedRandom = Math.pow(Math.random(), 0.72); // variety without living at the max.
-    const peakRatio = ttClamp(
-      minPeakRatio + (maxPossibleRatio - minPeakRatio) * weightedRandom,
-      minPeakRatio,
-      maxPossibleRatio
-    );
-
-    let direction = Math.random() < 0.5 ? 1 : -1;
-    if (tt.lastTempoDirection && Math.random() < 0.54) direction = -tt.lastTempoDirection;
-    tt.lastTempoDirection = direction;
-
-    const peakTempo = direction > 0
-      ? ttClamp(baseTempo * peakRatio, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM)
-      : ttClamp(baseTempo / peakRatio, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM);
-    const signedLogRatio = Math.log(peakTempo / baseTempo);
-
-    // The maximum permitted steepness increases with difficulty, but the actual
-    // event still randomizes. Early game mostly breathes; later game sometimes
-    // snaps into a more urgent wave.
-    const slowestDuration = ttLerp(7.8, 5.3, difficulty);
-    const fastestDuration = ttLerp(5.6, 2.75, difficulty);
-    const duration = ttLerp(slowestDuration, fastestDuration, Math.pow(Math.random(), 0.9));
-
-    // peakAt controls whether the climb or release is longer. Power below 1
-    // creates a more sudden move; power above 1 creates a more gradual one.
-    const suddenChance = ttLerp(0.12, 0.44, difficulty);
-    const attackPower = Math.random() < suddenChance
-      ? ttLerp(0.58, 0.88, Math.random())
-      : ttLerp(1.06, 1.82, Math.random());
-    const releasePower = Math.random() < suddenChance
-      ? ttLerp(0.58, 0.92, Math.random())
-      : ttLerp(1.04, 1.95, Math.random());
-    const peakAt = ttClamp(0.50 + (Math.random() - 0.5) * ttLerp(0.18, 0.36, difficulty), 0.28, 0.72);
-
-    tt.tempoEvent = {
-      startMs: tt.now,
-      durationMs: duration * 1000,
-      signedLogRatio,
-      peakRatio,
-      peakTempo,
-      peakAt,
-      attackPower,
-      releasePower,
-      maxPossibleRatio
-    };
-  }
-
-  function ttUpdateTempoWave(dt) {
-    const baseTempo = tt.baselineTempoBpm || TT_BASE_TEMPO_BPM;
-    let targetTempo = baseTempo;
-
-    if (!tt.tempoEvent && tt.now >= tt.nextTempoEventAt) {
-      ttStartTempoEvent();
-    }
-
-    if (tt.tempoEvent) {
-      const t = (tt.now - tt.tempoEvent.startMs) / Math.max(1, tt.tempoEvent.durationMs);
-      if (t >= 1) {
-        tt.tempoEvent = null;
-        targetTempo = baseTempo;
-        const pressure = ttClamp((tt.laserTightness || 0) + tt.watches * 0.006, 0, 1);
-        const restMs = (1050 + Math.random() * 2100) * (1 - pressure * 0.42);
-        tt.nextTempoEventAt = tt.now + Math.max(520, restMs);
-      } else {
-        targetTempo = baseTempo * Math.exp(tt.tempoEvent.signedLogRatio * ttTempoEventShape(t, tt.tempoEvent));
-      }
-    }
-
-    targetTempo = ttClamp(targetTempo, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM);
-    const tempoChange = targetTempo - (tt.previousTargetTempoBpm || baseTempo);
-    if (Math.abs(tempoChange) < 0.08 && !tt.tempoEvent) {
-      tt.rubatoLabel = "Steady";
-      tt.scrollMode = "steady";
-    } else if (tempoChange > 0.08) {
-      tt.rubatoLabel = "Accelerando";
-      tt.scrollMode = "accelerando";
-    } else if (tempoChange < -0.08) {
-      tt.rubatoLabel = "Ritardando";
-      tt.scrollMode = "ritardando";
-    } else {
-      tt.rubatoLabel = "Steady";
-      tt.scrollMode = "steady";
-    }
-
-    tt.previousTargetTempoBpm = targetTempo;
-    tt.targetTempoBpm = targetTempo;
-    tt.displayTempoBpm = targetTempo;
-    tt.scrollTargetSpeed = (tt.stepSize * (targetTempo / 60)) / Math.max(0.001, ttLayout().worldScale);
-    tt.scrollAccel = (tt.scrollTargetSpeed - tt.scrollSpeed) / Math.max(dt, 1 / 60);
-    tt.scrollSpeed = tt.scrollTargetSpeed;
-  }
-
-  function gameInit() {
-    ttRegisterHelp();
-    tt = ttFreshState();
-    const layout = ttLayout();
-    tt.laserGapStart = Math.max(140, layout.w - (layout.mobile ? 36 : 56));
-    tt.laserGap = tt.laserGapStart;
-    tt.laserGapTarget = tt.laserGapStart;
-    // Base calibration: each tap is one quarter note, and the floor moves at quarter = 120.
-    tt.baselineTempoBpm = TT_BASE_TEMPO_BPM;
-    tt.stepSize = layout.mobile ? 33 : 50;
-    tt.stepDuration = layout.mobile ? 0.13 : 0.145;
-    tt.baselineSpeed = (tt.stepSize * (tt.baselineTempoBpm / 60)) / layout.worldScale;
-    tt.tapTempoBpm = tt.baselineTempoBpm;
-    tt.displayTempoBpm = tt.baselineTempoBpm;
-    tt.targetTempoBpm = tt.baselineTempoBpm;
-    tt.previousTargetTempoBpm = tt.baselineTempoBpm;
-    tt.nextTempoEventAt = performance.now() + 1400;
-    tt.scrollSpeed = tt.baselineSpeed;
-    tt.scrollTargetSpeed = tt.baselineSpeed;
-    tt.centerDrift = 0;
-    tt.lastLaserOffset = 0;
-    tt.laserVelocity = 0;
-    tt.laserVelocityTarget = 0;
-    tt.nextLaserNudgeAt = performance.now() + 260;
-    tt.laserAcceleration = 0;
-    tt.playerRadius = layout.mobile ? 12 : 16;
-    setScore(0);
-    ttScheduleNextWatch();
-    ttSetStatus("");
-    gameDraw();
-  }
-
-  function gameUpdate() {
-    if (!tt) return;
-    const now = performance.now();
-    const dt = Math.min(0.05, Math.max(0, (now - tt.lastMs) / 1000));
-    tt.lastMs = now;
-    tt.now = now;
-    const layout = ttLayout();
-
-    ttUpdateTempoWave(dt);
-    tt.worldX += tt.scrollSpeed * dt;
-    ttUpdateLaserGap(layout, dt);
-
-    tt.safeMs = Math.max(0, tt.safeMs - dt * 1000);
-
-    // The thief stands still by default while the moving floor carries him backward.
-    // Button taps create short, smooth step impulses forward instead of teleport jumps.
-    // When the stairs sequence starts, freeze this drift so the thief does not slide away.
-    {
-      const backwardDrift = tt.scrollSpeed * layout.worldScale;
-      tt.playerOffset -= backwardDrift * dt;
-      let stepMotionThisFrame = 0;
-      tt.activeSteps.forEach(step => {
-        step.elapsed += dt;
-        const t = ttClamp(step.elapsed / step.duration, 0, 1);
-        const eased = 0.5 - Math.cos(t * Math.PI) * 0.5;
-        const delta = (eased - step.progress) * step.distance;
-        step.progress = eased;
-        stepMotionThisFrame += delta;
-      });
-      tt.activeSteps = tt.activeSteps.filter(step => step.elapsed < step.duration);
-      tt.playerOffset += stepMotionThisFrame;
-    }
-    const recentTap = tt.lastTapAt > 0 && now - tt.lastTapAt < 260;
-    const speedRun = ttClamp((tt.scrollSpeed - tt.baselineSpeed * 1.10) / Math.max(1, tt.baselineSpeed * 0.42), 0, 1);
-    tt.runIntensity = ttLerp(tt.runIntensity, recentTap ? Math.max(0.25, speedRun) : 0, 0.12);
-
-    // Tempo waves now control the floor speed. The lasers stay fixed on screen.
-    tt.centerDrift = 0;
-    tt.laserOffset = 0;
-    const laserCenterX = layout.playerX + tt.laserOffset;
-    const playerScreenX = layout.playerX + tt.playerOffset;
-    const laserLeft = laserCenterX - tt.laserGap / 2;
-    const laserRight = laserCenterX + tt.laserGap / 2;
-    const hitHalfWidth = tt.playerRadius * (layout.mobile ? 1.05 : 1.15);
-    const leftClearance = playerScreenX - hitHalfWidth - laserLeft;
-    const rightClearance = laserRight - (playerScreenX + hitHalfWidth);
-    const clearance = Math.min(leftClearance, rightClearance);
-    const dangerWindow = Math.max(18, tt.laserGap * 0.16);
-    const targetDanger = ttClamp(1 - clearance / dangerWindow, 0, 1);
-    tt.laserDanger = ttLerp(tt.laserDanger || 0, targetDanger, 0.22);
-    if (tt.safeMs <= 0 && !tt.caught) {
-      if (leftClearance <= 0 || rightClearance <= 0) {
-        tt.caught = true;
-        tt.deathFlash = 1;
-        tt.deathShakeMs = 360;
-        const sideX = leftClearance <= 0 ? laserLeft : laserRight;
-        for (let i = 0; i < 18; i++) {
-          tt.particles.push({
-            kind: "spark",
-            x: sideX + (Math.random() - 0.5) * 16,
-            y: layout.groundY - 55 + Math.random() * 40,
-            vx: (Math.random() - 0.5) * 160,
-            vy: -80 + Math.random() * 130,
-            life: 0.42 + Math.random() * 0.22,
-            maxLife: 0.64,
-            gold: false,
-            size: 2 + Math.random() * 2.5
-          });
-        }
-        gameDraw();
-        endGame("Caught by laser!");
-        return;
-      }
-    }
-
-    tt.footPulse = ttLerp(tt.footPulse, 0, 0.16);
-    tt.tapFlash = ttLerp(tt.tapFlash, 0, 0.10);
-    tt.pickupFlash = ttLerp(tt.pickupFlash || 0, 0, 0.10);
-    tt.deathFlash = ttLerp(tt.deathFlash || 0, 0, 0.08);
-    tt.deathShakeMs = Math.max(0, (tt.deathShakeMs || 0) - dt * 1000);
-    tt.doorGlow += dt * 2.2;
-    tt.messageMs = Math.max(0, tt.messageMs - dt * 1000);
-    tt.chimeCooldown = Math.max(0, tt.chimeCooldown - dt);
-
-    tt.particles.forEach(p => {
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 120 * dt;
-      p.life -= dt;
-    });
-    tt.particles = tt.particles.filter(p => p.life > 0 && p.y < layout.h + 30);
-
-    tt.popups.forEach(p => {
-      p.y += p.vy * dt;
-      p.life -= dt;
-    });
-    tt.popups = tt.popups.filter(p => p.life > 0);
-
-    const playerWorldX = tt.worldX + tt.playerOffset / layout.worldScale;
-    const playerFrontWorldX = tt.worldX + (tt.playerOffset + (layout.mobile ? 24 : 34)) / layout.worldScale;
-    const watchLeftWorldX = tt.watchX - (layout.mobile ? 28 : 38) / layout.worldScale;
-    if (!tt.watchTaken && playerFrontWorldX >= watchLeftWorldX) ttTakeWatch();
-
-    ttSetStatus("");
-  }
-
-  function ttWorldToScreen(worldX, layout) {
-    return layout.playerX + (worldX - tt.worldX) * layout.worldScale;
-  }
-
-  function ttDrawBackground(layout) {
-    const { w, h, groundY } = layout;
-    const g = ctx.createLinearGradient(0, 0, 0, h);
-    g.addColorStop(0, "#020617");
-    g.addColorStop(0.55, "#0b1220");
-    g.addColorStop(1, "#111827");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, w, h);
-
-    // Back wall.
-    ctx.fillStyle = "#0f172a";
-    ctx.fillRect(0, layout.hudH, w, groundY - layout.hudH);
-
-    // Marble floor.
-    const floorG = ctx.createLinearGradient(0, groundY, 0, h);
-    floorG.addColorStop(0, "#374151");
-    floorG.addColorStop(1, "#111827");
-    ctx.fillStyle = floorG;
-    ctx.fillRect(0, groundY, w, h - groundY);
-
-    // Scrolling floor tiles.
-    const tileW = 74 * layout.worldScale;
-    const tileOffset = -((tt.worldX * layout.worldScale) % tileW);
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
-    ctx.lineWidth = 1;
-    for (let x = tileOffset - tileW; x < w + tileW; x += tileW) {
-      ctx.beginPath();
-      ctx.moveTo(x, groundY);
-      ctx.lineTo(x - 24, h);
-      ctx.stroke();
-    }
-    for (let y = groundY + 24; y < h; y += 34) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
-    }
-
-
-    // Wall display cases and clocks scrolling left.
-    const spacing = 360;
-    const start = Math.floor((tt.worldX - 400) / spacing) * spacing;
-    for (let wx = start; wx < tt.worldX + w / layout.worldScale + 700; wx += spacing) {
-      const x = ttWorldToScreen(wx, layout);
-      const y = layout.hudH + 42 + ((Math.floor(wx / spacing) % 2) * 18);
-      ttDrawDisplayCase(x, y, 96 * layout.worldScale, 64 * layout.worldScale, Math.floor(wx / spacing));
-    }
-
-  }
-
-  function ttDrawDisplayCase(x, y, ww, hh, index) {
-    if (x < -ww - 30 || x > canvas.width + ww + 30) return;
-    ctx.fillStyle = "rgba(2,6,23,0.62)";
-    ttRoundRect(x - ww / 2, y - hh / 2, ww, hh, 8);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(250,204,21,0.42)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = "rgba(56,189,248,0.10)";
-    ttRoundRect(x - ww / 2 + 5, y - hh / 2 + 5, ww - 10, hh - 10, 6);
-    ctx.fill();
-
-    const r = Math.min(15, ww * 0.18);
-    ctx.fillStyle = index % 3 === 0 ? "#e5e7eb" : "#fef3c7";
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#020617";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x, y - r * 0.65);
-    ctx.moveTo(x, y);
-    ctx.lineTo(x + r * 0.55, y + r * 0.35);
-    ctx.stroke();
-  }
-
-  function ttDrawWatch(layout) {
-    if (tt.watchTaken) return;
-    const x = ttWorldToScreen(tt.watchX, layout);
-    const y = layout.groundY - 63 * layout.worldScale;
-    if (x < -80 || x > layout.w + 90) return;
-    const pulse = 0.55 + Math.sin(tt.now / 180) * 0.18;
-    const spin = tt.now / 520;
-    const tilt = Math.sin(spin) * 0.13;
-    const scale = 1 + Math.sin(tt.now / 230) * 0.035;
-
-    ctx.save();
-    ctx.globalAlpha = 0.86;
-    const rg = ctx.createRadialGradient(x, y, 4, x, y, 62);
-    rg.addColorStop(0, `rgba(250,204,21,${0.42 + pulse * 0.15})`);
-    rg.addColorStop(1, "rgba(250,204,21,0)");
-    ctx.fillStyle = rg;
-    ctx.fillRect(x - 80, y - 80, 160, 160);
-    ctx.restore();
-
-    // Pedestal.
-    ctx.fillStyle = "#4b2e12";
-    ttRoundRect(x - 26, layout.groundY - 34, 52, 34, 5);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(250,204,21,0.7)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Watch with a tiny spin/shine so pickups feel alive.
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.rotate(tilt);
-    ctx.scale(scale, scale);
-    ctx.fillStyle = TT_GOLD;
-    ctx.beginPath();
-    ctx.arc(0, 0, 18, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#fff7ed";
-    ctx.beginPath();
-    ctx.arc(0, 0, 12, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#111827";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, 0);
-    ctx.lineTo(0, -8);
-    ctx.moveTo(0, 0);
-    ctx.lineTo(7, 4);
-    ctx.stroke();
-    ctx.fillStyle = TT_GOLD;
-    ttRoundRect(-8, -34, 16, 15, 4);
-    ctx.fill();
-    ttRoundRect(-8, 19, 16, 15, 4);
-    ctx.fill();
-    ctx.strokeStyle = `rgba(255,255,255,${0.42 + pulse * 0.22})`;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(-7, -8);
-    ctx.lineTo(5, -16);
-    ctx.stroke();
-    ctx.restore();
-
-  }
-
-  function ttDrawStairs(layout) {
-    const x = ttWorldToScreen(tt.stairsX, layout);
-    const baseY = layout.groundY;
-    if (x < -120 || x > layout.w + 160) return;
-    const stepW = 34 * layout.worldScale;
-    const stepH = 14 * layout.worldScale;
-    ctx.fillStyle = "#334155";
-    ctx.strokeStyle = "rgba(255,255,255,0.22)";
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 6; i++) {
-      const sx = x + i * stepW * 0.72;
-      const sy = baseY - i * stepH;
-      ttRoundRect(sx, sy - stepH, stepW, stepH, 3);
-      ctx.fill();
-      ctx.stroke();
-    }
-    const doorX = x + stepW * 4.7;
-    const doorY = baseY - stepH * 6 - 54;
-    const glow = 0.55 + Math.sin(tt.doorGlow) * 0.18;
-    ctx.fillStyle = `rgba(56,189,248,${0.18 + glow * 0.16})`;
-    ttRoundRect(doorX - 33, doorY - 48, 66, 96, 10);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(186,230,253,0.78)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ttText("STAIRS", doorX, doorY - 63, 12, "#bae6fd");
-  }
-
-  function ttDrawLasers(layout) {
-    const centerX = layout.playerX + tt.laserOffset;
-    const leftX = centerX - tt.laserGap / 2;
-    const rightX = centerX + tt.laserGap / 2;
-    const top = layout.hudH + 4;
-    const bottom = layout.groundY + 12;
-    const danger = ttClamp(tt.laserDanger || 0, 0, 1);
-    const pulse = 0.55 + 0.45 * Math.sin(tt.now / 80);
-    const glowAlpha = 0.28 + danger * (0.36 + pulse * 0.16);
-    const coreW = (layout.mobile ? 3 : 5) + danger * (layout.mobile ? 1.2 : 2);
-    const outerW = (layout.mobile ? 8 : 12) + danger * (layout.mobile ? 4 : 6);
-
-    ctx.save();
-    [leftX, rightX].forEach(x => {
-      const glow = ctx.createLinearGradient(x - 24, 0, x + 24, 0);
-      glow.addColorStop(0, "rgba(239,68,68,0)");
-      glow.addColorStop(0.5, `rgba(239,68,68,${glowAlpha})`);
-      glow.addColorStop(1, "rgba(239,68,68,0)");
-      ctx.fillStyle = glow;
-      ctx.fillRect(x - 24, top, 48, bottom - top);
-
-      ctx.strokeStyle = `rgba(254,202,202,${0.92 + danger * 0.08})`;
-      ctx.lineWidth = coreW;
-      ctx.beginPath();
-      ctx.moveTo(x, top);
-      ctx.lineTo(x, bottom);
-      ctx.stroke();
-
-      ctx.strokeStyle = `rgba(239,68,68,${0.78 + danger * 0.20})`;
-      ctx.lineWidth = outerW;
-      ctx.beginPath();
-      ctx.moveTo(x, top);
-      ctx.lineTo(x, bottom);
-      ctx.stroke();
-    });
-
-    if (danger > 0.35) {
-      const playerX = layout.playerX + tt.playerOffset;
-      const edge = playerX < centerX ? leftX : rightX;
-      ctx.strokeStyle = `rgba(248,113,113,${(danger - 0.35) * 0.65})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(edge, top + 10);
-      ctx.lineTo(edge + (playerX < centerX ? 12 : -12), top + 28);
-      ctx.stroke();
-    }
-
-    ctx.restore();
-  }
-
-  function ttDrawThief(layout) {
-    const x = layout.playerX + tt.playerOffset;
-    const y = layout.groundY;
-    const s = layout.mobile ? 0.56 : 0.76;
-    const stepping = tt.activeSteps.length > 0 || tt.footPulse > 0.08;
-    const highTempo = ttClamp(((tt.displayTempoBpm || 120) - 120) / 80, 0, 1);
-    const sneakTempo = ttClamp((120 - (tt.displayTempoBpm || 120)) / 80, 0, 1);
-    const cycleSpeed = highTempo > 0.35 ? 55 : (sneakTempo > 0.35 ? 145 : 92);
-    const phase = tt.now / cycleSpeed + tt.stepPhase;
-    const stride = stepping ? Math.sin(phase) : 0;
-    const stride2 = stepping ? Math.sin(phase + Math.PI) : 0;
-    const bob = stepping ? (2.0 + highTempo * 5.0) * s * Math.abs(Math.sin(phase)) : sneakTempo * 0.7 * s;
-    const lean = stepping ? (0.05 + highTempo * 0.12 - sneakTempo * 0.035) : -0.015 * sneakTempo;
-    const armSwing = stepping ? Math.sin(phase + Math.PI) * (0.55 + highTempo * 0.65) : 0;
-    const legSwing = stepping ? (0.58 + highTempo * 0.82 - sneakTempo * 0.20) : 0;
-
-    ctx.save();
-    ctx.translate(x, y - bob);
-    ctx.rotate(lean);
-
-    // Shadow.
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.beginPath();
-    ctx.ellipse(0, 8, (30 + highTempo * 5) * s, 7 * s, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Feet.
-    ctx.strokeStyle = "#020617";
-    ctx.lineCap = "round";
-    ctx.lineWidth = 8 * s;
-    ctx.beginPath();
-    ctx.moveTo(-7 * s, -34 * s);
-    ctx.lineTo((-12 - stride * 13 * legSwing) * s, -13 * s);
-    ctx.lineTo((-18 - stride * 18 * legSwing) * s, -6 * s);
-    ctx.moveTo(7 * s, -34 * s);
-    ctx.lineTo((12 - stride2 * 13 * legSwing) * s, -13 * s);
-    ctx.lineTo((18 - stride2 * 18 * legSwing) * s, -6 * s);
-    ctx.stroke();
-
-    // Body.
-    ctx.fillStyle = "#111827";
-    ttRoundRect(-17 * s, -78 * s, 34 * s, 45 * s, 10 * s);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    ctx.lineWidth = 2 * s;
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath();
-      ctx.moveTo(-14 * s, (-69 + i * 9) * s);
-      ctx.lineTo(14 * s, (-69 + i * 9) * s);
-      ctx.stroke();
-    }
-
-    // Arms.
-    ctx.strokeStyle = "#020617";
-    ctx.lineWidth = 7 * s;
-    ctx.beginPath();
-    ctx.moveTo(-15 * s, -66 * s);
-    ctx.lineTo((-27 + armSwing * 12) * s, (-47 + highTempo * 3) * s);
-    ctx.moveTo(15 * s, -64 * s);
-    ctx.lineTo((28 - armSwing * 11) * s, (-47 - highTempo * 2) * s);
-    ctx.stroke();
-
-    // Tiny gold glint on the coat after pickups. Not a bag, just score flair.
-    if (tt.watches > 0) {
-      const glint = 0.45 + 0.35 * Math.sin(tt.now / 190);
-      ctx.fillStyle = `rgba(250,204,21,${glint})`;
-      ctx.beginPath();
-      ctx.arc(11 * s, -58 * s, Math.max(1.6, 2.4 * s), 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // Head + mask.
-    ctx.fillStyle = "#f2b38a";
-    ctx.beginPath();
-    ctx.arc(0, -94 * s, 17 * s, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#020617";
-    ctx.fillRect(-16 * s, -99 * s, 32 * s, 8 * s);
-    ctx.fillStyle = "white";
-    ctx.beginPath(); ctx.arc(-6 * s, -95 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(6 * s, -95 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#020617";
-    ctx.beginPath();
-    ctx.arc(0, -108 * s, 18 * s, Math.PI, Math.PI * 2);
-    ctx.fill();
-
-    ctx.restore();
-  }
-
-  function ttDrawHud(layout) {
-    const { w } = layout;
-    const pad = layout.mobile ? 6 : 10;
-    const panelH = layout.hudH - pad;
-    ctx.fillStyle = "rgba(2,6,23,0.76)";
-    ttRoundRect(pad, pad, w - pad * 2, panelH, 12);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.16)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    const tempo = Math.round(tt.displayTempoBpm || tt.baselineTempoBpm || 120);
-    const centerY = pad + panelH * 0.52;
-    ttText("TIME THIEF", pad + 12, centerY, layout.mobile ? 13 : 22, "#fff", "left", "900");
-    ttText(`Quarter = ${tempo}`, w / 2, centerY, layout.mobile ? 14 : 24, "#fde68a", "center", "900");
-    ttText(`Watches ${tt.watches}`, w - pad - 12, centerY, layout.mobile ? 11 : 16, "#fff", "right");
-  }
-
-
-  function ttDrawTempoCalibration(layout) {
-    const { w, h } = layout;
-    const minTempo = TT_MIN_TEMPO_BPM;
-    const maxTempo = TT_MAX_TEMPO_BPM;
-    const currentTempo = ttClamp(tt.displayTempoBpm || tt.baselineTempoBpm || TT_BASE_TEMPO_BPM, minTempo, maxTempo);
-    const barW = Math.min(w * (layout.mobile ? 0.64 : 0.54), layout.mobile ? 250 : 430);
-    const barH = layout.mobile ? 8 : 12;
-    const x = (w - barW) / 2;
-    const y = layout.groundY + (h - layout.groundY) * 0.50;
-    const tempoToBarT = value => {
-      const safeValue = ttClamp(value, minTempo, maxTempo);
-      return ttClamp(
-        Math.log(safeValue / minTempo) / Math.max(0.001, Math.log(maxTempo / minTempo)),
-        0,
-        1
-      );
-    };
-    const markerX = x + barW * tempoToBarT(currentTempo);
-
-    ctx.save();
-    ctx.fillStyle = "rgba(2,6,23,0.70)";
-    ttRoundRect(x - (layout.mobile ? 30 : 52), y - (layout.mobile ? 13 : 18), barW + (layout.mobile ? 60 : 104), layout.mobile ? 26 : 36, 12);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.14)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-
-    const g = ctx.createLinearGradient(x, 0, x + barW, 0);
-    g.addColorStop(0, "rgba(56,189,248,0.92)");
-    g.addColorStop(0.5, "rgba(250,204,21,0.95)");
-    g.addColorStop(1, "rgba(248,113,113,0.95)");
-    ctx.fillStyle = g;
-    ttRoundRect(x, y - barH / 2, barW, barH, barH / 2);
-    ctx.fill();
-
-    // Center-tempo tick.
-    const centerX = x + barW * tempoToBarT(TT_BASE_TEMPO_BPM);
-    ctx.strokeStyle = "rgba(255,255,255,0.78)";
-    ctx.lineWidth = layout.mobile ? 1.5 : 2;
-    ctx.beginPath();
-    ctx.moveTo(centerX, y - barH * 1.45);
-    ctx.lineTo(centerX, y + barH * 1.45);
-    ctx.stroke();
-
-    // Current tempo marker.
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "rgba(2,6,23,0.82)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(markerX, y, layout.mobile ? 6 : 8, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-
-    ttText(`${minTempo}`, x - (layout.mobile ? 16 : 26), y, layout.mobile ? 9 : 12, "#bfdbfe", "center", "800");
-    ttText(`${maxTempo}`, x + barW + (layout.mobile ? 16 : 26), y, layout.mobile ? 9 : 12, "#fecaca", "center", "800");
-    ctx.restore();
-  }
-
-
-  function ttDrawParticles() {
-    tt.particles.forEach(p => {
-      const a = ttClamp(p.life / p.maxLife, 0, 1);
-      ctx.save();
-      if (p.kind === "stepRing") {
-        ctx.globalAlpha = a * 0.50;
-        ctx.strokeStyle = "rgba(226,232,240,0.8)";
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.ellipse(p.x, p.y, p.size * (1.0 + (1 - a) * 0.9), p.size * 0.32, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (p.kind === "foot") {
-        ctx.globalAlpha = a * 0.55;
-        ctx.fillStyle = "rgba(226,232,240,0.72)";
-        ctx.beginPath();
-        ctx.ellipse(p.x, p.y, p.size * (1.1 + (1 - a) * 0.7), p.size * 0.34, 0, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (p.kind === "pickupRing") {
-        ctx.globalAlpha = a * 0.78;
-        ctx.strokeStyle = "rgba(250,204,21,0.95)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (1 + (1 - a) * 1.6), 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (p.kind === "spark") {
-        ctx.globalAlpha = a;
-        ctx.strokeStyle = p.gold ? "rgba(250,204,21,0.96)" : "rgba(248,113,113,0.9)";
-        ctx.lineWidth = 2;
-        const r = (p.size || 3) * (0.7 + (1 - a));
-        ctx.beginPath();
-        ctx.moveTo(p.x - r, p.y);
-        ctx.lineTo(p.x + r, p.y);
-        ctx.moveTo(p.x, p.y - r);
-        ctx.lineTo(p.x, p.y + r);
-        ctx.stroke();
-      } else {
-        ctx.fillStyle = p.gold ? `rgba(250,204,21,${a})` : `rgba(226,232,240,${a * 0.65})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, (p.gold ? 3 : 2) + 3 * a, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    });
-  }
-
-  function ttDrawPopups(layout) {
-    if (!tt.popups || !tt.popups.length) return;
-    tt.popups.forEach(p => {
-      const a = ttClamp(p.life / p.maxLife, 0, 1);
-      ctx.save();
-      ctx.globalAlpha = a;
-      ttText(p.text, p.x, p.y, layout.mobile ? 11 : 16, "#fde68a", "center", "900");
-      ctx.restore();
-    });
-  }
-
-  function gameDraw() {
-    if (!tt) return;
-    const layout = ttLayout();
-    const shake = ttClamp((tt.deathShakeMs || 0) / 360, 0, 1);
-    const sx = shake ? (Math.random() - 0.5) * 8 * shake : 0;
-    const sy = shake ? (Math.random() - 0.5) * 5 * shake : 0;
-
-    ctx.save();
-    ctx.translate(sx, sy);
-    ttDrawBackground(layout);
-    ttDrawWatch(layout);
-    ttDrawParticles();
-    ttDrawPopups(layout);
-    ttDrawLasers(layout);
-    ttDrawThief(layout);
-    if (tt.pickupFlash > 0.02) {
-      ctx.fillStyle = `rgba(250,204,21,${0.08 * tt.pickupFlash})`;
-      ctx.fillRect(0, layout.hudH, layout.w, layout.groundY - layout.hudH);
-    }
-    ctx.restore();
-
-    ttDrawHud(layout);
-    ttDrawTempoCalibration(layout);
-    if ((tt.deathFlash || 0) > 0.02) {
-      ctx.fillStyle = `rgba(239,68,68,${0.18 * tt.deathFlash})`;
-      ctx.fillRect(0, 0, layout.w, layout.h);
-    }
-    if (tt.transitionMs > 0) {
-      const a = ttClamp(tt.transitionMs / 1400, 0, 1);
-      ctx.fillStyle = `rgba(56,189,248,${0.10 * a})`;
-      ctx.fillRect(0, 0, layout.w, layout.h);
-    }
-  }
-
-  function gameInput(action) {
-    if (!tt) return;
-    if (["tap", "a", "b", "x", "y", "up", "down", "left", "right", "select"].includes(action)) ttTap();
-  }
-
-  function gamePointer(point) {
-    ttTap();
-  }
-
-  function gameStop() {
-    // Nothing to clean up yet.
-  }
-
-
-    window.MobileArcadeShell = {
+    /*
+      COMPATIBLE SHELL API
+      MobileArcadeShell is the native mobile name.
+      ArcadeShell is an alias so desktop game-module code can be reused without
+      renaming its shell calls.
+    */
+    const mobileShellApi = {
+      root: appStage,
       canvas,
       ctx,
+      questionBox,
+      gameWidth: GAME_CANVAS_LOGICAL_WIDTH,
+      gameHeight: GAME_CANVAS_LOGICAL_HEIGHT,
+      getCanvasSize: getGameCanvasSize,
+      scaleGameCanvasBackingStore,
+      resetGameCanvasTransform,
       sticks,
       setScore,
       addScore,
@@ -2807,17 +2118,1170 @@
       openMenu: openShellMenu,
       closeMenu: closeShellMenu,
       exitToPlayerMenu,
+      returnToPlayerMenu: exitToPlayerMenu,
       saveCurrentScoreForSelectedPlayer,
       registerMenuTab: registerShellMenuTab,
       updateMenuTab: updateShellMenuTab,
+      configureControls: configureMobileControls,
       setFirstTimeHelpVersion
     };
+
+    window.MobileArcadeShell = mobileShellApi;
+    window.ArcadeShell = mobileShellApi;
+
+    const TT_CONTROL_CONFIG = {
+      showDpad: false,
+      showLeftJoystick: false,
+      showRightJoystick: false,
+      faceButtons: ["a"],
+      systemButtons: ["start"],
+      labels: {
+        a: "TAP",
+        start: "MENU"
+      }
+    };
+
+  const TT_BG = "#07111f";
+    const TT_INK = "#f8fafc";
+    const TT_GOLD = "#facc15";
+    const TT_RED = "#ef4444";
+    const TT_BLUE = "#38bdf8";
+    const TT_FLOOR = "#1f2937";
+    const TT_BASE_TEMPO_BPM = 120;
+    const TT_MIN_TEMPO_BPM = 60;
+    const TT_MAX_TEMPO_BPM = 240;
+  
+    let tt = null;
+    let ttHelpRegistered = false;
+  
+    function ttClamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+    function ttLerp(a, b, t) { return a + (b - a) * t; }
+  
+    function ttRoundRect(x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+    }
+  
+    function ttText(text, x, y, size, fill = TT_INK, align = "center", weight = "bold") {
+      ctx.fillStyle = fill;
+      ctx.textAlign = align;
+      ctx.textBaseline = "middle";
+      ctx.font = `${weight} ${size}px Arial, sans-serif`;
+      ctx.fillText(text, x, y);
+    }
+  
+    function ttRegisterHelp() {
+      if (ttHelpRegistered) return;
+      ttHelpRegistered = true;
+  
+      const controlsHtml = `
+        <h3>Controls</h3>
+        <ul>
+          <li><strong>TAP:</strong> Press the large TAP button once for each quarter-note step.</li>
+          <li><strong>Play area:</strong> A quick tap on the game also steps. Vertical swipes can still scroll the page.</li>
+          <li><strong>MENU:</strong> Pause, read Help, or exit.</li>
+        </ul>
+        <p>Keep a steady quarter-note pulse. If you stop, the moving floor carries the thief backward.</p>
+      `;
+  
+      const instructionsHtml = `
+        <h3>How to Play</h3>
+        <ul>
+          <li>You are the Time Thief running through a laser corridor.</li>
+          <li>Each press is one step forward, like playing steady quarter notes.</li>
+          <li>Keep a steady beat so you stay near the safe opening between the red lasers.</li>
+          <li>Grab watches when they appear to score points.</li>
+          <li>The tempo changes in smooth waves, so listen and feel when the corridor speeds up or slows down.</li>
+          <li>If the lasers catch you, the run ends.</li>
+        </ul>
+      `;
+  
+      if (typeof updateShellMenuTab === "function") {
+        updateShellMenuTab("controls", controlsHtml);
+        updateShellMenuTab("instructions", instructionsHtml);
+      }
+  
+      const aBtn = typeof document !== "undefined" ? document.getElementById("buttonA") : null;
+      if (aBtn) aBtn.textContent = "TAP";
+    }
+  
+    function ttFreshState() {
+      const now = performance.now();
+      return {
+        now,
+        lastMs: now,
+        floor: 1,
+        watches: 0,
+        worldX: 0,
+        nextWatchGap: 1550,
+        watchX: 1550,
+        runLevel: 1,
+        scrollSpeed: 100,
+        baselineSpeed: 100,
+        scrollTargetSpeed: 100,
+        scrollAccel: 0,
+        scrollMode: "steady",
+        tempoEvent: null,
+        nextTempoEventAt: now + 900,
+        playerOffset: 0,
+        playerRadius: 16,
+        stepSize: 50,
+        stepDuration: 0.15,
+        activeSteps: [],
+        lastTapAt: 0,
+        tapInterval: 0.46,
+        runIntensity: 0,
+        centerDrift: 0,
+        laserGap: 999,
+        laserGapTarget: 999,
+        laserGapStart: 999,
+        laserGapMin: 96,
+        laserTightness: 0,
+        laserOffset: 0,
+        laserTargetOffset: 0,
+        nextLaserTargetAt: now + 1800,
+        rubatoPhase: 0,
+        rubatoAmp: 0,
+        rubatoTargetAmp: 34,
+        rubatoSpeed: 0.9,
+        rubatoTargetSpeed: 0.9,
+        rubatoEase: 0.018,
+        nextRubatoChangeAt: now + 1900,
+        rubatoLabel: "Steady",
+        rubatoMode: "steady",
+        lastLaserOffset: 0,
+        laserVelocity: 0,
+        laserVelocityTarget: 0,
+        nextLaserNudgeAt: now + 260,
+        laserAcceleration: 0,
+        safeMs: 0,
+        caught: false,
+        footPulse: 0,
+        stepPhase: 0,
+        tapFlash: 0,
+        watchTaken: false,
+        stairsReached: false,
+        transitionMs: 0,
+        message: "",
+        baselineTempoBpm: 120,
+        tapTempoBpm: 120,
+        displayTempoBpm: 120,
+        messageMs: 0,
+        particles: [],
+        popups: [],
+        doorGlow: 0,
+        chimeCooldown: 0,
+        difficultyPressure: 0,
+        targetTempoBpm: 120,
+        previousTargetTempoBpm: 120,
+        lastTempoDirection: 0,
+        laserDanger: 0,
+        deathFlash: 0,
+        deathShakeMs: 0,
+        pickupFlash: 0
+      };
+    }
+  
+    function ttSetStatus(text) {
+      if (typeof questionBox !== "undefined" && questionBox) questionBox.textContent = text;
+      if (typeof setMessage === "function") setMessage(text || "READY");
+    }
+  
+    function ttLayout() {
+      const w = GAME_CANVAS_LOGICAL_WIDTH;
+      const h = GAME_CANVAS_LOGICAL_HEIGHT;
+      const mobile = w <= 420;
+      const groundY = h * (mobile ? 0.77 : 0.78);
+      return {
+        w,
+        h,
+        mobile,
+        playerX: w * 0.5,
+        groundY,
+        hudH: mobile ? 34 : 54,
+        worldScale: mobile ? 0.78 : 1.0
+      };
+    }
+  
+    function ttTap() {
+      if (!tt || tt.transitionMs > 0) return;
+      const now = performance.now();
+      const layout = ttLayout();
+      if (tt.lastTapAt > 0) {
+        tt.tapInterval = ttClamp((now - tt.lastTapAt) / 1000, 0.13, 1.4);
+        tt.tapTempoBpm = ttClamp(60 / tt.tapInterval, 20, 260);
+      }
+      tt.lastTapAt = now;
+      tt.footPulse = 1;
+      tt.tapFlash = 1;
+      tt.stepPhase += Math.PI;
+      tt.message = "";
+      tt.messageMs = 0;
+  
+      const fastBonus = ttClamp((tt.scrollSpeed - tt.baselineSpeed) / Math.max(1, tt.baselineSpeed * 0.55), 0, 1);
+      const distance = tt.stepSize * (1 + fastBonus * 0.12);
+      const duration = tt.stepDuration * (1 - fastBonus * 0.26);
+      const leg = tt.stepPhase;
+      tt.activeSteps.push({ elapsed: 0, duration, distance, progress: 0, leg });
+      if (tt.activeSteps.length > 5) tt.activeSteps.shift();
+  
+      const footX = layout.playerX + tt.playerOffset - 12 + Math.random() * 20;
+      const footY = layout.groundY + 4;
+      tt.particles.push({
+        kind: "foot",
+        x: footX,
+        y: footY,
+        vx: -42 - Math.random() * 42,
+        vy: -8 - Math.random() * 10,
+        life: 0.24,
+        maxLife: 0.24,
+        size: 7 + Math.random() * 5
+      });
+      tt.particles.push({
+        kind: "stepRing",
+        x: footX + 4,
+        y: footY - 1,
+        vx: -18,
+        vy: 0,
+        life: 0.18,
+        maxLife: 0.18,
+        size: 8
+      });
+      if (typeof beep === "function") beep(120 + fastBonus * 70 + Math.random() * 18, 0.032, "triangle", 0.021);
+    }
+  
+    function ttUpdateLaserGap(layout, dt) {
+      // Difficulty curve step: lasers begin near the frame edges and glide inward
+      // continuously. The closing rate gets slightly more demanding with survival
+      // time and watch count, but the pressure itself eases in so there are no
+      // visible step-jumps.
+      const margin = layout.mobile ? 18 : 28;
+      const startGap = Math.max(140, layout.w - margin * 2);
+      const minGap = Math.max(
+        layout.mobile ? 72 : 104,
+        tt.playerRadius * (layout.mobile ? 5.6 : 6.3)
+      );
+      tt.laserGapStart = startGap;
+      tt.laserGapMin = minGap;
+  
+      const survivalPressure = ttClamp(tt.worldX / (layout.mobile ? 26000 : 31000), 0, 0.24);
+      const watchPressure = ttClamp(tt.watches * 0.004, 0, 0.22);
+      const targetPressure = ttClamp(survivalPressure + watchPressure, 0, 0.40);
+      const ease = 1 - Math.pow(0.94, dt * 60);
+      tt.difficultyPressure = ttLerp(tt.difficultyPressure || 0, targetPressure, ease);
+  
+      const baseDistanceConstant = layout.mobile ? 5200 : 6200;
+      const distanceConstant = baseDistanceConstant * (1 - tt.difficultyPressure * 0.45);
+      const distance = Math.max(0, tt.worldX);
+      const target = minGap + (startGap - minGap) * Math.exp(-distance / distanceConstant);
+  
+      tt.laserGapTarget = target;
+      tt.laserGap = target;
+      tt.laserTightness = ttClamp(1 - ((target - minGap) / Math.max(1, startGap - minGap)), 0, 1);
+    }
+  
+    function ttScheduleNextWatch() {
+      // One-active-watch loop: as soon as a watch is collected, the next one
+      // spawns just off the right edge so it visibly enters the corridor next.
+      const layout = ttLayout();
+      const offscreenMargin = layout.mobile ? 50 : 72;
+      const spawnScreenX = layout.w + offscreenMargin;
+      tt.nextWatchGap = (spawnScreenX - layout.playerX) / layout.worldScale;
+      tt.watchX = tt.worldX + tt.nextWatchGap;
+      tt.watchTaken = false;
+    }
+  
+    function ttTakeWatch() {
+      tt.watchTaken = true;
+      tt.watches += 1;
+      tt.runLevel = tt.watches + 1;
+      tt.pickupFlash = 1;
+      setScore(tt.watches);
+      tt.message = "";
+      tt.messageMs = 0;
+      const pickupLayout = ttLayout();
+      const burstX = pickupLayout.playerX + 24;
+      const burstY = pickupLayout.groundY - 66 * pickupLayout.worldScale;
+      for (let i = 0; i < 28; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 45 + Math.random() * 135;
+        tt.particles.push({
+          kind: "spark",
+          x: burstX + Math.random() * 22,
+          y: burstY + Math.random() * 18,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 32,
+          life: 0.55 + Math.random() * 0.28,
+          maxLife: 0.83,
+          gold: true,
+          size: 2.5 + Math.random() * 2.5
+        });
+      }
+      tt.particles.push({
+        kind: "pickupRing",
+        x: burstX + 4,
+        y: burstY + 2,
+        vx: 0,
+        vy: 0,
+        life: 0.38,
+        maxLife: 0.38,
+        size: 18
+      });
+      tt.popups.push({
+        text: "+1",
+        x: pickupLayout.playerX + 20,
+        y: pickupLayout.groundY - 98 * pickupLayout.worldScale,
+        vy: -22,
+        life: 0.58,
+        maxLife: 0.58
+      });
+      if (tt.popups.length > 4) tt.popups.shift();
+      if (typeof soundCorrect === "function") soundCorrect();
+      ttScheduleNextWatch();
+    }
+  
+    function ttReachStairs() {
+      // Stairs removed: this is now one continuous museum run.
+    }
+  
+    function ttSmoothTempoBell(t) {
+      // Default symmetric raised-cosine bell. Used as a safe fallback.
+      const x = ttClamp(t, 0, 1);
+      return 0.5 - 0.5 * Math.cos(2 * Math.PI * x);
+    }
+  
+    function ttEaseTempoSide(t, power) {
+      // Smoothstep gives musical endpoints; the power lets some waves feel broad
+      // and others feel more sudden without creating hard corners.
+      const x = ttClamp(t, 0, 1);
+      const smooth = x * x * (3 - 2 * x);
+      return Math.pow(smooth, Math.max(0.58, power || 1));
+    }
+  
+    function ttTempoEventShape(t, event) {
+      const x = ttClamp(t, 0, 1);
+      const peakAt = ttClamp(event?.peakAt ?? 0.5, 0.22, 0.78);
+      if (x <= peakAt) {
+        return ttEaseTempoSide(x / peakAt, event?.attackPower ?? 1);
+      }
+      return ttEaseTempoSide(1 - ((x - peakAt) / Math.max(0.001, 1 - peakAt)), event?.releasePower ?? 1);
+    }
+  
+    function ttStartTempoEvent() {
+      const difficulty = ttClamp(
+        (tt.laserTightness || 0) * 0.50 +
+        Math.min(0.34, tt.watches * 0.006) +
+        Math.min(0.22, tt.worldX / 54000),
+        0,
+        1
+      );
+  
+      // Ratio-based tempo waves: 120 is the multiplicative center between
+      // 60 and 240. The possible maximum ratio grows over time, but each
+      // actual wave randomly chooses its own peak below that ceiling.
+      const baseTempo = tt.baselineTempoBpm || TT_BASE_TEMPO_BPM;
+      const absoluteMaxRatio = Math.min(
+        TT_MAX_TEMPO_BPM / baseTempo,
+        baseTempo / TT_MIN_TEMPO_BPM
+      );
+      const maxPossibleRatio = ttClamp(1.22 + difficulty * 0.78, 1.22, absoluteMaxRatio);
+      const minPeakRatio = ttClamp(1.08 + difficulty * 0.04, 1.06, maxPossibleRatio);
+      const weightedRandom = Math.pow(Math.random(), 0.72); // variety without living at the max.
+      const peakRatio = ttClamp(
+        minPeakRatio + (maxPossibleRatio - minPeakRatio) * weightedRandom,
+        minPeakRatio,
+        maxPossibleRatio
+      );
+  
+      let direction = Math.random() < 0.5 ? 1 : -1;
+      if (tt.lastTempoDirection && Math.random() < 0.54) direction = -tt.lastTempoDirection;
+      tt.lastTempoDirection = direction;
+  
+      const peakTempo = direction > 0
+        ? ttClamp(baseTempo * peakRatio, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM)
+        : ttClamp(baseTempo / peakRatio, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM);
+      const signedLogRatio = Math.log(peakTempo / baseTempo);
+  
+      // The maximum permitted steepness increases with difficulty, but the actual
+      // event still randomizes. Early game mostly breathes; later game sometimes
+      // snaps into a more urgent wave.
+      const slowestDuration = ttLerp(7.8, 5.3, difficulty);
+      const fastestDuration = ttLerp(5.6, 2.75, difficulty);
+      const duration = ttLerp(slowestDuration, fastestDuration, Math.pow(Math.random(), 0.9));
+  
+      // peakAt controls whether the climb or release is longer. Power below 1
+      // creates a more sudden move; power above 1 creates a more gradual one.
+      const suddenChance = ttLerp(0.12, 0.44, difficulty);
+      const attackPower = Math.random() < suddenChance
+        ? ttLerp(0.58, 0.88, Math.random())
+        : ttLerp(1.06, 1.82, Math.random());
+      const releasePower = Math.random() < suddenChance
+        ? ttLerp(0.58, 0.92, Math.random())
+        : ttLerp(1.04, 1.95, Math.random());
+      const peakAt = ttClamp(0.50 + (Math.random() - 0.5) * ttLerp(0.18, 0.36, difficulty), 0.28, 0.72);
+  
+      tt.tempoEvent = {
+        startMs: tt.now,
+        durationMs: duration * 1000,
+        signedLogRatio,
+        peakRatio,
+        peakTempo,
+        peakAt,
+        attackPower,
+        releasePower,
+        maxPossibleRatio
+      };
+    }
+  
+    function ttUpdateTempoWave(dt) {
+      const baseTempo = tt.baselineTempoBpm || TT_BASE_TEMPO_BPM;
+      let targetTempo = baseTempo;
+  
+      if (!tt.tempoEvent && tt.now >= tt.nextTempoEventAt) {
+        ttStartTempoEvent();
+      }
+  
+      if (tt.tempoEvent) {
+        const t = (tt.now - tt.tempoEvent.startMs) / Math.max(1, tt.tempoEvent.durationMs);
+        if (t >= 1) {
+          tt.tempoEvent = null;
+          targetTempo = baseTempo;
+          const pressure = ttClamp((tt.laserTightness || 0) + tt.watches * 0.006, 0, 1);
+          const restMs = (1050 + Math.random() * 2100) * (1 - pressure * 0.42);
+          tt.nextTempoEventAt = tt.now + Math.max(520, restMs);
+        } else {
+          targetTempo = baseTempo * Math.exp(tt.tempoEvent.signedLogRatio * ttTempoEventShape(t, tt.tempoEvent));
+        }
+      }
+  
+      targetTempo = ttClamp(targetTempo, TT_MIN_TEMPO_BPM, TT_MAX_TEMPO_BPM);
+      const tempoChange = targetTempo - (tt.previousTargetTempoBpm || baseTempo);
+      if (Math.abs(tempoChange) < 0.08 && !tt.tempoEvent) {
+        tt.rubatoLabel = "Steady";
+        tt.scrollMode = "steady";
+      } else if (tempoChange > 0.08) {
+        tt.rubatoLabel = "Accelerando";
+        tt.scrollMode = "accelerando";
+      } else if (tempoChange < -0.08) {
+        tt.rubatoLabel = "Ritardando";
+        tt.scrollMode = "ritardando";
+      } else {
+        tt.rubatoLabel = "Steady";
+        tt.scrollMode = "steady";
+      }
+  
+      tt.previousTargetTempoBpm = targetTempo;
+      tt.targetTempoBpm = targetTempo;
+      tt.displayTempoBpm = targetTempo;
+      tt.scrollTargetSpeed = (tt.stepSize * (targetTempo / 60)) / Math.max(0.001, ttLayout().worldScale);
+      tt.scrollAccel = (tt.scrollTargetSpeed - tt.scrollSpeed) / Math.max(dt, 1 / 60);
+      tt.scrollSpeed = tt.scrollTargetSpeed;
+    }
+  
+    function gameInit() {
+      ttRegisterHelp();
+      tt = ttFreshState();
+      const layout = ttLayout();
+      tt.laserGapStart = Math.max(140, layout.w - (layout.mobile ? 36 : 56));
+      tt.laserGap = tt.laserGapStart;
+      tt.laserGapTarget = tt.laserGapStart;
+      // Base calibration: each tap is one quarter note, and the floor moves at quarter = 120.
+      tt.baselineTempoBpm = TT_BASE_TEMPO_BPM;
+      tt.stepSize = layout.mobile ? 33 : 50;
+      tt.stepDuration = layout.mobile ? 0.13 : 0.145;
+      tt.baselineSpeed = (tt.stepSize * (tt.baselineTempoBpm / 60)) / layout.worldScale;
+      tt.tapTempoBpm = tt.baselineTempoBpm;
+      tt.displayTempoBpm = tt.baselineTempoBpm;
+      tt.targetTempoBpm = tt.baselineTempoBpm;
+      tt.previousTargetTempoBpm = tt.baselineTempoBpm;
+      tt.nextTempoEventAt = performance.now() + 1400;
+      tt.scrollSpeed = tt.baselineSpeed;
+      tt.scrollTargetSpeed = tt.baselineSpeed;
+      tt.centerDrift = 0;
+      tt.lastLaserOffset = 0;
+      tt.laserVelocity = 0;
+      tt.laserVelocityTarget = 0;
+      tt.nextLaserNudgeAt = performance.now() + 260;
+      tt.laserAcceleration = 0;
+      tt.playerRadius = layout.mobile ? 12 : 16;
+      setScore(0);
+      ttScheduleNextWatch();
+      ttSetStatus("");
+      gameDraw();
+    }
+  
+    function gameUpdate() {
+      if (!tt) return;
+      const now = performance.now();
+      const dt = Math.min(0.05, Math.max(0, (now - tt.lastMs) / 1000));
+      tt.lastMs = now;
+      tt.now = now;
+      const layout = ttLayout();
+  
+      ttUpdateTempoWave(dt);
+      tt.worldX += tt.scrollSpeed * dt;
+      ttUpdateLaserGap(layout, dt);
+  
+      tt.safeMs = Math.max(0, tt.safeMs - dt * 1000);
+  
+      // The thief stands still by default while the moving floor carries him backward.
+      // Button taps create short, smooth step impulses forward instead of teleport jumps.
+      // When the stairs sequence starts, freeze this drift so the thief does not slide away.
+      {
+        const backwardDrift = tt.scrollSpeed * layout.worldScale;
+        tt.playerOffset -= backwardDrift * dt;
+        let stepMotionThisFrame = 0;
+        tt.activeSteps.forEach(step => {
+          step.elapsed += dt;
+          const t = ttClamp(step.elapsed / step.duration, 0, 1);
+          const eased = 0.5 - Math.cos(t * Math.PI) * 0.5;
+          const delta = (eased - step.progress) * step.distance;
+          step.progress = eased;
+          stepMotionThisFrame += delta;
+        });
+        tt.activeSteps = tt.activeSteps.filter(step => step.elapsed < step.duration);
+        tt.playerOffset += stepMotionThisFrame;
+      }
+      const recentTap = tt.lastTapAt > 0 && now - tt.lastTapAt < 260;
+      const speedRun = ttClamp((tt.scrollSpeed - tt.baselineSpeed * 1.10) / Math.max(1, tt.baselineSpeed * 0.42), 0, 1);
+      tt.runIntensity = ttLerp(tt.runIntensity, recentTap ? Math.max(0.25, speedRun) : 0, 0.12);
+  
+      // Tempo waves now control the floor speed. The lasers stay fixed on screen.
+      tt.centerDrift = 0;
+      tt.laserOffset = 0;
+      const laserCenterX = layout.playerX + tt.laserOffset;
+      const playerScreenX = layout.playerX + tt.playerOffset;
+      const laserLeft = laserCenterX - tt.laserGap / 2;
+      const laserRight = laserCenterX + tt.laserGap / 2;
+      const hitHalfWidth = tt.playerRadius * (layout.mobile ? 1.05 : 1.15);
+      const leftClearance = playerScreenX - hitHalfWidth - laserLeft;
+      const rightClearance = laserRight - (playerScreenX + hitHalfWidth);
+      const clearance = Math.min(leftClearance, rightClearance);
+      const dangerWindow = Math.max(18, tt.laserGap * 0.16);
+      const targetDanger = ttClamp(1 - clearance / dangerWindow, 0, 1);
+      tt.laserDanger = ttLerp(tt.laserDanger || 0, targetDanger, 0.22);
+      if (tt.safeMs <= 0 && !tt.caught) {
+        if (leftClearance <= 0 || rightClearance <= 0) {
+          tt.caught = true;
+          tt.deathFlash = 1;
+          tt.deathShakeMs = 360;
+          const sideX = leftClearance <= 0 ? laserLeft : laserRight;
+          for (let i = 0; i < 18; i++) {
+            tt.particles.push({
+              kind: "spark",
+              x: sideX + (Math.random() - 0.5) * 16,
+              y: layout.groundY - 55 + Math.random() * 40,
+              vx: (Math.random() - 0.5) * 160,
+              vy: -80 + Math.random() * 130,
+              life: 0.42 + Math.random() * 0.22,
+              maxLife: 0.64,
+              gold: false,
+              size: 2 + Math.random() * 2.5
+            });
+          }
+          gameDraw();
+          endGame("Caught by laser!");
+          return;
+        }
+      }
+  
+      tt.footPulse = ttLerp(tt.footPulse, 0, 0.16);
+      tt.tapFlash = ttLerp(tt.tapFlash, 0, 0.10);
+      tt.pickupFlash = ttLerp(tt.pickupFlash || 0, 0, 0.10);
+      tt.deathFlash = ttLerp(tt.deathFlash || 0, 0, 0.08);
+      tt.deathShakeMs = Math.max(0, (tt.deathShakeMs || 0) - dt * 1000);
+      tt.doorGlow += dt * 2.2;
+      tt.messageMs = Math.max(0, tt.messageMs - dt * 1000);
+      tt.chimeCooldown = Math.max(0, tt.chimeCooldown - dt);
+  
+      tt.particles.forEach(p => {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 120 * dt;
+        p.life -= dt;
+      });
+      tt.particles = tt.particles.filter(p => p.life > 0 && p.y < layout.h + 30);
+  
+      tt.popups.forEach(p => {
+        p.y += p.vy * dt;
+        p.life -= dt;
+      });
+      tt.popups = tt.popups.filter(p => p.life > 0);
+  
+      const playerWorldX = tt.worldX + tt.playerOffset / layout.worldScale;
+      const playerFrontWorldX = tt.worldX + (tt.playerOffset + (layout.mobile ? 24 : 34)) / layout.worldScale;
+      const watchLeftWorldX = tt.watchX - (layout.mobile ? 28 : 38) / layout.worldScale;
+      if (!tt.watchTaken && playerFrontWorldX >= watchLeftWorldX) ttTakeWatch();
+  
+      ttSetStatus("");
+    }
+  
+    function ttWorldToScreen(worldX, layout) {
+      return layout.playerX + (worldX - tt.worldX) * layout.worldScale;
+    }
+  
+    function ttDrawBackground(layout) {
+      const { w, h, groundY } = layout;
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#020617");
+      g.addColorStop(0.55, "#0b1220");
+      g.addColorStop(1, "#111827");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+  
+      // Back wall.
+      ctx.fillStyle = "#0f172a";
+      ctx.fillRect(0, layout.hudH, w, groundY - layout.hudH);
+  
+      // Marble floor.
+      const floorG = ctx.createLinearGradient(0, groundY, 0, h);
+      floorG.addColorStop(0, "#374151");
+      floorG.addColorStop(1, "#111827");
+      ctx.fillStyle = floorG;
+      ctx.fillRect(0, groundY, w, h - groundY);
+  
+      // Scrolling floor tiles.
+      const tileW = 74 * layout.worldScale;
+      const tileOffset = -((tt.worldX * layout.worldScale) % tileW);
+      ctx.strokeStyle = "rgba(255,255,255,0.14)";
+      ctx.lineWidth = 1;
+      for (let x = tileOffset - tileW; x < w + tileW; x += tileW) {
+        ctx.beginPath();
+        ctx.moveTo(x, groundY);
+        ctx.lineTo(x - 24, h);
+        ctx.stroke();
+      }
+      for (let y = groundY + 24; y < h; y += 34) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+  
+  
+      // Wall display cases and clocks scrolling left.
+      const spacing = 360;
+      const start = Math.floor((tt.worldX - 400) / spacing) * spacing;
+      for (let wx = start; wx < tt.worldX + w / layout.worldScale + 700; wx += spacing) {
+        const x = ttWorldToScreen(wx, layout);
+        const y = layout.hudH + 42 + ((Math.floor(wx / spacing) % 2) * 18);
+        ttDrawDisplayCase(x, y, 96 * layout.worldScale, 64 * layout.worldScale, Math.floor(wx / spacing));
+      }
+  
+    }
+  
+    function ttDrawDisplayCase(x, y, ww, hh, index) {
+      if (x < -ww - 30 || x > GAME_CANVAS_LOGICAL_WIDTH + ww + 30) return;
+      ctx.fillStyle = "rgba(2,6,23,0.62)";
+      ttRoundRect(x - ww / 2, y - hh / 2, ww, hh, 8);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(250,204,21,0.42)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.fillStyle = "rgba(56,189,248,0.10)";
+      ttRoundRect(x - ww / 2 + 5, y - hh / 2 + 5, ww - 10, hh - 10, 6);
+      ctx.fill();
+  
+      const r = Math.min(15, ww * 0.18);
+      ctx.fillStyle = index % 3 === 0 ? "#e5e7eb" : "#fef3c7";
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#020617";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y - r * 0.65);
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + r * 0.55, y + r * 0.35);
+      ctx.stroke();
+    }
+  
+    function ttDrawWatch(layout) {
+      if (tt.watchTaken) return;
+      const x = ttWorldToScreen(tt.watchX, layout);
+      const y = layout.groundY - 63 * layout.worldScale;
+      if (x < -80 || x > layout.w + 90) return;
+      const pulse = 0.55 + Math.sin(tt.now / 180) * 0.18;
+      const spin = tt.now / 520;
+      const tilt = Math.sin(spin) * 0.13;
+      const scale = 1 + Math.sin(tt.now / 230) * 0.035;
+  
+      ctx.save();
+      ctx.globalAlpha = 0.86;
+      const rg = ctx.createRadialGradient(x, y, 4, x, y, 62);
+      rg.addColorStop(0, `rgba(250,204,21,${0.42 + pulse * 0.15})`);
+      rg.addColorStop(1, "rgba(250,204,21,0)");
+      ctx.fillStyle = rg;
+      ctx.fillRect(x - 80, y - 80, 160, 160);
+      ctx.restore();
+  
+      // Pedestal.
+      ctx.fillStyle = "#4b2e12";
+      ttRoundRect(x - 26, layout.groundY - 34, 52, 34, 5);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(250,204,21,0.7)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+  
+      // Watch with a tiny spin/shine so pickups feel alive.
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(tilt);
+      ctx.scale(scale, scale);
+      ctx.fillStyle = TT_GOLD;
+      ctx.beginPath();
+      ctx.arc(0, 0, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff7ed";
+      ctx.beginPath();
+      ctx.arc(0, 0, 12, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -8);
+      ctx.moveTo(0, 0);
+      ctx.lineTo(7, 4);
+      ctx.stroke();
+      ctx.fillStyle = TT_GOLD;
+      ttRoundRect(-8, -34, 16, 15, 4);
+      ctx.fill();
+      ttRoundRect(-8, 19, 16, 15, 4);
+      ctx.fill();
+      ctx.strokeStyle = `rgba(255,255,255,${0.42 + pulse * 0.22})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-7, -8);
+      ctx.lineTo(5, -16);
+      ctx.stroke();
+      ctx.restore();
+  
+    }
+  
+    function ttDrawStairs(layout) {
+      const x = ttWorldToScreen(tt.stairsX, layout);
+      const baseY = layout.groundY;
+      if (x < -120 || x > layout.w + 160) return;
+      const stepW = 34 * layout.worldScale;
+      const stepH = 14 * layout.worldScale;
+      ctx.fillStyle = "#334155";
+      ctx.strokeStyle = "rgba(255,255,255,0.22)";
+      ctx.lineWidth = 2;
+      for (let i = 0; i < 6; i++) {
+        const sx = x + i * stepW * 0.72;
+        const sy = baseY - i * stepH;
+        ttRoundRect(sx, sy - stepH, stepW, stepH, 3);
+        ctx.fill();
+        ctx.stroke();
+      }
+      const doorX = x + stepW * 4.7;
+      const doorY = baseY - stepH * 6 - 54;
+      const glow = 0.55 + Math.sin(tt.doorGlow) * 0.18;
+      ctx.fillStyle = `rgba(56,189,248,${0.18 + glow * 0.16})`;
+      ttRoundRect(doorX - 33, doorY - 48, 66, 96, 10);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(186,230,253,0.78)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ttText("STAIRS", doorX, doorY - 63, 12, "#bae6fd");
+    }
+  
+    function ttDrawLasers(layout) {
+      const centerX = layout.playerX + tt.laserOffset;
+      const leftX = centerX - tt.laserGap / 2;
+      const rightX = centerX + tt.laserGap / 2;
+      const top = layout.hudH + 4;
+      const bottom = layout.groundY + 12;
+      const danger = ttClamp(tt.laserDanger || 0, 0, 1);
+      const pulse = 0.55 + 0.45 * Math.sin(tt.now / 80);
+      const glowAlpha = 0.28 + danger * (0.36 + pulse * 0.16);
+      const coreW = (layout.mobile ? 3 : 5) + danger * (layout.mobile ? 1.2 : 2);
+      const outerW = (layout.mobile ? 8 : 12) + danger * (layout.mobile ? 4 : 6);
+  
+      ctx.save();
+      [leftX, rightX].forEach(x => {
+        const glow = ctx.createLinearGradient(x - 24, 0, x + 24, 0);
+        glow.addColorStop(0, "rgba(239,68,68,0)");
+        glow.addColorStop(0.5, `rgba(239,68,68,${glowAlpha})`);
+        glow.addColorStop(1, "rgba(239,68,68,0)");
+        ctx.fillStyle = glow;
+        ctx.fillRect(x - 24, top, 48, bottom - top);
+  
+        ctx.strokeStyle = `rgba(254,202,202,${0.92 + danger * 0.08})`;
+        ctx.lineWidth = coreW;
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.stroke();
+  
+        ctx.strokeStyle = `rgba(239,68,68,${0.78 + danger * 0.20})`;
+        ctx.lineWidth = outerW;
+        ctx.beginPath();
+        ctx.moveTo(x, top);
+        ctx.lineTo(x, bottom);
+        ctx.stroke();
+      });
+  
+      if (danger > 0.35) {
+        const playerX = layout.playerX + tt.playerOffset;
+        const edge = playerX < centerX ? leftX : rightX;
+        ctx.strokeStyle = `rgba(248,113,113,${(danger - 0.35) * 0.65})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(edge, top + 10);
+        ctx.lineTo(edge + (playerX < centerX ? 12 : -12), top + 28);
+        ctx.stroke();
+      }
+  
+      ctx.restore();
+    }
+  
+    function ttDrawThief(layout) {
+      const x = layout.playerX + tt.playerOffset;
+      const y = layout.groundY;
+      const s = layout.mobile ? 0.56 : 0.76;
+      const stepping = tt.activeSteps.length > 0 || tt.footPulse > 0.08;
+      const highTempo = ttClamp(((tt.displayTempoBpm || 120) - 120) / 80, 0, 1);
+      const sneakTempo = ttClamp((120 - (tt.displayTempoBpm || 120)) / 80, 0, 1);
+      const cycleSpeed = highTempo > 0.35 ? 55 : (sneakTempo > 0.35 ? 145 : 92);
+      const phase = tt.now / cycleSpeed + tt.stepPhase;
+      const stride = stepping ? Math.sin(phase) : 0;
+      const stride2 = stepping ? Math.sin(phase + Math.PI) : 0;
+      const bob = stepping ? (2.0 + highTempo * 5.0) * s * Math.abs(Math.sin(phase)) : sneakTempo * 0.7 * s;
+      const lean = stepping ? (0.05 + highTempo * 0.12 - sneakTempo * 0.035) : -0.015 * sneakTempo;
+      const armSwing = stepping ? Math.sin(phase + Math.PI) * (0.55 + highTempo * 0.65) : 0;
+      const legSwing = stepping ? (0.58 + highTempo * 0.82 - sneakTempo * 0.20) : 0;
+  
+      ctx.save();
+      ctx.translate(x, y - bob);
+      ctx.rotate(lean);
+  
+      // Shadow.
+      ctx.fillStyle = "rgba(0,0,0,0.35)";
+      ctx.beginPath();
+      ctx.ellipse(0, 8, (30 + highTempo * 5) * s, 7 * s, 0, 0, Math.PI * 2);
+      ctx.fill();
+  
+      // Feet.
+      ctx.strokeStyle = "#020617";
+      ctx.lineCap = "round";
+      ctx.lineWidth = 8 * s;
+      ctx.beginPath();
+      ctx.moveTo(-7 * s, -34 * s);
+      ctx.lineTo((-12 - stride * 13 * legSwing) * s, -13 * s);
+      ctx.lineTo((-18 - stride * 18 * legSwing) * s, -6 * s);
+      ctx.moveTo(7 * s, -34 * s);
+      ctx.lineTo((12 - stride2 * 13 * legSwing) * s, -13 * s);
+      ctx.lineTo((18 - stride2 * 18 * legSwing) * s, -6 * s);
+      ctx.stroke();
+  
+      // Body.
+      ctx.fillStyle = "#111827";
+      ttRoundRect(-17 * s, -78 * s, 34 * s, 45 * s, 10 * s);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.lineWidth = 2 * s;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(-14 * s, (-69 + i * 9) * s);
+        ctx.lineTo(14 * s, (-69 + i * 9) * s);
+        ctx.stroke();
+      }
+  
+      // Arms.
+      ctx.strokeStyle = "#020617";
+      ctx.lineWidth = 7 * s;
+      ctx.beginPath();
+      ctx.moveTo(-15 * s, -66 * s);
+      ctx.lineTo((-27 + armSwing * 12) * s, (-47 + highTempo * 3) * s);
+      ctx.moveTo(15 * s, -64 * s);
+      ctx.lineTo((28 - armSwing * 11) * s, (-47 - highTempo * 2) * s);
+      ctx.stroke();
+  
+      // Tiny gold glint on the coat after pickups. Not a bag, just score flair.
+      if (tt.watches > 0) {
+        const glint = 0.45 + 0.35 * Math.sin(tt.now / 190);
+        ctx.fillStyle = `rgba(250,204,21,${glint})`;
+        ctx.beginPath();
+        ctx.arc(11 * s, -58 * s, Math.max(1.6, 2.4 * s), 0, Math.PI * 2);
+        ctx.fill();
+      }
+  
+      // Head + mask.
+      ctx.fillStyle = "#f2b38a";
+      ctx.beginPath();
+      ctx.arc(0, -94 * s, 17 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#020617";
+      ctx.fillRect(-16 * s, -99 * s, 32 * s, 8 * s);
+      ctx.fillStyle = "white";
+      ctx.beginPath(); ctx.arc(-6 * s, -95 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(6 * s, -95 * s, 2 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#020617";
+      ctx.beginPath();
+      ctx.arc(0, -108 * s, 18 * s, Math.PI, Math.PI * 2);
+      ctx.fill();
+  
+      ctx.restore();
+    }
+  
+    function ttDrawHud(layout) {
+      const { w } = layout;
+      const pad = layout.mobile ? 6 : 10;
+      const panelH = layout.hudH - pad;
+      ctx.fillStyle = "rgba(2,6,23,0.76)";
+      ttRoundRect(pad, pad, w - pad * 2, panelH, 12);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.16)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+  
+      const tempo = Math.round(tt.displayTempoBpm || tt.baselineTempoBpm || 120);
+      const centerY = pad + panelH * 0.52;
+      ttText("TIME THIEF", pad + 12, centerY, layout.mobile ? 13 : 22, "#fff", "left", "900");
+      ttText(`Quarter = ${tempo}`, w / 2, centerY, layout.mobile ? 14 : 24, "#fde68a", "center", "900");
+      ttText(`Watches ${tt.watches}`, w - pad - 12, centerY, layout.mobile ? 11 : 16, "#fff", "right");
+    }
+  
+  
+    function ttDrawTempoCalibration(layout) {
+      const { w, h } = layout;
+      const minTempo = TT_MIN_TEMPO_BPM;
+      const maxTempo = TT_MAX_TEMPO_BPM;
+      const currentTempo = ttClamp(tt.displayTempoBpm || tt.baselineTempoBpm || TT_BASE_TEMPO_BPM, minTempo, maxTempo);
+      const barW = Math.min(w * (layout.mobile ? 0.64 : 0.54), layout.mobile ? 250 : 430);
+      const barH = layout.mobile ? 8 : 12;
+      const x = (w - barW) / 2;
+      const y = layout.groundY + (h - layout.groundY) * 0.50;
+      const tempoToBarT = value => {
+        const safeValue = ttClamp(value, minTempo, maxTempo);
+        return ttClamp(
+          Math.log(safeValue / minTempo) / Math.max(0.001, Math.log(maxTempo / minTempo)),
+          0,
+          1
+        );
+      };
+      const markerX = x + barW * tempoToBarT(currentTempo);
+  
+      ctx.save();
+      ctx.fillStyle = "rgba(2,6,23,0.70)";
+      ttRoundRect(x - (layout.mobile ? 30 : 52), y - (layout.mobile ? 13 : 18), barW + (layout.mobile ? 60 : 104), layout.mobile ? 26 : 36, 12);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.14)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+  
+      const g = ctx.createLinearGradient(x, 0, x + barW, 0);
+      g.addColorStop(0, "rgba(56,189,248,0.92)");
+      g.addColorStop(0.5, "rgba(250,204,21,0.95)");
+      g.addColorStop(1, "rgba(248,113,113,0.95)");
+      ctx.fillStyle = g;
+      ttRoundRect(x, y - barH / 2, barW, barH, barH / 2);
+      ctx.fill();
+  
+      // Center-tempo tick.
+      const centerX = x + barW * tempoToBarT(TT_BASE_TEMPO_BPM);
+      ctx.strokeStyle = "rgba(255,255,255,0.78)";
+      ctx.lineWidth = layout.mobile ? 1.5 : 2;
+      ctx.beginPath();
+      ctx.moveTo(centerX, y - barH * 1.45);
+      ctx.lineTo(centerX, y + barH * 1.45);
+      ctx.stroke();
+  
+      // Current tempo marker.
+      ctx.fillStyle = "#ffffff";
+      ctx.strokeStyle = "rgba(2,6,23,0.82)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(markerX, y, layout.mobile ? 6 : 8, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+  
+      ttText(`${minTempo}`, x - (layout.mobile ? 16 : 26), y, layout.mobile ? 9 : 12, "#bfdbfe", "center", "800");
+      ttText(`${maxTempo}`, x + barW + (layout.mobile ? 16 : 26), y, layout.mobile ? 9 : 12, "#fecaca", "center", "800");
+      ctx.restore();
+    }
+  
+  
+    function ttDrawParticles() {
+      tt.particles.forEach(p => {
+        const a = ttClamp(p.life / p.maxLife, 0, 1);
+        ctx.save();
+        if (p.kind === "stepRing") {
+          ctx.globalAlpha = a * 0.50;
+          ctx.strokeStyle = "rgba(226,232,240,0.8)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.ellipse(p.x, p.y, p.size * (1.0 + (1 - a) * 0.9), p.size * 0.32, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (p.kind === "foot") {
+          ctx.globalAlpha = a * 0.55;
+          ctx.fillStyle = "rgba(226,232,240,0.72)";
+          ctx.beginPath();
+          ctx.ellipse(p.x, p.y, p.size * (1.1 + (1 - a) * 0.7), p.size * 0.34, 0, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (p.kind === "pickupRing") {
+          ctx.globalAlpha = a * 0.78;
+          ctx.strokeStyle = "rgba(250,204,21,0.95)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * (1 + (1 - a) * 1.6), 0, Math.PI * 2);
+          ctx.stroke();
+        } else if (p.kind === "spark") {
+          ctx.globalAlpha = a;
+          ctx.strokeStyle = p.gold ? "rgba(250,204,21,0.96)" : "rgba(248,113,113,0.9)";
+          ctx.lineWidth = 2;
+          const r = (p.size || 3) * (0.7 + (1 - a));
+          ctx.beginPath();
+          ctx.moveTo(p.x - r, p.y);
+          ctx.lineTo(p.x + r, p.y);
+          ctx.moveTo(p.x, p.y - r);
+          ctx.lineTo(p.x, p.y + r);
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = p.gold ? `rgba(250,204,21,${a})` : `rgba(226,232,240,${a * 0.65})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, (p.gold ? 3 : 2) + 3 * a, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+  
+    function ttDrawPopups(layout) {
+      if (!tt.popups || !tt.popups.length) return;
+      tt.popups.forEach(p => {
+        const a = ttClamp(p.life / p.maxLife, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = a;
+        ttText(p.text, p.x, p.y, layout.mobile ? 11 : 16, "#fde68a", "center", "900");
+        ctx.restore();
+      });
+    }
+  
+    function gameDraw() {
+      if (!tt) return;
+      const layout = ttLayout();
+      const shake = ttClamp((tt.deathShakeMs || 0) / 360, 0, 1);
+      const sx = shake ? (Math.random() - 0.5) * 8 * shake : 0;
+      const sy = shake ? (Math.random() - 0.5) * 5 * shake : 0;
+  
+      ctx.save();
+      ctx.translate(sx, sy);
+      ttDrawBackground(layout);
+      ttDrawWatch(layout);
+      ttDrawParticles();
+      ttDrawPopups(layout);
+      ttDrawLasers(layout);
+      ttDrawThief(layout);
+      if (tt.pickupFlash > 0.02) {
+        ctx.fillStyle = `rgba(250,204,21,${0.08 * tt.pickupFlash})`;
+        ctx.fillRect(0, layout.hudH, layout.w, layout.groundY - layout.hudH);
+      }
+      ctx.restore();
+  
+      ttDrawHud(layout);
+      ttDrawTempoCalibration(layout);
+      if ((tt.deathFlash || 0) > 0.02) {
+        ctx.fillStyle = `rgba(239,68,68,${0.18 * tt.deathFlash})`;
+        ctx.fillRect(0, 0, layout.w, layout.h);
+      }
+      if (tt.transitionMs > 0) {
+        const a = ttClamp(tt.transitionMs / 1400, 0, 1);
+        ctx.fillStyle = `rgba(56,189,248,${0.10 * a})`;
+        ctx.fillRect(0, 0, layout.w, layout.h);
+      }
+    }
+  
+    function gameInput(action) {
+      if (!tt) return;
+      if (["tap", "a", "b", "x", "y", "up", "down", "left", "right", "select"].includes(action)) ttTap();
+    }
+  
+    function gamePointer(point) {
+      ttTap();
+    }
+  
+    function gameStop() {
+      // Nothing to clean up yet.
+    }
+
+    let resizeObserver = null;
+
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      });
+
+      resizeObserver.observe(appFrame);
+    }
+
+    window.addEventListener("resize", () => {
+      scaleAppToFrame();
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+
+      if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
+    });
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      }, 250);
+    });
+
+    function shutDownMobileArcade() {
+      try {
+        stopGame();
+      } catch (err) {}
+
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
+      }
+
+      audioCtx = null;
+    }
+
+    window.addEventListener("pagehide", shutDownMobileArcade);
+
 
     scaleAppToFrame();
     loadPlayers();
     resetJoystick(sticks.left);
     resetJoystick(sticks.right);
+    configureMobileControls(TT_CONTROL_CONFIG);
     gameInit();
+    resetGameCanvasTransform();
     gameDraw();
   </script>
 </body>
