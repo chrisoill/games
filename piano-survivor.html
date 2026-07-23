@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Piano Survivor Mobile</title>
+  <title>Piano Arcade Mobile Desktop-World Template v3.4</title>
 
   <style>
     * {
@@ -18,6 +18,8 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
@@ -41,7 +43,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -64,6 +67,19 @@
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #appFrame,
+    #menuScreen,
+    #screen,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
     }
 
     input,
@@ -223,8 +239,11 @@
       min-width: 110px;
     }
 
+
     /* =========================
-       GAME / EMULATOR
+       GAME / MOBILE CONTROLLER
+       The game world uses the desktop template's full 720 x 520 coordinates.
+       Only the displayed canvas is reduced to fit the 390px mobile shell.
        ========================= */
 
     #gameScreen {
@@ -233,7 +252,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: none;
+      overflow: hidden;
     }
 
     #screen {
@@ -241,29 +261,41 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: none;
+    }
+
+    /* Overlay the old mobile-style frame on top of the canvas.
+       Because it does not participate in layout, the 720 x 520 game world
+       keeps exactly the same displayed size and aspect ratio. */
+    #screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      pointer-events: none;
     }
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
+      touch-action: none;
       background: #f7fbff;
-      image-rendering: pixelated;
+      image-rendering: auto;
     }
 
     #gameOverBox {
       display: none;
       position: absolute;
-      left: 34px;
-      right: 34px;
-      top: 35px;
+      left: 38px;
+      right: 38px;
+      top: 60px;
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -297,7 +329,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -312,15 +344,16 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       grid-template-rows: 1fr 1fr;
+      column-gap: 12px;
       align-items: center;
-      padding: 5px 16px;
+      padding: 5px 14px;
       pointer-events: none;
     }
 
     #lcdMessage {
-      grid-column: 1 / 3;
+      grid-column: 1 / 4;
       font-size: 14px;
       font-weight: bold;
       white-space: nowrap;
@@ -328,23 +361,42 @@
       text-overflow: ellipsis;
     }
 
-    #lcdScore {
+    #lcdPlayer,
+    #lcdScore,
+    #lcdBest {
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    #lcdScore {
+      text-align: center;
     }
 
     #lcdBest {
-      font-size: 13px;
       text-align: right;
     }
 
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
+      height: 340.333px;
+      /*
+        FULL-SIZE CONTROLLER DEFAULT:
+        All controller hardware below uses the original mobile dimensions.
+        Fit complete control sets by compressing shell padding and row gaps,
+        not by shrinking the controls themselves.
+      */
+      padding: 3px 14px 15px;
       background: linear-gradient(180deg, #303030, #181818);
-      touch-action: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: stretch;
+      gap: 2px;
+      overflow: hidden;
+      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -360,15 +412,36 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .controlRow {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 54px;
+      flex: 0 0 auto;
+    }
+
+    #primaryControlsRow {
+      min-height: 150px;
+    }
+
+    #stickControlsRow {
+      min-height: 112px;
+      gap: 94px;
+    }
+
+    #systemControlsRow {
+      min-height: 34px;
+    }
+
     /* D-PAD */
 
     #dpad {
-      position: absolute;
-      left: 17px;
-      top: 19px;
+      position: relative;
       width: 150px;
       height: 150px;
-      touch-action: manipulation;
+      flex: 0 0 150px;
+      touch-action: none;
     }
 
     .dpadBtn {
@@ -403,11 +476,10 @@
     /* FACE BUTTONS */
 
     #faceButtons {
-      position: absolute;
-      right: 18px;
-      top: 20px;
+      position: relative;
       width: 150px;
       height: 150px;
+      flex: 0 0 150px;
     }
 
     .faceBtn {
@@ -436,26 +508,29 @@
     #buttonA { left: 92px; top: 46px; }
     #buttonB { left: 46px; top: 92px; }
 
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 76px;
+      height: 76px;
+      left: 37px !important;
+      top: 37px !important;
+      border-radius: 22px;
+      padding: 0 8px;
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: normal;
+    }
+
     /* JOYSTICKS */
 
     .joystickPad {
-      position: absolute;
+      position: relative;
       width: 112px;
       height: 112px;
+      flex: 0 0 112px;
       border-radius: 18px;
       background: rgba(255,255,255,0.035);
       box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
       touch-action: none;
-    }
-
-    #leftJoystickPad {
-      left: 36px;
-      top: 188px;
-    }
-
-    #rightJoystickPad {
-      right: 37px;
-      top: 188px;
     }
 
     .joystickBase {
@@ -488,19 +563,15 @@
     /* START / SELECT */
 
     #systemButtons {
-      position: absolute;
-      left: 50%;
-      top: 326px;
-      width: 164px;
-      height: 34px;
-      transform: translateX(-50%);
+      min-height: 34px;
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 12px;
     }
 
     .systemBtn {
-      width: 76px;
+      width: 82px;
       height: 32px;
       border-radius: 999px;
       border: none;
@@ -516,6 +587,10 @@
     .systemBtn:active {
       transform: scale(0.96);
       filter: brightness(1.2);
+    }
+
+    #systemButtons.singleSystem .systemBtn {
+      width: 104px;
     }
 
     /* =========================
@@ -655,23 +730,36 @@
     }
 
 
+    /* =========================
+       PIANO SURVIVOR MOBILE OVERRIDES
+       ========================= */
+
     #menuScreen,
-    #gameScreen {
-      background:
-        radial-gradient(circle at 25% 12%, rgba(255,224,138,0.12), transparent 22%),
-        linear-gradient(180deg, #252525, #141414);
+    #gameScreen,
+    #screen,
+    #gameCanvas,
+    #lcd,
+    #controls,
+    .controlRow {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
+    button,
+    #dpad,
+    .joystickPad {
+      touch-action: none;
+    }
 
     #gameCanvas {
       background: #0b1420;
+      image-rendering: auto;
     }
 
-
-    /* Piano Survivor mobile: keep the movement/aim controls visible and remove optional reminder buttons. */
-    #faceButtons,
-    #selectButton {
-      display: none !important;
+    #controls {
+      background:
+        radial-gradient(circle at 25% 12%, rgba(255,224,138,0.08), transparent 22%),
+        linear-gradient(180deg, #303030, #181818);
     }
 
   </style>
@@ -707,9 +795,10 @@
         <button id="startGameBtn">Start Game</button>
       </div>
 
+
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -721,39 +810,46 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdPlayer">PLAYER: <span id="playerName">—</span></div>
+          <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
 
         <div id="controls">
-          <div id="dpad">
-            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
-            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
-            <button id="dpadCenter" class="dpadBtn"></button>
-            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
-            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          <div id="primaryControlsRow" class="controlRow">
+            <div id="dpad">
+              <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+              <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+              <button id="dpadCenter" class="dpadBtn"></button>
+              <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+              <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+            </div>
+
+            <div id="faceButtons">
+              <button id="buttonX" class="faceBtn" data-action="x">X</button>
+              <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+              <button id="buttonA" class="faceBtn" data-action="a">A</button>
+              <button id="buttonB" class="faceBtn" data-action="b">B</button>
+            </div>
           </div>
 
-          <div id="faceButtons">
-            <button id="buttonX" class="faceBtn" data-action="x">X</button>
-            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
-            <button id="buttonA" class="faceBtn" data-action="a">A</button>
-            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          <div id="stickControlsRow" class="controlRow">
+            <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+              <div class="joystickBase"></div>
+              <div id="leftJoystickKnob" class="joystickKnob"></div>
+            </div>
+
+            <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+              <div class="joystickBase"></div>
+              <div id="rightJoystickKnob" class="joystickKnob"></div>
+            </div>
           </div>
 
-          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
-            <div class="joystickBase"></div>
-            <div id="leftJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
-            <div class="joystickBase"></div>
-            <div id="rightJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="systemButtons">
-            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
-            <button id="startButton" class="systemBtn" data-action="start">START</button>
+          <div id="systemControlsRow" class="controlRow">
+            <div id="systemButtons">
+              <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+              <button id="startButton" class="systemBtn" data-action="start">START</button>
+            </div>
           </div>
         </div>
       </div>
@@ -774,10 +870,30 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
+
+    // These must match the desktop template exactly.
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+
+    // The desktop world is displayed proportionally inside the mobile shell.
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
+
+    /*
+      Change STORAGE_KEY for each separate arcade game if you want each game
+      to keep its own local player list/leaderboard.
+      Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
+    */
     const STORAGE_KEY = "pianoSurvivorMobilePlayers_v1";
     const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Score";
+    const FIRST_TIME_HELP_DEFAULT_VERSION = "pianoSurvivorMobileHowToPlay_v2";
+    let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
 
     const appFrame = document.getElementById("appFrame");
     const appStage = document.getElementById("appStage");
@@ -798,10 +914,66 @@
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    let gameCanvasPixelScale = 1;
+
+    function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
+      const dpr = Math.max(1, window.devicePixelRatio || 1);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
+      const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
+      const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
+
+      if (canvas.width !== targetWidth || canvas.height !== targetHeight) {
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+      }
+
+      gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
+    }
 
     const lcdMessage = document.getElementById("lcdMessage");
+    const playerNameEl = document.getElementById("playerName");
+    const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
+
+    // Desktop game modules commonly write to questionBox.
+    // On mobile, that same content appears in the compact LCD message row.
+    const questionBox = lcdMessage;
+    scoreLabelEl.textContent = String(SCORE_LABEL || "Score").toUpperCase();
 
     const gameOverBox = document.getElementById("gameOverBox");
     const gameOverScore = document.getElementById("gameOverScore");
@@ -812,13 +984,17 @@
     const rightJoystickPad = document.getElementById("rightJoystickPad");
     const leftJoystickKnob = document.getElementById("leftJoystickKnob");
     const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+    const primaryControlsRow = document.getElementById("primaryControlsRow");
+    const stickControlsRow = document.getElementById("stickControlsRow");
+    const systemControlsRow = document.getElementById("systemControlsRow");
+    const dpad = document.getElementById("dpad");
+    const faceButtons = document.getElementById("faceButtons");
+    const systemButtons = document.getElementById("systemButtons");
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
     const shellMenuBody = document.getElementById("shellMenuBody");
     const shellMenuCloseBtn = document.getElementById("shellMenuCloseBtn");
-    const startButton = document.getElementById("startButton");
-    if (startButton) startButton.textContent = "MENU";
 
     let appScale = 1;
     let players = {};
@@ -826,6 +1002,8 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
@@ -857,7 +1035,7 @@
       Add game-specific tabs with:
       MobileArcadeShell.registerMenuTab("map", "Map", "<h3>Map</h3><p>Map content...</p>");
       Update default tabs with:
-      window.MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
+      MobileArcadeShell.updateMenuTab("instructions", "<h3>How to Play</h3><p>New instructions...</p>");
     */
     const shellMenuTabs = [
       {
@@ -865,31 +1043,12 @@
         label: "Pause",
         html: `
           <h3>Pause</h3>
-          <p>Pause the run, return to the player menu, or save your score before exiting.</p>
+          <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
           <div class="pauseMenuActions">
-            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save &amp; Exit</button>
-            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
             <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Score &amp; Exit</button>
+            <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
           </div>
-        `
-      },
-      {
-        id: "instructions",
-        label: "How to Play",
-        html: `
-          <h3>How to Play</h3>
-          <p>You are the tiny piano. Instrument enemies chase you through a large scrolling map.</p>
-          <ul>
-            <li>Use the left joystick to move away from danger.</li>
-            <li>Use the right joystick to aim and fire note shots.</li>
-            <li>Collect music symbols to upgrade your piano.</li>
-            <li><strong>Dynamics</strong> make your notes bigger and stronger.</li>
-            <li><strong>Tempo</strong> changes how fast you move.</li>
-            <li><strong>Rhythm</strong> changes how quickly you fire.</li>
-            <li><strong>Harmony</strong> adds more notes to your attack.</li>
-            <li><strong>Rests</strong> heal you. <strong>:||</strong> gives an extra life.</li>
-          </ul>
-          <p>Your score goes up as you survive.</p>
         `
       },
       {
@@ -898,66 +1057,32 @@
         html: `
           <h3>Controls</h3>
           <ul>
-            <li><strong>Left joystick:</strong> move the piano. Stay near the center to slow down or stop.</li>
-            <li><strong>D-pad:</strong> tap for quick movement in one direction.</li>
-            <li><strong>Right joystick:</strong> aim and fire. Push it toward the enemies.</li>
-            <li><strong>MENU:</strong> pause, resume, or return to the player menu.</li>
+            <li><strong>Left joystick / D-pad:</strong> Movement when the game uses movement.</li>
+            <li><strong>Right joystick:</strong> Directional aiming and firing when the game uses twin-stick controls.</li>
+            <li><strong>A / B / X / Y:</strong> Game action buttons. Each game should explain what these do.</li>
+            <li><strong>START:</strong> Pause / open this menu.</li>
+            <li><strong>SELECT:</strong> Extra game/system action when a game uses it.</li>
           </ul>
-          <p>Move with your left hand and aim with your right hand.</p>
+          <p>The template exposes every mobile control by default. Each game should hide unused controls; the remaining rows recenter automatically.</p>
+        `
+      },
+      {
+        id: "instructions",
+        label: "How to Play",
+        html: `
+          <h3>How to Play</h3>
+          <p>This is the quick-start screen for new players.</p>
+          <ul>
+            <li>Read the goal of the game.</li>
+            <li>Check which buttons actually matter.</li>
+            <li>Tap START any time you need help again.</li>
+          </ul>
+          <p>Each game should replace this with short, concrete instructions.</p>
         `
       }
     ];
 
-    let activeShellMenuTab = "instructions";
-    const FIRST_TIME_HELP_VERSION = "pianoSurvivor_howToPlay_v1";
-    let pendingStartAfterFirstTimeHelp = false;
-
-    function isGuestPlayerName(name = selectedPlayer) {
-      return String(name || "").trim().toLowerCase() === "guest";
-    }
-
-    function ensureSelectedPlayerForStart() {
-      if (!selectedPlayer) {
-        selectedPlayer = "Guest";
-      }
-
-      if (!players[selectedPlayer]) {
-        players[selectedPlayer] = { best: 0 };
-      }
-
-      savePlayers();
-    }
-
-    function shouldShowFirstTimeHelp() {
-      if (!selectedPlayer) return false;
-      if (isGuestPlayerName()) return true;
-      return players[selectedPlayer]?.helpSeenVersion !== FIRST_TIME_HELP_VERSION;
-    }
-
-    function markFirstTimeHelpSeen() {
-      if (!selectedPlayer || isGuestPlayerName()) return;
-      if (!players[selectedPlayer]) players[selectedPlayer] = { best: 0 };
-      players[selectedPlayer].helpSeenVersion = FIRST_TIME_HELP_VERSION;
-      savePlayers();
-    }
-
-    function beginGameRunWithHelpCheck() {
-      closeShellMenu({ resume: false });
-      ensureSelectedPlayerForStart();
-      resetRemoveConfirmButton();
-      menuScreen.style.display = "none";
-      gameScreen.style.display = "block";
-      gameOverBox.style.display = "none";
-
-      if (shouldShowFirstTimeHelp()) {
-        markFirstTimeHelpSeen();
-        pendingStartAfterFirstTimeHelp = true;
-        openShellMenu("instructions");
-        return;
-      }
-
-      startGame();
-    }
+    let activeShellMenuTab = "pause";
 
     function preventBrowserHoldGesture(event) {
       const tagName = event.target?.tagName;
@@ -1037,7 +1162,6 @@
 
     function closeShellMenu(options = {}) {
       const shouldResume = options.resume !== false;
-      if (!shouldResume) pendingStartAfterFirstTimeHelp = false;
       shellMenu.classList.remove("open");
       shellMenu.setAttribute("aria-hidden", "true");
 
@@ -1048,22 +1172,164 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        scheduleGameLoop();
       }
-
-      const shouldStartPendingGame =
-        shouldResume &&
-        pendingStartAfterFirstTimeHelp &&
-        gameScreen.style.display === "block" &&
-        gameOverBox.style.display !== "block";
 
       shellMenuWasRunning = false;
-
-      if (shouldStartPendingGame) {
-        pendingStartAfterFirstTimeHelp = false;
-        startGame();
-      }
     }
+
+    function setFirstTimeHelpVersion(version) {
+      const cleanVersion = String(version || "").trim();
+      if (cleanVersion) firstTimeHelpVersion = cleanVersion;
+    }
+
+    function ensureSelectedPlayerRecord() {
+      if (!selectedPlayer) return null;
+
+      if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].best))) {
+        players[selectedPlayer].best = 0;
+      }
+
+      return players[selectedPlayer];
+    }
+
+    function isGuestPlayerName(name = selectedPlayer) {
+      return String(name || "").trim().toLowerCase() === "guest";
+    }
+
+    function shouldShowFirstTimeHelp() {
+      // Guest is a shared/new-visitor account, so it should open How to Play every time.
+      if (isGuestPlayerName()) return true;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return false;
+      return playerData.helpSeenVersion !== firstTimeHelpVersion;
+    }
+
+    function markFirstTimeHelpSeen() {
+      // Do not mark Guest as done. The next Guest player should still see How to Play.
+      if (isGuestPlayerName()) return;
+
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
+      playerData.helpSeenVersion = firstTimeHelpVersion;
+      savePlayers();
+    }
+
+    function maybeOpenFirstTimeHelp() {
+      if (!shouldShowFirstTimeHelp()) return;
+      markFirstTimeHelpSeen();
+      openShellMenu("instructions");
+    }
+
+    /*
+      DEFAULT MOBILE CONTROLS
+      The template includes the full control inventory, but the layout now reflows.
+      Individual games should hide anything they do not use with
+      MobileArcadeShell.configureControls({...}) rather than resizing the game world.
+
+      Example future game-specific override:
+      MobileArcadeShell.configureControls({
+        showDpad: false,
+        showLeftJoystick: true,
+        showRightJoystick: false,
+        faceButtons: ["a"],
+        systemButtons: ["start"],
+        labels: { a: "REEL", start: "MENU" }
+      });
+    */
+    const defaultMobileControlConfig = {
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: ["a", "b", "x", "y"],
+      systemButtons: ["select", "start"],
+      labels: {
+        a: "A",
+        b: "B",
+        x: "X",
+        y: "Y",
+        select: "SELECT",
+        start: "START"
+      }
+    };
+
+    function setVisible(element, visible) {
+      if (!element) return;
+      element.classList.toggle("hidden", !visible);
+    }
+
+    function configureMobileControls(options = {}) {
+      const config = {
+        ...defaultMobileControlConfig,
+        ...options,
+        labels: {
+          ...defaultMobileControlConfig.labels,
+          ...(options.labels || {})
+        }
+      };
+
+      const showDpad = config.showDpad !== false;
+      const showLeftJoystick = config.showLeftJoystick !== false;
+      const showRightJoystick = config.showRightJoystick === true;
+      const visibleFaceButtons = new Set(
+        (config.faceButtons || []).map(action => String(action).toLowerCase())
+      );
+      const visibleSystemButtons = new Set(
+        (config.systemButtons || []).map(action => String(action).toLowerCase())
+      );
+
+      setVisible(dpad, showDpad);
+      setVisible(leftJoystickPad, showLeftJoystick);
+      setVisible(rightJoystickPad, showRightJoystick);
+      setVisible(faceButtons, visibleFaceButtons.size > 0);
+      setVisible(systemButtons, visibleSystemButtons.size > 0);
+
+      const faceButtonMap = {
+        a: document.getElementById("buttonA"),
+        b: document.getElementById("buttonB"),
+        x: document.getElementById("buttonX"),
+        y: document.getElementById("buttonY")
+      };
+
+      Object.entries(faceButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleFaceButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+        button.classList.toggle("singleAction", isVisible && visibleFaceButtons.size === 1);
+      });
+
+      faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
+
+      const systemButtonMap = {
+        select: document.getElementById("selectButton"),
+        start: document.getElementById("startButton")
+      };
+
+      Object.entries(systemButtonMap).forEach(([action, button]) => {
+        if (!button) return;
+        const isVisible = visibleSystemButtons.has(action);
+        setVisible(button, isVisible);
+        button.textContent = config.labels[action] || action.toUpperCase();
+      });
+
+      systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
+
+      // Empty rows disappear entirely. Remaining rows automatically redistribute
+      // themselves vertically, so game-specific control sets stay centered.
+      setVisible(primaryControlsRow, showDpad || visibleFaceButtons.size > 0);
+      setVisible(stickControlsRow, showLeftJoystick || showRightJoystick);
+      setVisible(systemControlsRow, visibleSystemButtons.size > 0);
+
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    }
+
 
     function saveCurrentScoreForSelectedPlayer() {
       if (!selectedPlayer) return;
@@ -1138,6 +1404,7 @@
       const frameWidth = appFrame.clientWidth;
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
+      scaleGameCanvasBackingStore();
     }
 
     function setMessage(text) {
@@ -1168,19 +1435,15 @@
         const cleanName = String(name || "").trim();
         if (!cleanName) return;
 
-        const best = data && typeof data === "object"
+        const isObjectData = data && typeof data === "object" && !Array.isArray(data);
+        const best = isObjectData
           ? Number(data.best || 0)
           : Number(data || 0);
 
-        const cleanedPlayer = {
+        cleaned[cleanName] = {
+          ...(isObjectData ? data : {}),
           best: Math.max(0, Math.floor(best || 0))
         };
-
-        if (data && typeof data === "object" && typeof data.helpSeenVersion === "string") {
-          cleanedPlayer.helpSeenVersion = data.helpSeenVersion;
-        }
-
-        cleaned[cleanName] = cleanedPlayer;
       });
 
       return cleaned;
@@ -1191,7 +1454,7 @@
         Supports both:
         1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
         2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
-        Either way, this game stores only each player's best score.
+        Either way, this template stores only each player's best score.
       */
       if (!savedData || typeof savedData !== "object") {
         return { players: {}, selectedPlayer: null };
@@ -1461,9 +1724,26 @@
       }
     });
 
-    startGameBtn.onclick = () => beginGameRunWithHelpCheck();
+    startGameBtn.onclick = () => {
+      closeShellMenu({ resume: false });
 
-    playAgainBtn.onclick = () => beginGameRunWithHelpCheck();
+      if (!selectedPlayer) {
+        selectedPlayer = "Guest";
+        if (!players.Guest) players.Guest = { best: 0 };
+      }
+
+      savePlayers();
+
+      menuScreen.style.display = "none";
+      gameScreen.style.display = "block";
+      startGame();
+      maybeOpenFirstTimeHelp();
+    };
+
+    playAgainBtn.onclick = () => {
+      startGame();
+      maybeOpenFirstTimeHelp();
+    };
 
     backToMenuBtn.onclick = () => {
       closeShellMenu({ resume: false });
@@ -1490,13 +1770,17 @@
 
       const centerX = stick.pad.offsetWidth / 2;
       const centerY = stick.pad.offsetHeight / 2;
+      const rawDx = point.x - centerX;
+      const rawDy = point.y - centerY;
+      const rawDistance = Math.hypot(rawDx, rawDy);
+      const limitedDistance = Math.min(stick.maxDistance, rawDistance);
+      const directionX = rawDistance > 0 ? rawDx / rawDistance : 0;
+      const directionY = rawDistance > 0 ? rawDy / rawDistance : 0;
+      const dx = directionX * limitedDistance;
+      const dy = directionY * limitedDistance;
 
-      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
-      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
-
-      const dx = limitedX - centerX;
-      const dy = limitedY - centerY;
-
+      // Normalized analog values in the range -1 through 1.
+      // Game modules can read MobileArcadeShell.sticks.left/right continuously.
       stick.x = dx / stick.maxDistance;
       stick.y = dy / stick.maxDistance;
 
@@ -1576,14 +1860,16 @@
       score = 0;
       running = true;
 
+      playerNameEl.textContent = selectedPlayer || "Guest";
       scoreEl.textContent = score;
       bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
+      scheduleGameLoop();
     }
 
     function stopGame() {
@@ -1594,13 +1880,39 @@
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
       if (!running) return;
 
-      gameUpdate();
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+      }
+
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+      if (!running) return;
+
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
+
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
       gameDraw();
 
       loopId = requestAnimationFrame(loop);
@@ -1612,7 +1924,17 @@
       stopGame();
       soundLose();
 
-      saveCurrentScoreForSelectedPlayer();
+      if (!players[selectedPlayer]) {
+        players[selectedPlayer] = { best: 0 };
+      }
+
+      if (score > (players[selectedPlayer].best || 0)) {
+        players[selectedPlayer].best = score;
+      }
+
+      savePlayers();
+      renderLeaderboard();
+      bestScoreEl.textContent = players[selectedPlayer].best || 0;
 
       gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
       gameOverBox.style.display = "block";
@@ -1629,6 +1951,48 @@
 
       gameInput(action);
     }
+
+    // Piano Survivor uses the two joysticks and D-pad only. The canvas deliberately
+    // has no pointer-capture handler so a swipe beginning on the artwork scrolls Wix.
+
+    document.addEventListener("keydown", event => {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+      if (shellMenu.classList.contains("open")) return;
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+
+      if (event.key === "ArrowUp" || key === "w") {
+        event.preventDefault();
+        handleInput("up");
+      }
+
+      if (event.key === "ArrowDown" || key === "s") {
+        event.preventDefault();
+        handleInput("down");
+      }
+
+      if (event.key === "ArrowLeft" || key === "a") {
+        event.preventDefault();
+        handleInput("left");
+      }
+
+      if (event.key === "ArrowRight" || key === "d") {
+        event.preventDefault();
+        handleInput("right");
+      }
+
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        handleInput("a");
+      }
+
+      if (key === "m") {
+        event.preventDefault();
+        openShellMenu("instructions");
+      }
+    });
 
     function getAudio() {
       if (!audioCtx) {
@@ -1681,1491 +2045,22 @@
       });
     }
 
-
     /*
-      GAME MODULE: PIANO SURVIVOR MVP
-      Keep these function names.
+      COMPATIBLE SHELL API
+      MobileArcadeShell is the native mobile name.
+      ArcadeShell is an alias so desktop game-module code can be reused without
+      renaming its shell calls.
     */
-
-    const PS_DYNAMICS = [
-      { label: "pp", damage: 1.0, size: 2.3 },
-      { label: "p", damage: 1.25, size: 3.0 },
-      { label: "mp", damage: 1.6, size: 3.9 },
-      { label: "mf", damage: 1.95, size: 5.0 },
-      { label: "f", damage: 2.35, size: 6.4 },
-      { label: "ff", damage: 2.9, size: 7.9 }
-    ];
-
-    const PS_TEMPOS = [
-      { label: "Largo", short: "Lar", speed: 1.0 },
-      { label: "Adagio", short: "Adg", speed: 1.32 },
-      { label: "Andante", short: "And", speed: 1.72 },
-      { label: "Moderato", short: "Mod", speed: 2.18 },
-      { label: "Allegro", short: "All", speed: 2.72 },
-      { label: "Presto", short: "Pre", speed: 3.28 },
-      { label: "Prestissimo", short: "Prs", speed: 3.88 }
-    ];
-
-    const PS_RHYTHMS = [
-      { label: "Whole", short: "whole", symbol: "whole", cooldown: 46 },
-      { label: "Dotted Half", short: "d-half", symbol: "d-half", cooldown: 40 },
-      { label: "Half", short: "half", symbol: "half", cooldown: 34 },
-      { label: "Dotted Quarter", short: "d-qtr", symbol: "d-qtr", cooldown: 28 },
-      { label: "Quarter", short: "qtr", symbol: "qtr", cooldown: 22 },
-      { label: "Eighth", short: "8th", symbol: "8th", cooldown: 15 },
-      { label: "16th", short: "16th", symbol: "16th", cooldown: 10 }
-    ];
-
-
-    const PS_HARMONIES = [
-      { label: "Single Note", short: "X", count: 1, spread: 0 },
-      { label: "Add Third", short: "X³", count: 2, spread: 0.261799 },
-      { label: "Add Fifth", short: "X⁵", count: 3, spread: 0.261799 },
-      { label: "7th Chord", short: "X⁷", count: 4, spread: 0.261799 },
-      { label: "9th Chord", short: "X⁹", count: 5, spread: 0.261799 },
-      { label: "11th Chord", short: "X¹¹", count: 6, spread: 0.261799 },
-      { label: "13th Chord", short: "X¹³", count: 7, spread: 0.261799 }
-    ];
-
-    const PS_ARTICULATIONS = [
-      { id: "staccato", label: "Staccato", symbol: "•", message: "STACCATO: BOUNCE" },
-      { id: "legato", label: "Legato", symbol: "⌒", message: "LEGATO: CHAIN" },
-      { id: "accent", label: "Accent", symbol: ">", message: "ACCENT: PIERCE" },
-      { id: "tenuto", label: "Tenuto", symbol: "–", message: "TENUTO: HEAVY" },
-      { id: "trill", label: "Trill", symbol: "tr", message: "TRILL: WIGGLE" },
-      { id: "marcato", label: "Marcato", symbol: "^", message: "MARCATO: EXPLODE" }
-    ];
-
-    const PS_WORLD = { width: 1800, height: 1320 };
-    const PS_DROP_TARGETS = { D: 2, T: 2, R: 2, H: 2, articulation: 3, rest: 1 };
-    const PS_SPECIAL_KINDS = ["fermata", "treble", "bass"];
-    const PS_SPECIAL_FIRST_TIME = 2600;
-    const PS_SPECIAL_COOLDOWN = 3000;
-    const PS_REPEAT_FIRST_TIME = 9000;
-    const PS_REPEAT_COOLDOWN = 12000;
-    // Enemy target count intentionally has no hard cap; it rises over time.
-    const PS_ENEMY_TOO_FAR = 660;
-    const PS_ENEMY_RESPAWN_MIN = 250;
-    const PS_ENEMY_RESPAWN_MAX = 360;
-
-    let ps = null;
-
-    function psClamp(value, min, max) {
-      return Math.max(min, Math.min(max, value));
-    }
-
-    function psRand(min, max) {
-      return min + Math.random() * (max - min);
-    }
-
-    function psWrapValue(value, max) {
-      value = value % max;
-      return value < 0 ? value + max : value;
-    }
-
-    function psWrapEntity(obj) {
-      obj.x = psWrapValue(obj.x, PS_WORLD.width);
-      obj.y = psWrapValue(obj.y, PS_WORLD.height);
-    }
-
-    function psWrappedDelta(from, to, size) {
-      let delta = to - from;
-      if (delta > size / 2) delta -= size;
-      if (delta < -size / 2) delta += size;
-      return delta;
-    }
-
-    function psDist(a, b) {
-      const dx = psWrappedDelta(a.x, b.x, PS_WORLD.width);
-      const dy = psWrappedDelta(a.y, b.y, PS_WORLD.height);
-      return Math.sqrt(dx * dx + dy * dy);
-    }
-
-    function psSetMessage(text, frames = 130) {
-      if (!ps) return;
-      ps.message = text;
-      ps.messageTimer = frames;
-      setMessage(text);
-    }
-
-    function psStatsLine() {
-      if (!ps) return "READY";
-      const art = ps.articulation ? ps.articulation.label : "None";
-      const special = ps.fermataTimer > 0 ? ` | Fermata ${Math.ceil(ps.fermataTimer / 60)}s` : ps.trebleTimer > 0 ? ` | Treble ${Math.ceil(ps.trebleTimer / 60)}s` : ps.bassTimer > 0 ? ` | Bass ${Math.ceil(ps.bassTimer / 60)}s` : "";
-      return `${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].label} | ${PS_RHYTHMS[ps.rhythm].label} | ${PS_HARMONIES[ps.harmony].short} | ${art}${special}`;
-    }
-
-    function psCompactStatsLine() {
-      const art = ps.articulation ? ps.articulation.symbol : "-";
-      return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
-    }
-
-    function psUpdateHud() {
-      if (!ps) return;
-      if (ps.messageTimer > 0) setMessage(ps.message);
-      else setMessage(psStatsLine());
-    }
-
-    function psUpdateCamera() {
-      ps.camera.x = ps.player.x - canvas.width / 2;
-      ps.camera.y = ps.player.y - canvas.height / 2;
-    }
-
-    function psWorldToScreen(x, y) {
-      let sx = x - ps.camera.x;
-      let sy = y - ps.camera.y;
-
-      if (sx < -PS_WORLD.width / 2) sx += PS_WORLD.width;
-      if (sx > PS_WORLD.width / 2) sx -= PS_WORLD.width;
-      if (sy < -PS_WORLD.height / 2) sy += PS_WORLD.height;
-      if (sy > PS_WORLD.height / 2) sy -= PS_WORLD.height;
-
-      return { x: sx, y: sy };
-    }
-
-    function psPointOnScreen(obj, pad = 30) {
-      const s = psWorldToScreen(obj.x, obj.y);
-      return s.x > -pad && s.x < canvas.width + pad && s.y > -pad && s.y < canvas.height + pad;
-    }
-
-    function psGetUpgradePickupLabel(track) {
-      if (track === "D") return PS_DYNAMICS[Math.min(ps.dyn + 1, PS_DYNAMICS.length - 1)].label;
-      if (track === "T") return PS_TEMPOS[Math.min(ps.tempo + 1, PS_TEMPOS.length - 1)].short;
-      if (track === "R") return PS_RHYTHMS[Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1)].short;
-      if (track === "H") return PS_HARMONIES[Math.min(ps.harmony + 1, PS_HARMONIES.length - 1)].short;
-      return "?";
-    }
-
-    function psRefreshDropLabels(track = null) {
-      ps.drops.forEach(drop => {
-        if (drop.kind !== "upgrade") return;
-        if (track && drop.track !== track) return;
-        drop.label = psGetUpgradePickupLabel(drop.track);
-        if (drop.track === "R") drop.rhythmIndex = Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1);
-        drop.fontSize = drop.label.length > 2 ? 8 : 11;
-      });
-    }
-
-    function psFindDropPosition(preferFar = false) {
-      let x = psRand(42, PS_WORLD.width - 42);
-      let y = psRand(42, PS_WORLD.height - 42);
-      if (!preferFar) return { x, y };
-      for (let i = 0; i < 80; i++) {
-        x = psRand(42, PS_WORLD.width - 42);
-        y = psRand(42, PS_WORLD.height - 42);
-        const candidate = { x, y };
-        const farFromPlayer = psDist(candidate, ps.player) > 260;
-        const farFromDrops = ps.drops.every(drop => psDist(candidate, drop) > 105);
-        if (farFromPlayer && farFromDrops) break;
-      }
-      return { x, y };
-    }
-
-    function psSpawnDrop(forceType = null, nearPlayer = false, forcedTrack = null) {
-      const kind = forceType || "upgrade";
-      let x, y;
-      if (nearPlayer) {
-        const angle = Math.random() * Math.PI * 2;
-        const distance = psRand(95, 180);
-        x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
-        y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
-      } else {
-        ({ x, y } = psFindDropPosition(true));
-      }
-
-      const drop = {
-        kind,
-        x,
-        y,
-        r: 9,
-        pulse: Math.random() * 100,
-        label: "?",
-        color: "#ffe08a",
-        fontSize: 11
-      };
-
-      if (kind === "upgrade") {
-        const availableTracks = ["D", "T", "R", "H"].filter(track => !psIsTrackMaxed(track));
-        if (availableTracks.length === 0) return;
-        drop.track = forcedTrack || availableTracks[Math.floor(Math.random() * availableTracks.length)];
-        if (psIsTrackMaxed(drop.track)) return;
-        drop.label = psGetUpgradePickupLabel(drop.track);
-        drop.color = { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[drop.track];
-        if (drop.track === "R") drop.rhythmIndex = Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1);
-        drop.fontSize = drop.label.length > 2 ? 8 : 11;
-      } else if (kind === "rest") {
-        const rests = [
-          { label: "𝄻", heal: 3, name: "WHOLE REST" },
-          { label: "𝄼", heal: 2, name: "HALF REST" },
-          { label: "𝄽", heal: 1, name: "QUARTER REST" }
-        ];
-        const rest = rests[Math.floor(Math.random() * rests.length)];
-        Object.assign(drop, { label: rest.label, heal: rest.heal, name: rest.name, color: "#f8fafc", fontSize: 12 });
-      } else if (kind === "articulation") {
-        const art = psChooseArticulationDrop();
-        if (!art) return;
-        Object.assign(drop, { articulation: art, label: art.symbol, color: "#c084fc", fontSize: 14 });
-      } else if (kind === "bonus") {
-        const track = forcedTrack || "D";
-        Object.assign(drop, { track, label: "✦", color: psBonusColor(track), r: 10, fontSize: 17 });
-      } else if (kind === "repeat") {
-        Object.assign(drop, { label: ":||", color: "#fb7185", r: 11, fontSize: 11 });
-      } else if (kind === "fermata") {
-        Object.assign(drop, { label: "𝄐", color: "#22d3ee", r: 11, fontSize: 15 });
-      } else if (kind === "treble") {
-        Object.assign(drop, { label: "𝄞", color: "#60a5fa", r: 11, fontSize: 16 });
-      } else if (kind === "bass") {
-        Object.assign(drop, { label: "𝄢", color: "#a78bfa", r: 11, fontSize: 16 });
-      }
-
-      ps.drops.push(drop);
-    }
-
-    function psIsTrackMaxed(track) {
-      if (track === "D") return ps.dyn >= PS_DYNAMICS.length - 1;
-      if (track === "T") return ps.tempo >= PS_TEMPOS.length - 1;
-      if (track === "R") return ps.rhythm >= PS_RHYTHMS.length - 1;
-      if (track === "H") return ps.harmony >= PS_HARMONIES.length - 1;
-      return false;
-    }
-
-    function psDropCount(kind, track = null) {
-      return ps.drops.filter(drop => {
-        if (drop.kind !== kind) return false;
-        if (track && drop.track !== track) return false;
-        return true;
-      }).length;
-    }
-
-    function psSpecialDropCount() {
-      return ps.drops.filter(drop => PS_SPECIAL_KINDS.includes(drop.kind)).length;
-    }
-
-    function psSpawnSpecialDrop() {
-      const kind = PS_SPECIAL_KINDS[Math.floor(Math.random() * PS_SPECIAL_KINDS.length)];
-      psSpawnDrop(kind);
-    }
-
-    function psChooseArticulationDrop() {
-      const currentId = ps.articulation?.id;
-      const alreadyOnMap = ps.drops
-        .filter(drop => drop.kind === "articulation" && drop.articulation)
-        .map(drop => drop.articulation.id);
-
-      let choices = PS_ARTICULATIONS.filter(art => art.id !== currentId);
-      const uniqueChoices = choices.filter(art => !alreadyOnMap.includes(art.id));
-      if (uniqueChoices.length > 0) choices = uniqueChoices;
-      return choices[Math.floor(Math.random() * choices.length)] || null;
-    }
-
-    function psBonusColor(track) {
-      return { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[track] || "#fef3c7";
-    }
-
-    function psMaintainDrops() {
-      ps.drops = ps.drops.filter(drop => {
-        if (drop.kind === "upgrade" && psIsTrackMaxed(drop.track)) return false;
-        if (drop.kind === "bonus" && !psIsTrackMaxed(drop.track)) return false;
-        if (drop.kind === "articulation" && ps.articulation && drop.articulation?.id === ps.articulation.id) return false;
-        return true;
-      });
-
-      ["D", "T", "R", "H"].forEach(track => {
-        if (psIsTrackMaxed(track)) {
-          while (psDropCount("bonus", track) < PS_DROP_TARGETS[track]) {
-            psSpawnDrop("bonus", false, track);
-          }
-          return;
-        }
-        while (psDropCount("upgrade", track) < PS_DROP_TARGETS[track]) {
-          psSpawnDrop("upgrade", false, track);
-        }
-      });
-
-      while (psDropCount("articulation") < PS_DROP_TARGETS.articulation) psSpawnDrop("articulation");
-
-      const needsRest = ps.hp <= ps.maxHp - 2;
-      while (needsRest && psDropCount("rest") < PS_DROP_TARGETS.rest) psSpawnDrop("rest");
-      if (!needsRest) ps.drops = ps.drops.filter(drop => drop.kind !== "rest");
-
-      if (ps.specialCooldown > 0) ps.specialCooldown--;
-      const allowSpecial = ps.time > PS_SPECIAL_FIRST_TIME && ps.specialCooldown <= 0;
-      if (allowSpecial && psSpecialDropCount() < 1) psSpawnSpecialDrop();
-      if (!allowSpecial) ps.drops = ps.drops.filter(drop => !PS_SPECIAL_KINDS.includes(drop.kind));
-
-      if (ps.repeatCooldown > 0) ps.repeatCooldown--;
-      const allowRepeat = ps.time > PS_REPEAT_FIRST_TIME && ps.repeats < 2 && ps.repeatCooldown <= 0;
-      if (allowRepeat && psDropCount("repeat") < 1) psSpawnDrop("repeat");
-      if (!allowRepeat) ps.drops = ps.drops.filter(drop => drop.kind !== "repeat");
-    }
-
-
-    function psCreateEnemyType() {
-      const t = ps.time;
-      const enemyPool = [
-        { name: "Violin", kind: "violin", unlock: 0, hp: 1.7, speed: 0.42, r: 8, score: 8, weight: 34 },
-        { name: "Flute", kind: "flute", unlock: 1800, hp: 2.15, speed: 0.5, r: 8, score: 11, weight: 22 },
-        { name: "Trumpet", kind: "trumpet", unlock: 3300, hp: 3.05, speed: 0.35, r: 9, score: 14, weight: 18 },
-        { name: "Cello", kind: "cello", unlock: 5700, hp: 4.8, speed: 0.29, r: 10, score: 22, weight: 13 },
-        { name: "Tuba", kind: "tuba", unlock: 7800, hp: 7.2, speed: 0.26, r: 11, score: 30, weight: 10 },
-        { name: "Drum", kind: "drum", unlock: 10500, hp: 9.8, speed: 0.24, r: 12, score: 42, weight: 7 }
-      ];
-
-      const available = enemyPool.filter(type => t >= type.unlock);
-      const totalWeight = available.reduce((sum, type) => sum + type.weight, 0);
-      let roll = Math.random() * totalWeight;
-      let type = available[0];
-      for (const candidate of available) {
-        roll -= candidate.weight;
-        if (roll <= 0) {
-          type = candidate;
-          break;
-        }
-      }
-
-      const bossChance = t > 3600 ? Math.min(0.28, 0.018 + (t - 3600) / 90000) : 0;
-      const boss = Math.random() < bossChance;
-      const scaling = 1 + Math.min(3.2, ps.time / 12000);
-      const bossScale = boss ? 6.4 + Math.min(3.6, ps.time / 24000) : 1;
-
-      return {
-        x: ps.player.x,
-        y: ps.player.y,
-        hp: type.hp * scaling * bossScale,
-        maxHp: type.hp * scaling * bossScale,
-        speed: type.speed * Math.min(1.9, 1 + ps.time / 16000) * (boss ? 1.12 : 1),
-        r: type.r * (boss ? 1.5 : 0.9),
-        kind: type.kind,
-        name: boss ? `${type.name} Boss` : type.name,
-        score: type.score * (boss ? 7 : 1),
-        boss,
-        hitFlash: 0
-      };
-    }
-
-    function psSpawnEnemy() {
-      const enemy = psCreateEnemyType();
-      psPlaceEnemyNearPlayer(enemy);
-      ps.enemies.push(enemy);
-    }
-
-    function psEnemyTargetCount() {
-      return 2 + Math.floor(ps.time / 920) + Math.floor(ps.time / 4600);
-    }
-
-    function psPlaceEnemyNearPlayer(enemy) {
-      const baseAngle = Math.atan2(ps.heading.y, ps.heading.x);
-      const arc = Math.PI * 2 / 3; // 120 degrees total, centered on current movement heading.
-      const angle = baseAngle + psRand(-arc / 2, arc / 2);
-      const distance = psRand(PS_ENEMY_RESPAWN_MIN, PS_ENEMY_RESPAWN_MAX);
-      enemy.x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
-      enemy.y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
-      enemy.hp = enemy.maxHp;
-      enemy.hitFlash = 0;
-    }
-
-    function psMaintainEnemies() {
-      const target = psEnemyTargetCount();
-      while (ps.enemies.length < target) psSpawnEnemy();
-
-      ps.enemies.forEach(enemy => {
-        if (psDist(enemy, ps.player) > PS_ENEMY_TOO_FAR) {
-          const replacement = psCreateEnemyType();
-          Object.assign(enemy, replacement);
-          psPlaceEnemyNearPlayer(enemy);
-        }
-      });
-    }
-
-    function psApplyUpgrade(track) {
-      if (track === "D" && ps.dyn < PS_DYNAMICS.length - 1) {
-        ps.dyn++;
-        psRefreshDropLabels("D");
-        psSetMessage(`DYNAMIC UP: ${PS_DYNAMICS[ps.dyn].label}`);
-        soundCorrect();
-        return;
-      }
-      if (track === "T" && ps.tempo < PS_TEMPOS.length - 1) {
-        ps.tempo++;
-        psRefreshDropLabels("T");
-        psSetMessage(`TEMPO UP: ${PS_TEMPOS[ps.tempo].label}`);
-        soundCorrect();
-        return;
-      }
-      if (track === "R" && ps.rhythm < PS_RHYTHMS.length - 1) {
-        ps.rhythm++;
-        psRefreshDropLabels("R");
-        psSetMessage(`RHYTHM UP: ${PS_RHYTHMS[ps.rhythm].label}`);
-        soundCorrect();
-        return;
-      }
-      if (track === "H" && ps.harmony < PS_HARMONIES.length - 1) {
-        ps.harmony++;
-        psRefreshDropLabels("H");
-        psSetMessage(`HARMONY UP: ${PS_HARMONIES[ps.harmony].short}`);
-        soundCorrect();
-        return;
-      }
-      addScore(15);
-      psSetMessage("MAXED: BONUS");
-      soundCorrect();
-    }
-
-    function psCollectDrop(drop) {
-      if (drop.kind === "upgrade") psApplyUpgrade(drop.track);
-      else if (drop.kind === "rest") {
-        ps.hp = Math.min(ps.maxHp, ps.hp + drop.heal);
-        psSetMessage(`${drop.name} +${drop.heal} HP`);
-        soundCorrect();
-      } else if (drop.kind === "articulation") {
-        ps.articulation = drop.articulation;
-        ps.drops = ps.drops.filter(item => item.kind !== "articulation" || item.articulation?.id !== ps.articulation.id);
-        psSetMessage(drop.articulation.message);
-        soundWin();
-      } else if (drop.kind === "bonus") {
-        addScore(50);
-        psSetMessage("BONUS +50");
-        soundCorrect();
-      } else if (drop.kind === "repeat") {
-        ps.repeats = Math.min(3, ps.repeats + 1);
-        ps.repeatCooldown = PS_REPEAT_COOLDOWN;
-        psSetMessage(`REPEAT LIFE x${ps.repeats}`);
-        soundWin();
-      } else if (drop.kind === "fermata") {
-        ps.fermataTimer = 320;
-        ps.specialCooldown = PS_SPECIAL_COOLDOWN;
-        psSetMessage("FERMATA RAYS", 180);
-        soundWin();
-      } else if (drop.kind === "treble") {
-        ps.trebleTimer = 360;
-        ps.trebleCooldown = 0;
-        ps.specialCooldown = PS_SPECIAL_COOLDOWN;
-        psSetMessage("TREBLE LINES", 180);
-        soundWin();
-      } else if (drop.kind === "bass") {
-        ps.bassTimer = 360;
-        ps.bassPulseCooldown = 0;
-        ps.specialCooldown = PS_SPECIAL_COOLDOWN;
-        psSetMessage("BASS QUAKE", 180);
-        soundWin();
-      }
-    }
-
-    function psFire() {
-      if (ps.fireCooldown > 0) return;
-      const ax = ps.aim.x;
-      const ay = ps.aim.y;
-      const mag = Math.sqrt(ax * ax + ay * ay);
-      if (mag < 0.34) return;
-
-      const baseAngle = Math.atan2(ay, ax);
-      const rhythm = PS_RHYTHMS[ps.rhythm];
-      const harmony = PS_HARMONIES[ps.harmony];
-      const dyn = PS_DYNAMICS[ps.dyn];
-      const count = harmony.count;
-      const speed = ps.articulation?.id === "tenuto" ? 2.85 : 4.0;
-      const size = dyn.size + (ps.articulation?.id === "tenuto" ? 2 : 0);
-
-      if (ps.fermataTimer > 0) {
-        for (let i = 0; i < count; i++) {
-          const offset = count === 1 ? 0 : (i - (count - 1) / 2) * harmony.spread;
-          const angle = baseAngle + offset;
-          ps.rays.push({
-            x: ps.player.x,
-            y: ps.player.y,
-            angle,
-            life: 7,
-            damage: dyn.damage * 1.15,
-            width: 5 + dyn.size,
-            length: 255,
-            color: "fermata"
-          });
-        }
-        psSoundFire();
-        ps.fireCooldown = Math.max(4, Math.floor(rhythm.cooldown * 0.72));
-        return;
-      }
-
-      for (let i = 0; i < count; i++) {
-        const offset = count === 1 ? 0 : (i - (count - 1) / 2) * harmony.spread;
-        const angle = baseAngle + offset;
-        ps.bullets.push({
-          x: ps.player.x + Math.cos(angle) * 10,
-          y: ps.player.y + Math.sin(angle) * 10,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          r: size,
-          damage: dyn.damage,
-          life: ps.articulation?.id === "tenuto" ? 75 : 56,
-          pierce: ps.articulation?.id === "accent" ? 3 : 0,
-          bounces: ps.articulation?.id === "staccato" ? 3 : 0,
-          chain: ps.articulation?.id === "legato" ? 2 : 0,
-          wiggle: ps.articulation?.id === "trill" ? { phase: Math.random() * Math.PI * 2, amp: 4.8, freq: 0.78 } : null,
-          hitRadius: ps.articulation?.id === "trill" ? size + 4.5 : size,
-          explode: ps.articulation?.id === "marcato",
-          hitIds: new Set()
-        });
-      }
-
-      psSoundFire();
-      ps.fireCooldown = rhythm.cooldown;
-    }
-
-    function psSoundFire() {
-      if (!ps || ps.time < ps.nextFireSound) return;
-      const rhythmGap = PS_RHYTHMS[ps.rhythm]?.cooldown || 10;
-      ps.nextFireSound = ps.time + Math.max(1, Math.floor(rhythmGap * 0.45));
-      const freq = 300 + ps.rhythm * 32 + ps.harmony * 22;
-      beep(freq, 0.024, "square", 0.014);
-    }
-
-    function psSoundEnemyDie(enemy) {
-      const base = enemy.kind === "drum" ? 95 : enemy.kind === "tuba" ? 125 : enemy.kind === "cello" ? 155 : enemy.kind === "trumpet" ? 230 : enemy.kind === "flute" ? 420 : 330;
-      beep(base, enemy.boss ? 0.14 : 0.08, "sawtooth", enemy.boss ? 0.055 : 0.035);
-      setTimeout(() => beep(base * 1.5, 0.05, "square", 0.025), 45);
-      if (enemy.boss) setTimeout(() => beep(base * 0.75, 0.18, "triangle", 0.04), 95);
-    }
-
-    function psSpawnShockwave() {
-      ps.shockwaves.push({
-        x: ps.player.x,
-        y: ps.player.y,
-        r: 8,
-        maxR: 125,
-        damage: PS_DYNAMICS[ps.dyn].damage * 1.65,
-        life: 30,
-        hitIds: new Set()
-      });
-      beep(92, 0.09, "sawtooth", 0.045);
-    }
-
-    function psSpawnTrebleBolts() {
-      const dyn = PS_DYNAMICS[ps.dyn];
-      const burstCount = 4 + Math.floor(Math.random() * 5);
-      for (let i = 0; i < burstCount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        ps.rays.push({
-          x: ps.player.x,
-          y: ps.player.y,
-          angle,
-          life: 5 + Math.floor(Math.random() * 5),
-          damage: dyn.damage * 0.78,
-          width: 3 + dyn.size * 0.5,
-          length: psRand(190, 330),
-          color: "treble",
-          jagged: true
-        });
-      }
-      beep(760 + Math.random() * 360, 0.035, "sawtooth", 0.028);
-    }
-
-    function psExplodeAt(x, y, damage) {
-      const radius = 54;
-      ps.explosions.push({ x, y, r: 6, maxR: radius, life: 15 });
-      ps.enemies.forEach(enemy => {
-        if (enemy.hp <= 0) return;
-        const d = psDist({ x, y }, enemy);
-        if (d < radius + enemy.r) psDamageEnemy(enemy, damage * 0.78);
-      });
-      beep(170, 0.05, "sawtooth", 0.03);
-    }
-
-    function psDamageEnemy(enemy, amount) {
-      enemy.hp -= amount;
-      enemy.hitFlash = 4;
-      ps.particles.push({ x: enemy.x, y: enemy.y, text: "♪", life: 16, vy: -0.25 });
-    }
-
-    function psKillEnemy(enemy) {
-      addScore(enemy.score);
-      ps.kills++;
-      psSoundEnemyDie(enemy);
-      ps.particles.push({ x: enemy.x, y: enemy.y, text: "✦", life: 18, vy: -0.22 });
-    }
-
-    function psChainFrom(enemy, damage, depth) {
-      if (depth <= 0) return;
-      let best = null;
-      let bestDist = 9999;
-      ps.enemies.forEach(other => {
-        if (other === enemy || other.hp <= 0) return;
-        const d = psDist(enemy, other);
-        if (d < 96 && d < bestDist) {
-          best = other;
-          bestDist = d;
-        }
-      });
-      if (!best) return;
-      ps.lines.push({ x1: enemy.x, y1: enemy.y, x2: best.x, y2: best.y, life: 10 });
-      psDamageEnemy(best, damage * 0.9);
-      psChainFrom(best, damage * 0.7, depth - 1);
-    }
-
-    function psTryRevive() {
-      if (ps.hp > 0) return true;
-      if (ps.repeats > 0) {
-        ps.repeats--;
-        ps.hp = ps.maxHp;
-        ps.invuln = 95;
-        psSetMessage(`REPEAT USED ${ps.repeats} LEFT`, 120);
-        soundWin();
-        return true;
-      }
-      return false;
-    }
-
-    function psDrawPixelPiano(x, y) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      ctx.fillStyle = "#2563eb";
-      ctx.fillRect(-10, -8, 20, 17);
-      ctx.fillStyle = "#60a5fa";
-      ctx.fillRect(-9, -7, 18, 4);
-      ctx.fillStyle = "#111827";
-      ctx.fillRect(-10, -8, 20, 2);
-      ctx.fillStyle = "#f8fafc";
-      ctx.fillRect(-8, -1, 5, 8);
-      ctx.fillRect(-2, -1, 5, 8);
-      ctx.fillRect(4, -1, 5, 8);
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 1;
-      ctx.strokeRect(-8, -1, 5, 8);
-      ctx.strokeRect(-2, -1, 5, 8);
-      ctx.strokeRect(4, -1, 5, 8);
-      ctx.fillStyle = "#111827";
-      ctx.fillRect(-5, -1, 3, 5);
-      ctx.fillRect(1, -1, 3, 5);
-      ctx.fillStyle = "#fde68a";
-      ctx.fillRect(-2, -11, 4, 3);
-      ctx.restore();
-    }
-
-    function psDrawViolin(x, y, flash) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      ctx.scale(0.68, 0.68);
-      const body = flash ? "#fef3c7" : "#b45309";
-      const bodyDark = flash ? "#fde68a" : "#78350f";
-      const wood = flash ? "#fff7ed" : "#d97706";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 2;
-      ctx.fillStyle = body;
-      ctx.beginPath();
-      ctx.moveTo(0, -4);
-      ctx.bezierCurveTo(-12, -17, -21, -5, -12, 3);
-      ctx.bezierCurveTo(-24, 16, -4, 23, 0, 10);
-      ctx.bezierCurveTo(5, 23, 24, 16, 12, 3);
-      ctx.bezierCurveTo(21, -5, 12, -17, 0, -4);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = bodyDark;
-      ctx.beginPath();
-      ctx.ellipse(-7, 2, 3, 7, -0.4, 0, Math.PI * 2);
-      ctx.ellipse(7, 2, 3, 7, 0.4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = wood;
-      ctx.fillRect(-3, -28, 6, 20);
-      ctx.strokeRect(-3, -28, 6, 20);
-      ctx.fillRect(-8, -32, 16, 5);
-      ctx.strokeRect(-8, -32, 16, 5);
-      ctx.strokeStyle = "#fef3c7";
-      ctx.lineWidth = 1;
-      [-3, -1, 1, 3].forEach(offset => {
-        ctx.beginPath();
-        ctx.moveTo(offset, -29);
-        ctx.lineTo(offset * 0.4, 16);
-        ctx.stroke();
-      });
-      ctx.strokeStyle = "#e5e7eb";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(-21, -18);
-      ctx.lineTo(22, 16);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function psDrawTrumpet(x, y, flash) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      ctx.scale(0.68, 0.68);
-      const brass = flash ? "#fef3c7" : "#fbbf24";
-      const brassDark = flash ? "#fde68a" : "#b45309";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 2;
-      ctx.fillStyle = brass;
-      ctx.fillRect(-25, -5, 30, 10);
-      ctx.strokeRect(-25, -5, 30, 10);
-      ctx.fillRect(-32, -3, 7, 6);
-      ctx.strokeRect(-32, -3, 7, 6);
-      ctx.beginPath();
-      ctx.moveTo(5, -8);
-      ctx.lineTo(27, -17);
-      ctx.lineTo(31, -15);
-      ctx.lineTo(31, 15);
-      ctx.lineTo(27, 17);
-      ctx.lineTo(5, 8);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = brassDark;
-      ctx.fillRect(-13, -15, 4, 10);
-      ctx.fillRect(-6, -17, 4, 12);
-      ctx.fillRect(1, -15, 4, 10);
-      ctx.fillRect(-17, 5, 24, 8);
-      ctx.strokeRect(-17, 5, 24, 8);
-      ctx.fillStyle = "rgba(255,255,255,0.55)";
-      ctx.fillRect(-21, -3, 18, 2);
-      ctx.fillRect(13, -9, 11, 3);
-      ctx.restore();
-    }
-
-    function psDrawTuba(x, y, flash) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      ctx.scale(0.62, 0.62);
-      const brass = flash ? "#fef3c7" : "#f59e0b";
-      const bright = flash ? "#fde68a" : "#fbbf24";
-      const dark = flash ? "#111827" : "#92400e";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 2.5;
-      ctx.fillStyle = brass;
-      ctx.beginPath();
-      ctx.ellipse(-5, 5, 18, 20, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#0b1420";
-      ctx.beginPath();
-      ctx.ellipse(-5, 5, 9, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = bright;
-      ctx.beginPath();
-      ctx.moveTo(10, -20);
-      ctx.lineTo(33, -29);
-      ctx.lineTo(36, -26);
-      ctx.lineTo(36, -4);
-      ctx.lineTo(33, -1);
-      ctx.lineTo(10, -9);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = brass;
-      ctx.fillRect(4, -19, 8, 25);
-      ctx.strokeRect(4, -19, 8, 25);
-      ctx.fillRect(-19, -15, 7, 26);
-      ctx.strokeRect(-19, -15, 7, 26);
-      ctx.fillStyle = dark;
-      ctx.fillRect(-27, -18, 7, 5);
-      ctx.fillRect(-8, -22, 4, 9);
-      ctx.fillRect(-2, -22, 4, 9);
-      ctx.fillRect(4, -22, 4, 9);
-      ctx.strokeStyle = "rgba(255,255,255,0.5)";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(-8, 3, 13, Math.PI * 0.25, Math.PI * 1.25);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function psDrawFlute(x, y, flash) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      ctx.rotate(-0.22);
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 1.2;
-      ctx.fillStyle = flash ? "#fef3c7" : "#dbeafe";
-      ctx.fillRect(-15, -2, 30, 4);
-      ctx.strokeRect(-15, -2, 30, 4);
-      ctx.fillStyle = flash ? "#111827" : "#2563eb";
-      for (let i = -8; i <= 9; i += 5) ctx.fillRect(i, -1, 2, 2);
-      ctx.fillStyle = flash ? "#fef3c7" : "#93c5fd";
-      ctx.fillRect(-18, -3, 4, 6);
-      ctx.fillRect(14, -3, 3, 6);
-      ctx.restore();
-    }
-
-    function psDrawCello(x, y, flash) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      const body = flash ? "#fef3c7" : "#9a3412";
-      const dark = flash ? "#fde68a" : "#431407";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 1.2;
-      ctx.fillStyle = body;
-      ctx.beginPath();
-      ctx.moveTo(0, -5);
-      ctx.bezierCurveTo(-9, -13, -13, -3, -7, 3);
-      ctx.bezierCurveTo(-15, 11, -3, 19, 0, 10);
-      ctx.bezierCurveTo(3, 19, 15, 11, 7, 3);
-      ctx.bezierCurveTo(13, -3, 9, -13, 0, -5);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = dark;
-      ctx.fillRect(-2, -21, 4, 15);
-      ctx.strokeRect(-2, -21, 4, 15);
-      ctx.fillRect(-5, -24, 10, 3);
-      ctx.strokeRect(-5, -24, 10, 3);
-      ctx.strokeStyle = "#fef3c7";
-      ctx.lineWidth = 0.8;
-      [-2, -0.6, 0.6, 2].forEach(offset => {
-        ctx.beginPath();
-        ctx.moveTo(offset, -22);
-        ctx.lineTo(offset * 0.35, 14);
-        ctx.stroke();
-      });
-      ctx.restore();
-    }
-
-    function psDrawDrum(x, y, flash) {
-      ctx.save();
-      ctx.translate(Math.round(x), Math.round(y));
-      const shell = flash ? "#fef3c7" : "#dc2626";
-      const rim = flash ? "#fde68a" : "#f8fafc";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 1.2;
-      ctx.fillStyle = shell;
-      ctx.fillRect(-13, -8, 26, 16);
-      ctx.strokeRect(-13, -8, 26, 16);
-      ctx.fillStyle = rim;
-      ctx.beginPath();
-      ctx.ellipse(0, -8, 13, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.ellipse(0, 8, 13, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.strokeStyle = "#fef3c7";
-      ctx.lineWidth = 1.1;
-      ctx.beginPath();
-      ctx.moveTo(-16, -15);
-      ctx.lineTo(2, 0);
-      ctx.moveTo(16, -15);
-      ctx.lineTo(-2, 0);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function psDrawEnemy(enemy) {
-      const p = psWorldToScreen(enemy.x, enemy.y);
-      if (!psPointOnScreen(enemy, 34)) return;
-      const flash = enemy.hitFlash > 0;
-
-      if (enemy.boss) {
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.strokeStyle = "rgba(251,191,36,0.75)";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(0, 0, enemy.r + 5 + Math.sin(ps.time / 8), 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.scale(1.35, 1.35);
-        if (enemy.kind === "violin") psDrawViolin(0, 0, flash);
-        else if (enemy.kind === "flute") psDrawFlute(0, 0, flash);
-        else if (enemy.kind === "trumpet") psDrawTrumpet(0, 0, flash);
-        else if (enemy.kind === "cello") psDrawCello(0, 0, flash);
-        else if (enemy.kind === "drum") psDrawDrum(0, 0, flash);
-        else psDrawTuba(0, 0, flash);
-        ctx.restore();
-
-        ctx.fillStyle = "rgba(3,7,18,0.82)";
-        ctx.fillRect(p.x - 15, p.y - enemy.r - 12, 30, 4);
-        ctx.fillStyle = "#fbbf24";
-        ctx.fillRect(p.x - 14, p.y - enemy.r - 11, 28 * Math.max(0, enemy.hp / enemy.maxHp), 2);
-        return;
-      }
-
-      ctx.save();
-      ctx.translate(p.x, p.y);
-      ctx.scale(0.9, 0.9);
-      if (enemy.kind === "violin") psDrawViolin(0, 0, flash);
-      else if (enemy.kind === "flute") psDrawFlute(0, 0, flash);
-      else if (enemy.kind === "trumpet") psDrawTrumpet(0, 0, flash);
-      else if (enemy.kind === "cello") psDrawCello(0, 0, flash);
-      else if (enemy.kind === "drum") psDrawDrum(0, 0, flash);
-      else psDrawTuba(0, 0, flash);
-      ctx.restore();
-    }
-
-
-    function psStrokeLinePath(drawPath, color, outerWidth = 4, innerWidth = 2) {
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.strokeStyle = "rgba(3,7,18,0.95)";
-      ctx.lineWidth = outerWidth;
-      ctx.beginPath();
-      drawPath();
-      ctx.stroke();
-      ctx.strokeStyle = color;
-      ctx.lineWidth = innerWidth;
-      ctx.beginPath();
-      drawPath();
-      ctx.stroke();
-    }
-
-    function psDrawRhythmSymbol(index, color) {
-      const rhythm = PS_RHYTHMS[index] || PS_RHYTHMS[0];
-      const s = 0.72;
-      ctx.save();
-      ctx.scale(s, s);
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 7;
-
-      function noteHead(filled) {
-        ctx.save();
-        ctx.rotate(-0.34);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(3,7,18,0.95)";
-        ctx.fillStyle = filled ? "rgba(3,7,18,0.95)" : "#0b1420";
-        ctx.beginPath();
-        ctx.ellipse(-5, 7, 6, 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.lineWidth = 1.4;
-        ctx.strokeStyle = color;
-        ctx.fillStyle = filled ? color : "#0b1420";
-        ctx.beginPath();
-        ctx.ellipse(-5, 7, 6, 4, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.restore();
-      }
-
-      function stem() {
-        psStrokeLinePath(() => { ctx.moveTo(1, 4); ctx.lineTo(1, -18); }, color);
-      }
-
-      function flag(y1, y2) {
-        psStrokeLinePath(() => {
-          ctx.moveTo(1, y1);
-          ctx.bezierCurveTo(11, y1 + 1, 11, y2 - 1, 4, y2);
-        }, color);
-      }
-
-      if (rhythm.label === "Whole") {
-        ctx.save();
-        ctx.rotate(-0.12);
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = "rgba(3,7,18,0.95)";
-        ctx.fillStyle = "#0b1420";
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-        ctx.lineWidth = 1.4;
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      } else {
-        const filled = rhythm.label.includes("Quarter") || rhythm.label === "Eighth" || rhythm.label === "16th";
-        noteHead(filled);
-        stem();
-        if (rhythm.label === "Eighth" || rhythm.label === "16th") flag(-18, -7);
-        if (rhythm.label === "16th") flag(-12, -2);
-        if (rhythm.label.includes("Dotted")) {
-          ctx.fillStyle = "rgba(3,7,18,0.95)";
-          ctx.beginPath(); ctx.arc(9, 6, 3.3, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = color;
-          ctx.beginPath(); ctx.arc(9, 6, 2.1, 0, Math.PI * 2); ctx.fill();
-        }
-      }
-
-      ctx.restore();
-    }
-
-    function psDrawRestSymbol(drop) {
-      const color = drop.color;
-      ctx.shadowColor = color;
-      ctx.shadowBlur = 7;
-      ctx.fillStyle = color;
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.lineCap = "butt";
-      if (drop.heal > 1) {
-        const w = 13;
-        const h = 5;
-        const linePad = 2;
-        const lineY = 0;
-        const rectY = drop.heal === 2 ? -h : 0;
-        ctx.beginPath();
-        ctx.moveTo(-w / 2 - linePad, lineY);
-        ctx.lineTo(w / 2 + linePad, lineY);
-        ctx.stroke();
-        ctx.fillRect(-w / 2, rectY, w, h);
-        return;
-      }
-      // Quarter rest: custom zig-zag so it does not depend on fragile music fonts.
-      psStrokeLinePath(() => {
-        ctx.moveTo(-3, -13);
-        ctx.lineTo(4, -5);
-        ctx.lineTo(-2, 0);
-        ctx.lineTo(5, 8);
-        ctx.bezierCurveTo(0, 6, -5, 8, -2, 14);
-      }, color, 4, 2);
-    }
-    function psDrawDrop(drop) {
-      if (!psPointOnScreen(drop, 22)) return;
-      const p = psWorldToScreen(drop.x, drop.y);
-      const pulse = Math.sin((ps.time + drop.pulse) / 16) * 0.12;
-      ctx.save();
-      ctx.translate(Math.round(p.x), Math.round(p.y));
-      ctx.scale(1 + pulse, 1 + pulse);
-
-      if (drop.kind === "upgrade" && drop.track === "R") {
-        psDrawRhythmSymbol(drop.rhythmIndex ?? Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1), drop.color);
-        ctx.restore();
-        return;
-      }
-
-      if (drop.kind === "rest") {
-        psDrawRestSymbol(drop);
-        ctx.restore();
-        return;
-      }
-
-      ctx.font = `bold ${drop.fontSize || 12}px Arial, sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = "rgba(3,7,18,0.95)";
-      ctx.strokeText(drop.label, 0, 0.5);
-      ctx.fillStyle = drop.color;
-      ctx.shadowColor = drop.color;
-      ctx.shadowBlur = 7;
-      ctx.fillText(drop.label, 0, 0.5);
-      ctx.restore();
-    }
-
-    function gameInit() {
-      ps = {
-        player: { x: PS_WORLD.width / 2, y: PS_WORLD.height / 2, r: 9 },
-        camera: { x: 0, y: 0 },
-        bullets: [],
-        rays: [],
-        shockwaves: [],
-        explosions: [],
-        enemies: [],
-        drops: [],
-        particles: [],
-        lines: [],
-        dyn: 0,
-        tempo: 0,
-        rhythm: 0,
-        harmony: 0,
-        articulation: null,
-        hp: 6,
-        maxHp: 6,
-        repeats: 0,
-        invuln: 0,
-        fireCooldown: 0,
-        repeatCooldown: 0,
-        specialCooldown: PS_SPECIAL_FIRST_TIME,
-        bassPulseCooldown: 0,
-        trebleCooldown: 0,
-        nextFireSound: 0,
-        heading: { x: 1, y: 0 },
-        time: 0,
-        kills: 0,
-        fermataTimer: 0,
-        trebleTimer: 0,
-        bassTimer: 0,
-        message: "EXPLORE FOR PICKUPS",
-        messageTimer: 200,
-        dpad: { x: 0, y: 0 },
-        aim: { x: 1, y: 0 }
-      };
-
-      setScore(0);
-      psUpdateCamera();
-      psMaintainDrops();
-      psMaintainEnemies();
-      psUpdateHud();
-
-      updateShellMenuTab("controls", `
-          <h3>Controls</h3>
-          <ul>
-            <li><strong>Left joystick:</strong> move the piano. Stay near the center to slow down or stop.</li>
-            <li><strong>D-pad:</strong> tap for quick movement in one direction.</li>
-            <li><strong>Right joystick:</strong> aim and fire. Push it toward the enemies.</li>
-            <li><strong>MENU:</strong> pause, resume, or return to the player menu.</li>
-          </ul>
-          <p>Move with your left hand and aim with your right hand.</p>
-      `);
-
-      updateShellMenuTab("instructions", `
-          <h3>How to Play</h3>
-          <p>You are the tiny piano. Instrument enemies chase you through a large scrolling map.</p>
-          <ul>
-            <li>Use the left joystick to move away from danger.</li>
-            <li>Use the right joystick to aim and fire note shots.</li>
-            <li>Collect music symbols to upgrade your piano.</li>
-            <li><strong>Dynamics</strong> make your notes bigger and stronger.</li>
-            <li><strong>Tempo</strong> changes how fast you move.</li>
-            <li><strong>Rhythm</strong> changes how quickly you fire.</li>
-            <li><strong>Harmony</strong> adds more notes to your attack.</li>
-            <li><strong>Rests</strong> heal you. <strong>:||</strong> gives an extra life.</li>
-          </ul>
-          <p>Your score goes up as you survive.</p>
-      `);
-    }
-
-    function gameUpdate() {
-      if (!ps) return;
-      ps.time++;
-      if (ps.messageTimer > 0) ps.messageTimer--;
-      if (ps.invuln > 0) ps.invuln--;
-      if (ps.fermataTimer > 0) ps.fermataTimer--;
-      if (ps.trebleTimer > 0) ps.trebleTimer--;
-      if (ps.bassTimer > 0) ps.bassTimer--;
-      if (ps.trebleCooldown > 0) ps.trebleCooldown--;
-      if (ps.bassPulseCooldown > 0) ps.bassPulseCooldown--;
-      if (ps.fireCooldown > 0) ps.fireCooldown--;
-
-      let mx = sticks.left.x + ps.dpad.x;
-      let my = sticks.left.y + ps.dpad.y;
-      const rawMag = Math.sqrt(mx * mx + my * my);
-      const joystickDeadZone = 0.22;
-      const speed = PS_TEMPOS[ps.tempo].speed;
-
-      if (rawMag > joystickDeadZone) {
-        const nx = mx / rawMag;
-        const ny = my / rawMag;
-        const moveMag = Math.min(1, (rawMag - joystickDeadZone) / (1 - joystickDeadZone));
-        ps.heading.x = nx;
-        ps.heading.y = ny;
-        ps.player.x = psWrapValue(ps.player.x + nx * speed * moveMag, PS_WORLD.width);
-        ps.player.y = psWrapValue(ps.player.y + ny * speed * moveMag, PS_WORLD.height);
-      }
-
-      if (Math.abs(sticks.right.x) > 0.05 || Math.abs(sticks.right.y) > 0.05) {
-        ps.aim.x = sticks.right.x;
-        ps.aim.y = sticks.right.y;
-      }
-
-      psUpdateCamera();
-      psMaintainDrops();
-      psMaintainEnemies();
-      psFire();
-
-      if (ps.bassTimer > 0 && ps.bassPulseCooldown <= 0) {
-        psSpawnShockwave();
-        ps.bassPulseCooldown = 23;
-      }
-
-      if (ps.trebleTimer > 0 && ps.trebleCooldown <= 0) {
-        psSpawnTrebleBolts();
-        ps.trebleCooldown = 8 + Math.floor(Math.random() * 11);
-      }
-
-      ps.enemies.forEach(enemy => {
-        const dx = psWrappedDelta(enemy.x, ps.player.x, PS_WORLD.width);
-        const dy = psWrappedDelta(enemy.y, ps.player.y, PS_WORLD.height);
-        const mag = Math.sqrt(dx * dx + dy * dy) || 1;
-        enemy.x += (dx / mag) * enemy.speed;
-        enemy.y += (dy / mag) * enemy.speed;
-        psWrapEntity(enemy);
-        if (enemy.hitFlash > 0) enemy.hitFlash--;
-
-        const enemyHitRadius = enemy.r * 0.76;
-        const playerHitRadius = ps.player.r * 0.78;
-        if (psDist(enemy, ps.player) < enemyHitRadius + playerHitRadius && ps.invuln <= 0) {
-          ps.hp--;
-          ps.invuln = 70;
-          psSetMessage(`OUCH HP ${ps.hp}/${ps.maxHp}`, 90);
-          soundLose();
-          if (!psTryRevive()) endGame("Out of rests.");
-        }
-      });
-
-      ps.bullets.forEach(bullet => {
-        bullet.x += bullet.vx;
-        bullet.y += bullet.vy;
-        if (bullet.wiggle) {
-          bullet.wiggle.phase += bullet.wiggle.freq;
-          const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 1;
-          const wobble = Math.sin(bullet.wiggle.phase) * bullet.wiggle.amp;
-          bullet.x += (-bullet.vy / spd) * wobble;
-          bullet.y += (bullet.vx / spd) * wobble;
-        }
-        psWrapEntity(bullet);
-        bullet.life--;
-
-        ps.enemies.forEach(enemy => {
-          if (enemy.hp <= 0 || bullet.hitIds.has(enemy)) return;
-          if (psDist(bullet, enemy) < (bullet.hitRadius || bullet.r) + enemy.r) {
-            bullet.hitIds.add(enemy);
-            psDamageEnemy(enemy, bullet.damage);
-            if (bullet.explode) psExplodeAt(enemy.x, enemy.y, bullet.damage);
-            if (bullet.chain > 0) psChainFrom(enemy, bullet.damage, bullet.chain);
-
-            if (bullet.bounces > 0) {
-              bullet.bounces--;
-              let target = null;
-              let bestD = 9999;
-              ps.enemies.forEach(other => {
-                if (other === enemy || other.hp <= 0 || bullet.hitIds.has(other)) return;
-                const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
-                if (d < bestD) { bestD = d; target = other; }
-              });
-              if (target) {
-                const dx = psWrappedDelta(bullet.x, target.x, PS_WORLD.width);
-                const dy = psWrappedDelta(bullet.y, target.y, PS_WORLD.height);
-                const mag = Math.sqrt(dx * dx + dy * dy) || 1;
-                const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 4;
-                bullet.vx = (dx / mag) * spd;
-                bullet.vy = (dy / mag) * spd;
-              } else {
-                bullet.life = 0;
-              }
-            } else if (bullet.pierce > 0) {
-              bullet.pierce--;
-            } else {
-              bullet.life = 0;
-            }
-          }
-        });
-      });
-
-      ps.rays.forEach(ray => {
-        ray.life--;
-        const dx = Math.cos(ray.angle);
-        const dy = Math.sin(ray.angle);
-        ps.enemies.forEach(enemy => {
-          if (enemy.hp <= 0) return;
-          const ex = psWrappedDelta(ray.x, enemy.x, PS_WORLD.width);
-          const ey = psWrappedDelta(ray.y, enemy.y, PS_WORLD.height);
-          const forward = ex * dx + ey * dy;
-          if (forward < 0 || forward > ray.length) return;
-          const perp = Math.abs(ex * dy - ey * dx);
-          if (perp < enemy.r + ray.width * 0.36) psDamageEnemy(enemy, ray.damage);
-        });
-      });
-
-      ps.shockwaves.forEach(wave => {
-        wave.r += (wave.maxR - wave.r) * 0.18;
-        wave.life--;
-        ps.enemies.forEach(enemy => {
-          if (enemy.hp <= 0 || wave.hitIds.has(enemy)) return;
-          const d = psDist(wave, enemy);
-          if (Math.abs(d - wave.r) < enemy.r + 14) {
-            wave.hitIds.add(enemy);
-            psDamageEnemy(enemy, wave.damage);
-          }
-        });
-      });
-
-      ps.explosions.forEach(explosion => {
-        explosion.r += (explosion.maxR - explosion.r) * 0.35;
-        explosion.life--;
-      });
-
-      ps.enemies = ps.enemies.filter(enemy => {
-        if (enemy.hp > 0) return true;
-        psKillEnemy(enemy);
-        return false;
-      });
-
-      ps.bullets = ps.bullets.filter(b => b.life > 0);
-      ps.rays = ps.rays.filter(r => r.life > 0);
-      ps.shockwaves = ps.shockwaves.filter(w => w.life > 0);
-    ps.explosions = ps.explosions.filter(e => e.life > 0);
-
-      ps.drops.forEach(drop => {
-        if (psDist(drop, ps.player) < drop.r + ps.player.r) {
-          drop.collected = true;
-          psCollectDrop(drop);
-        }
-      });
-      ps.drops = ps.drops.filter(d => !d.collected);
-
-      ps.particles.forEach(p => { p.y += p.vy; p.life--; });
-      ps.particles = ps.particles.filter(p => p.life > 0);
-      ps.lines.forEach(l => l.life--);
-      ps.lines = ps.lines.filter(l => l.life > 0);
-
-      if (ps.time % 60 === 0) addScore(1);
-      psUpdateHud();
-    }
-
-    function gameDraw() {
-      if (!ps) return;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#0b1420";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.fillStyle = "rgba(96,165,250,0.08)";
-      const grid = 28;
-      const gx = -(ps.camera.x % grid);
-      const gy = -(ps.camera.y % grid);
-      for (let x = gx; x < canvas.width; x += grid) ctx.fillRect(Math.floor(x), 0, 1, canvas.height);
-      for (let y = gy; y < canvas.height; y += grid) ctx.fillRect(0, Math.floor(y), canvas.width, 1);
-
-      ps.drops.forEach(psDrawDrop);
-
-      ps.lines.forEach(line => {
-        const a = psWorldToScreen(line.x1, line.y1);
-        const b = psWorldToScreen(line.x2, line.y2);
-        ctx.strokeStyle = `rgba(147,197,253,${line.life / 10})`;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(a.x, a.y);
-        ctx.lineTo(b.x, b.y);
-        ctx.stroke();
-      });
-
-      ps.rays.forEach(ray => {
-        const p = psWorldToScreen(ray.x, ray.y);
-        const dx = Math.cos(ray.angle);
-        const dy = Math.sin(ray.angle);
-        const drawBolt = (lineWidth, strokeStyle) => {
-          ctx.strokeStyle = strokeStyle;
-          ctx.lineWidth = lineWidth;
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          if (ray.jagged) {
-            const steps = 7;
-            const perpX = -dy;
-            const perpY = dx;
-            for (let i = 1; i <= steps; i++) {
-              const t = i / steps;
-              const jitter = (Math.random() - 0.5) * 17 * (1 - t * 0.35);
-              ctx.lineTo(p.x + dx * ray.length * t + perpX * jitter, p.y + dy * ray.length * t + perpY * jitter);
-            }
-          } else {
-            ctx.lineTo(p.x + dx * ray.length, p.y + dy * ray.length);
-          }
-          ctx.stroke();
-        };
-        drawBolt(ray.width, ray.color === "treble" ? `rgba(96,165,250,${0.24 + ray.life / 10})` : `rgba(147,197,253,${0.2 + ray.life / 10})`);
-        drawBolt(Math.max(1.1, ray.width * 0.22), "rgba(255,255,255,0.78)");
-      });
-
-      ps.shockwaves.forEach(wave => {
-        const p = psWorldToScreen(wave.x, wave.y);
-        ctx.strokeStyle = `rgba(167,139,250,${Math.max(0, wave.life / 24)})`;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, wave.r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, wave.life / 36)})`;
-        ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, wave.r * 0.72, 0, Math.PI * 2);
-        ctx.stroke();
-      });
-
-      ps.explosions.forEach(explosion => {
-        const p = psWorldToScreen(explosion.x, explosion.y);
-        ctx.strokeStyle = `rgba(251,191,36,${Math.max(0, explosion.life / 12)})`;
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, explosion.r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = `rgba(251,113,133,${Math.max(0, explosion.life / 34)})`;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, explosion.r * 0.45, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      ps.bullets.forEach(b => {
-        if (!psPointOnScreen(b, 15)) return;
-        const p = psWorldToScreen(b.x, b.y);
-        ctx.fillStyle = ps.articulation?.id === "legato" ? "#93c5fd" : "#ffe08a";
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, b.r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#111827";
-        ctx.font = `bold ${Math.max(6, b.r + 2)}px Arial, sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("♪", p.x, p.y + 0.5);
-      });
-
-      ps.enemies.forEach(psDrawEnemy);
-
-      const playerPos = psWorldToScreen(ps.player.x, ps.player.y);
-      if (ps.invuln % 12 < 6) psDrawPixelPiano(playerPos.x, playerPos.y);
-
-      ctx.fillStyle = "rgba(3,7,18,0.84)";
-      ctx.fillRect(0, 0, canvas.width, 15);
-      ctx.fillStyle = "#b7ff9e";
-      ctx.font = "bold 8px Courier New, monospace";
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillText(psCompactStatsLine(), 4, 8);
-      ctx.textAlign = "right";
-      ctx.fillText(`K ${ps.kills}`, canvas.width - 4, 8);
-
-      ps.particles.forEach(p => {
-        if (!psPointOnScreen(p, 12)) return;
-        const sp = psWorldToScreen(p.x, p.y);
-        ctx.globalAlpha = Math.max(0, p.life / 16);
-        ctx.fillStyle = "#fef3c7";
-        ctx.font = "bold 9px Arial, sans-serif";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(p.text, sp.x, sp.y);
-        ctx.globalAlpha = 1;
-      });
-    }
-
-    function gameInput(action) {
-      if (!ps) return;
-
-      if (action === "up") ps.dpad.y = -1;
-      if (action === "down") ps.dpad.y = 1;
-      if (action === "left") ps.dpad.x = -1;
-      if (action === "right") ps.dpad.x = 1;
-
-      if (["up", "down", "left", "right"].includes(action)) {
-        setTimeout(() => {
-          if (!ps) return;
-          if (action === "up" || action === "down") ps.dpad.y = 0;
-          if (action === "left" || action === "right") ps.dpad.x = 0;
-        }, 130);
-      }
-
-      if (action === "a" || action === "x") psSetMessage("USE RIGHT STICK TO FIRE", 90);
-      if (action === "b" || action === "y") psSetMessage(psStatsLine(), 110);
-      if (action === "select") psSetMessage("EXPLORE FOR SYMBOLS", 110);
-    }
-
-    function gameStop() {
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      if (!ps) return;
-      ps.bullets = [];
-      ps.rays = [];
-      ps.shockwaves = [];
-      ps.dpad = { x: 0, y: 0 };
-    }
-
-    const resizeObserver = new ResizeObserver(() => {
-      scaleAppToFrame();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      if (!running) gameDraw();
-    });
-
-    resizeObserver.observe(appFrame);
-
-    window.addEventListener("orientationchange", () => {
-      setTimeout(() => {
-        scaleAppToFrame();
-        resetJoystick(sticks.left);
-        resetJoystick(sticks.right);
-        if (!running) gameDraw();
-      }, 250);
-    });
-
-    window.MobileArcadeShell = {
+    const mobileShellApi = {
+      root: appStage,
       canvas,
       ctx,
+      questionBox,
+      gameWidth: GAME_CANVAS_LOGICAL_WIDTH,
+      gameHeight: GAME_CANVAS_LOGICAL_HEIGHT,
+      getCanvasSize: getGameCanvasSize,
+      scaleGameCanvasBackingStore,
+      resetGameCanvasTransform,
       sticks,
       setScore,
       addScore,
@@ -3175,17 +2070,1602 @@
       soundWin,
       soundLose,
       getAudio,
+      savePlayers,
+      loadPlayers,
       openMenu: openShellMenu,
       closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      returnToPlayerMenu: exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
       registerMenuTab: registerShellMenuTab,
-      updateMenuTab: updateShellMenuTab
+      updateMenuTab: updateShellMenuTab,
+      configureControls: configureMobileControls,
+      setFirstTimeHelpVersion
     };
+
+    window.MobileArcadeShell = mobileShellApi;
+    window.ArcadeShell = mobileShellApi;
+
+    /* =========================
+       GAME MODULE — PIANO SURVIVOR
+       Desktop gameplay and geometry are preserved; only mobile input is adapted.
+       ========================= */
+
+    MobileArcadeShell.setFirstTimeHelpVersion("pianoSurvivorMobileHowToPlay_v2");
+    MobileArcadeShell.configureControls({
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: [],
+      systemButtons: ["start"],
+      labels: { start: "MENU" }
+    });
+
+  const PS_DYNAMICS = [
+    { label: "pp", damage: 1.0, size: 3.6 },
+    { label: "p", damage: 1.25, size: 4.9 },
+    { label: "mp", damage: 1.6, size: 6.4 },
+    { label: "mf", damage: 1.95, size: 8.2 },
+    { label: "f", damage: 2.35, size: 10.8 },
+    { label: "ff", damage: 2.9, size: 13.8 }
+  ];
+
+  const PS_TEMPOS = [
+    { label: "Largo", short: "Lar", speed: 1.7 },
+    { label: "Adagio", short: "Adg", speed: 2.15 },
+    { label: "Andante", short: "And", speed: 2.65 },
+    { label: "Moderato", short: "Mod", speed: 3.25 },
+    { label: "Allegro", short: "All", speed: 3.9 },
+    { label: "Presto", short: "Pre", speed: 4.65 },
+    { label: "Prestissimo", short: "Prs", speed: 5.35 }
+  ];
+
+  const PS_RHYTHMS = [
+    { label: "Whole", short: "whole", symbol: "whole", cooldown: 46 },
+    { label: "Dotted Half", short: "d-half", symbol: "d-half", cooldown: 40 },
+    { label: "Half", short: "half", symbol: "half", cooldown: 34 },
+    { label: "Dotted Quarter", short: "d-qtr", symbol: "d-qtr", cooldown: 28 },
+    { label: "Quarter", short: "qtr", symbol: "qtr", cooldown: 22 },
+    { label: "Eighth", short: "8th", symbol: "8th", cooldown: 15 },
+    { label: "16th", short: "16th", symbol: "16th", cooldown: 10 }
+  ];
+
+  const PS_HARMONIES = [
+    { label: "Single Note", short: "X", count: 1, spread: 0 },
+    { label: "Add Third", short: "X³", count: 2, spread: 0.261799 },
+    { label: "Add Fifth", short: "X⁵", count: 3, spread: 0.261799 },
+    { label: "7th Chord", short: "X⁷", count: 4, spread: 0.261799 },
+    { label: "9th Chord", short: "X⁹", count: 5, spread: 0.261799 },
+    { label: "11th Chord", short: "X¹¹", count: 6, spread: 0.261799 },
+    { label: "13th Chord", short: "X¹³", count: 7, spread: 0.261799 }
+  ];
+
+  const PS_ARTICULATIONS = [
+    { id: "staccato", label: "Staccato", symbol: "•", message: "STACCATO: shots bounce" },
+    { id: "legato", label: "Legato", symbol: "⌒", message: "LEGATO: shots chain" },
+    { id: "accent", label: "Accent", symbol: ">", message: "ACCENT: shots pierce" },
+    { id: "tenuto", label: "Tenuto", symbol: "–", message: "TENUTO: heavy shots" },
+    { id: "trill", label: "Trill", symbol: "tr", message: "TRILL: shots wiggle" },
+    { id: "marcato", label: "Marcato", symbol: "^", message: "MARCATO: shots explode" }
+  ];
+
+  const PS_WORLD = { width: 2400, height: 1800 };
+  const PS_DROP_TARGETS = { D: 1, T: 1, R: 1, H: 1, articulation: 2, rest: 1 };
+  const PS_SPECIAL_KINDS = ["fermata", "treble", "bass"];
+  const PS_SPECIAL_FIRST_TIME = 2600;
+  const PS_SPECIAL_COOLDOWN = 3000;
+  const PS_REPEAT_FIRST_TIME = 9000;
+  const PS_REPEAT_COOLDOWN = 12000;
+  // Enemy target count intentionally has no hard cap; it rises over time.
+  const PS_ENEMY_TOO_FAR = 980;
+  const PS_ENEMY_RESPAWN_MIN = 430;
+  const PS_ENEMY_RESPAWN_MAX = 660;
+
+  let ps = null;
+
+  function psClamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function psRand(min, max) {
+    return min + Math.random() * (max - min);
+  }
+
+  function psWrapValue(value, max) {
+    value = value % max;
+    return value < 0 ? value + max : value;
+  }
+
+  function psWrapEntity(obj) {
+    obj.x = psWrapValue(obj.x, PS_WORLD.width);
+    obj.y = psWrapValue(obj.y, PS_WORLD.height);
+  }
+
+  function psWrappedDelta(from, to, size) {
+    let delta = to - from;
+    if (delta > size / 2) delta -= size;
+    if (delta < -size / 2) delta += size;
+    return delta;
+  }
+
+  function psDist(a, b) {
+    const dx = psWrappedDelta(a.x, b.x, PS_WORLD.width);
+    const dy = psWrappedDelta(a.y, b.y, PS_WORLD.height);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  function psSetMessage(text, frames = 150) {
+    if (!ps) return;
+    ps.message = text;
+    ps.messageTimer = frames;
+  }
+
+  function psStatsLine() {
+    const d = PS_DYNAMICS[ps.dyn].label;
+    const t = PS_TEMPOS[ps.tempo].label;
+    const r = PS_RHYTHMS[ps.rhythm].label;
+    const h = PS_HARMONIES[ps.harmony].short;
+    const art = ps.articulation ? ps.articulation.label : "None";
+    const special = ps.fermataTimer > 0 ? ` | Fermata ${Math.ceil(ps.fermataTimer / 60)}s` : ps.trebleTimer > 0 ? ` | Treble ${Math.ceil(ps.trebleTimer / 60)}s` : ps.bassTimer > 0 ? ` | Bass ${Math.ceil(ps.bassTimer / 60)}s` : "";
+    return `${d} | ${t} | ${r} | ${h} | ${art}${special}`;
+  }
+
+  function psCompactStatsLine() {
+    const art = ps.articulation ? ps.articulation.symbol : "-";
+    return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
+  }
+
+  function psUpdateHud() {
+    if (!ps) return;
+    if (ps.messageTimer > 0) {
+      questionBox.textContent = ps.message;
+    } else {
+      questionBox.textContent = psStatsLine();
+    }
+  }
+
+  function psUpdateCamera() {
+    ps.camera.x = ps.player.x - GAME_CANVAS_LOGICAL_WIDTH / 2;
+    ps.camera.y = ps.player.y - GAME_CANVAS_LOGICAL_HEIGHT / 2;
+  }
+
+  function psWorldToScreen(x, y) {
+    let sx = x - ps.camera.x;
+    let sy = y - ps.camera.y;
+
+    if (sx < -PS_WORLD.width / 2) sx += PS_WORLD.width;
+    if (sx > PS_WORLD.width / 2) sx -= PS_WORLD.width;
+    if (sy < -PS_WORLD.height / 2) sy += PS_WORLD.height;
+    if (sy > PS_WORLD.height / 2) sy -= PS_WORLD.height;
+
+    return { x: sx, y: sy };
+  }
+
+  function psPointOnScreen(obj, pad = 60) {
+    const s = psWorldToScreen(obj.x, obj.y);
+    return s.x > -pad && s.x < GAME_CANVAS_LOGICAL_WIDTH + pad && s.y > -pad && s.y < GAME_CANVAS_LOGICAL_HEIGHT + pad;
+  }
+
+  function psGetUpgradePickupLabel(track) {
+    if (track === "D") return PS_DYNAMICS[Math.min(ps.dyn + 1, PS_DYNAMICS.length - 1)].label;
+    if (track === "T") return PS_TEMPOS[Math.min(ps.tempo + 1, PS_TEMPOS.length - 1)].short;
+    if (track === "R") return PS_RHYTHMS[Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1)].short;
+    if (track === "H") return PS_HARMONIES[Math.min(ps.harmony + 1, PS_HARMONIES.length - 1)].short;
+    return "?";
+  }
+
+  function psRefreshDropLabels(track = null) {
+    ps.drops.forEach(drop => {
+      if (drop.kind !== "upgrade") return;
+      if (track && drop.track !== track) return;
+      drop.label = psGetUpgradePickupLabel(drop.track);
+      if (drop.track === "R") drop.rhythmIndex = Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1);
+      drop.fontSize = drop.label.length > 2 ? 20 : 26;
+    });
+  }
+
+  function psFindDropPosition(preferFar = false) {
+    let x = psRand(70, PS_WORLD.width - 70);
+    let y = psRand(70, PS_WORLD.height - 70);
+    if (!preferFar) return { x, y };
+
+    for (let i = 0; i < 80; i++) {
+      x = psRand(70, PS_WORLD.width - 70);
+      y = psRand(70, PS_WORLD.height - 70);
+      const candidate = { x, y };
+      const farFromPlayer = psDist(candidate, ps.player) > 560;
+      const farFromDrops = ps.drops.every(drop => psDist(candidate, drop) > 230);
+      if (farFromPlayer && farFromDrops) break;
+    }
+    return { x, y };
+  }
+
+  function psSpawnDrop(forceType = null, nearPlayer = false, forcedTrack = null) {
+    const kind = forceType || "upgrade";
+    let x, y;
+
+    if (nearPlayer) {
+      const angle = Math.random() * Math.PI * 2;
+      const distance = psRand(130, 260);
+      x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
+      y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
+    } else {
+      ({ x, y } = psFindDropPosition(true));
+    }
+
+    const drop = {
+      kind,
+      x,
+      y,
+      r: 14,
+      pulse: Math.random() * 100,
+      label: "?",
+      color: "#ffe08a",
+      fontSize: 24
+    };
+
+    if (kind === "upgrade") {
+      const availableTracks = ["D", "T", "R", "H"].filter(track => !psIsTrackMaxed(track));
+      if (availableTracks.length === 0) return;
+      drop.track = forcedTrack || availableTracks[Math.floor(Math.random() * availableTracks.length)];
+      if (psIsTrackMaxed(drop.track)) return;
+      drop.label = psGetUpgradePickupLabel(drop.track);
+      drop.color = { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[drop.track];
+      if (drop.track === "R") drop.rhythmIndex = Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1);
+      drop.fontSize = drop.label.length > 2 ? 20 : 26;
+    } else if (kind === "rest") {
+      const rests = [
+        { label: "𝄻", heal: 3, name: "Whole Rest" },
+        { label: "𝄼", heal: 2, name: "Half Rest" },
+        { label: "𝄽", heal: 1, name: "Quarter Rest" }
+      ];
+      const rest = rests[Math.floor(Math.random() * rests.length)];
+      Object.assign(drop, { label: rest.label, heal: rest.heal, name: rest.name, color: "#f8fafc", fontSize: 26 });
+    } else if (kind === "articulation") {
+      const art = psChooseArticulationDrop();
+      if (!art) return;
+      Object.assign(drop, { articulation: art, label: art.symbol, color: "#c084fc", fontSize: 30 });
+    } else if (kind === "bonus") {
+      const track = forcedTrack || "D";
+      Object.assign(drop, { track, label: "✦", color: psBonusColor(track), r: 16, fontSize: 30 });
+    } else if (kind === "repeat") {
+      Object.assign(drop, { label: ":||", color: "#fb7185", r: 16, fontSize: 24 });
+    } else if (kind === "fermata") {
+      Object.assign(drop, { label: "𝄐", color: "#22d3ee", r: 16, fontSize: 32 });
+    } else if (kind === "treble") {
+      Object.assign(drop, { label: "𝄞", color: "#60a5fa", r: 16, fontSize: 34 });
+    } else if (kind === "bass") {
+      Object.assign(drop, { label: "𝄢", color: "#a78bfa", r: 16, fontSize: 34 });
+    }
+
+    ps.drops.push(drop);
+  }
+
+  function psIsTrackMaxed(track) {
+    if (track === "D") return ps.dyn >= PS_DYNAMICS.length - 1;
+    if (track === "T") return ps.tempo >= PS_TEMPOS.length - 1;
+    if (track === "R") return ps.rhythm >= PS_RHYTHMS.length - 1;
+    if (track === "H") return ps.harmony >= PS_HARMONIES.length - 1;
+    return false;
+  }
+
+  function psDropCount(kind, track = null) {
+    return ps.drops.filter(drop => {
+      if (drop.kind !== kind) return false;
+      if (track && drop.track !== track) return false;
+      return true;
+    }).length;
+  }
+
+  function psSpecialDropCount() {
+    return ps.drops.filter(drop => PS_SPECIAL_KINDS.includes(drop.kind)).length;
+  }
+
+  function psSpawnSpecialDrop() {
+    const kind = PS_SPECIAL_KINDS[Math.floor(Math.random() * PS_SPECIAL_KINDS.length)];
+    psSpawnDrop(kind);
+  }
+
+  function psChooseArticulationDrop() {
+    const currentId = ps.articulation?.id;
+    const alreadyOnMap = ps.drops
+      .filter(drop => drop.kind === "articulation" && drop.articulation)
+      .map(drop => drop.articulation.id);
+
+    let choices = PS_ARTICULATIONS.filter(art => art.id !== currentId);
+    const uniqueChoices = choices.filter(art => !alreadyOnMap.includes(art.id));
+    if (uniqueChoices.length > 0) choices = uniqueChoices;
+    return choices[Math.floor(Math.random() * choices.length)] || null;
+  }
+
+  function psBonusColor(track) {
+    return { D: "#ff5f8f", T: "#38bdf8", R: "#4ade80", H: "#facc15" }[track] || "#fef3c7";
+  }
+
+  function psMaintainDrops() {
+    ps.drops = ps.drops.filter(drop => {
+      if (drop.kind === "upgrade" && psIsTrackMaxed(drop.track)) return false;
+      if (drop.kind === "bonus" && !psIsTrackMaxed(drop.track)) return false;
+      if (drop.kind === "articulation" && ps.articulation && drop.articulation?.id === ps.articulation.id) return false;
+      return true;
+    });
+
+    ["D", "T", "R", "H"].forEach(track => {
+      if (psIsTrackMaxed(track)) {
+        while (psDropCount("bonus", track) < PS_DROP_TARGETS[track]) {
+          psSpawnDrop("bonus", false, track);
+        }
+        return;
+      }
+      while (psDropCount("upgrade", track) < PS_DROP_TARGETS[track]) {
+        psSpawnDrop("upgrade", false, track);
+      }
+    });
+
+    while (psDropCount("articulation") < PS_DROP_TARGETS.articulation) psSpawnDrop("articulation");
+
+    const needsRest = ps.hp <= ps.maxHp - 2;
+    while (needsRest && psDropCount("rest") < PS_DROP_TARGETS.rest) psSpawnDrop("rest");
+    if (!needsRest) ps.drops = ps.drops.filter(drop => drop.kind !== "rest");
+
+    if (ps.specialCooldown > 0) ps.specialCooldown--;
+    const allowSpecial = ps.time > PS_SPECIAL_FIRST_TIME && ps.specialCooldown <= 0;
+    if (allowSpecial && psSpecialDropCount() < 1) psSpawnSpecialDrop();
+    if (!allowSpecial) ps.drops = ps.drops.filter(drop => !PS_SPECIAL_KINDS.includes(drop.kind));
+
+    if (ps.repeatCooldown > 0) ps.repeatCooldown--;
+    const allowRepeat = ps.time > PS_REPEAT_FIRST_TIME && ps.repeats < 2 && ps.repeatCooldown <= 0;
+    if (allowRepeat && psDropCount("repeat") < 1) psSpawnDrop("repeat");
+    if (!allowRepeat) ps.drops = ps.drops.filter(drop => drop.kind !== "repeat");
+  }
+
+
+  function psCreateEnemyType() {
+    const t = ps.time;
+    const enemyPool = [
+      { name: "Violin", kind: "violin", unlock: 0, hp: 1.75, speed: 0.7, r: 18, score: 8, weight: 34 },
+      { name: "Flute", kind: "flute", unlock: 1800, hp: 2.25, speed: 0.84, r: 17, score: 11, weight: 22 },
+      { name: "Trumpet", kind: "trumpet", unlock: 3300, hp: 3.2, speed: 0.62, r: 20, score: 14, weight: 18 },
+      { name: "Cello", kind: "cello", unlock: 5700, hp: 5.0, speed: 0.5, r: 23, score: 22, weight: 13 },
+      { name: "Tuba", kind: "tuba", unlock: 7800, hp: 7.4, speed: 0.43, r: 25, score: 30, weight: 10 },
+      { name: "Drum", kind: "drum", unlock: 10500, hp: 10.2, speed: 0.38, r: 27, score: 42, weight: 7 }
+    ];
+
+    const available = enemyPool.filter(type => t >= type.unlock);
+    const totalWeight = available.reduce((sum, type) => sum + type.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let type = available[0];
+    for (const candidate of available) {
+      roll -= candidate.weight;
+      if (roll <= 0) {
+        type = candidate;
+        break;
+      }
+    }
+
+    const bossChance = t > 3600 ? Math.min(0.28, 0.018 + (t - 3600) / 90000) : 0;
+    const boss = Math.random() < bossChance;
+    const scaling = 1 + Math.min(3.2, ps.time / 12000);
+    const bossScale = boss ? 6.4 + Math.min(3.6, ps.time / 24000) : 1;
+
+    return {
+      x: ps.player.x,
+      y: ps.player.y,
+      hp: type.hp * scaling * bossScale,
+      maxHp: type.hp * scaling * bossScale,
+      speed: type.speed * Math.min(1.9, 1 + ps.time / 16000) * (boss ? 1.12 : 1),
+      r: type.r * (boss ? 1.5 : 1),
+      kind: type.kind,
+      name: boss ? `${type.name} Boss` : type.name,
+      score: type.score * (boss ? 7 : 1),
+      boss,
+      hitFlash: 0
+    };
+  }
+
+  function psSpawnEnemy() {
+    const enemy = psCreateEnemyType();
+    psPlaceEnemyNearPlayer(enemy);
+    ps.enemies.push(enemy);
+  }
+
+  function psEnemyTargetCount() {
+    return 2 + Math.floor(ps.time / 760) + Math.floor(ps.time / 3600);
+  }
+
+  function psPlaceEnemyNearPlayer(enemy) {
+    const baseAngle = Math.atan2(ps.heading.y, ps.heading.x);
+    const arc = Math.PI * 2 / 3; // 120 degrees total, centered on current movement heading.
+    const angle = baseAngle + psRand(-arc / 2, arc / 2);
+    const distance = psRand(PS_ENEMY_RESPAWN_MIN, PS_ENEMY_RESPAWN_MAX);
+    enemy.x = psWrapValue(ps.player.x + Math.cos(angle) * distance, PS_WORLD.width);
+    enemy.y = psWrapValue(ps.player.y + Math.sin(angle) * distance, PS_WORLD.height);
+    enemy.hp = enemy.maxHp;
+    enemy.hitFlash = 0;
+  }
+
+  function psMaintainEnemies() {
+    const target = psEnemyTargetCount();
+    while (ps.enemies.length < target) psSpawnEnemy();
+
+    ps.enemies.forEach(enemy => {
+      if (psDist(enemy, ps.player) > PS_ENEMY_TOO_FAR) {
+        const replacement = psCreateEnemyType();
+        Object.assign(enemy, replacement);
+        psPlaceEnemyNearPlayer(enemy);
+      }
+    });
+  }
+
+  function psApplyUpgrade(track) {
+    if (track === "D" && ps.dyn < PS_DYNAMICS.length - 1) {
+      ps.dyn++;
+      psRefreshDropLabels("D");
+      psSetMessage(`DYNAMIC UP: ${PS_DYNAMICS[ps.dyn].label}`);
+      soundCorrect();
+      return;
+    }
+    if (track === "T" && ps.tempo < PS_TEMPOS.length - 1) {
+      ps.tempo++;
+      psRefreshDropLabels("T");
+      psSetMessage(`TEMPO UP: ${PS_TEMPOS[ps.tempo].label}`);
+      soundCorrect();
+      return;
+    }
+    if (track === "R" && ps.rhythm < PS_RHYTHMS.length - 1) {
+      ps.rhythm++;
+      psRefreshDropLabels("R");
+      psSetMessage(`RHYTHM UP: ${PS_RHYTHMS[ps.rhythm].label}`);
+      soundCorrect();
+      return;
+    }
+    if (track === "H" && ps.harmony < PS_HARMONIES.length - 1) {
+      ps.harmony++;
+      psRefreshDropLabels("H");
+      psSetMessage(`HARMONY UP: ${PS_HARMONIES[ps.harmony].short}`);
+      soundCorrect();
+      return;
+    }
+    addScore(15);
+    psSetMessage("MAXED: bonus points");
+    soundCorrect();
+  }
+
+  function psCollectDrop(drop) {
+    if (drop.kind === "upgrade") {
+      psApplyUpgrade(drop.track);
+    } else if (drop.kind === "rest") {
+      ps.hp = Math.min(ps.maxHp, ps.hp + drop.heal);
+      psSetMessage(`${drop.name}: +${drop.heal} health`);
+      soundCorrect();
+    } else if (drop.kind === "articulation") {
+      ps.articulation = drop.articulation;
+      ps.drops = ps.drops.filter(item => item.kind !== "articulation" || item.articulation?.id !== ps.articulation.id);
+      psSetMessage(drop.articulation.message);
+      soundWin();
+    } else if (drop.kind === "bonus") {
+      addScore(50);
+      psSetMessage("BONUS POINTS +50");
+      soundCorrect();
+    } else if (drop.kind === "repeat") {
+      ps.repeats = Math.min(3, ps.repeats + 1);
+      ps.repeatCooldown = PS_REPEAT_COOLDOWN;
+      psSetMessage(`REPEAT: extra life x${ps.repeats}`);
+      soundWin();
+    } else if (drop.kind === "fermata") {
+      ps.fermataTimer = 320;
+      ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+      psSetMessage("FERMATA: note rays!", 220);
+      soundWin();
+    } else if (drop.kind === "treble") {
+      ps.trebleTimer = 360;
+      ps.trebleCooldown = 0;
+      ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+      psSetMessage("TREBLE CLEF: piercing lines!", 220);
+      soundWin();
+    } else if (drop.kind === "bass") {
+      ps.bassTimer = 360;
+      ps.bassPulseCooldown = 0;
+      ps.specialCooldown = PS_SPECIAL_COOLDOWN;
+      psSetMessage("BASS CLEF: earthquake pulses!", 220);
+      soundWin();
+    }
+  }
+
+  function psFire() {
+    const rhythm = PS_RHYTHMS[ps.rhythm];
+    if (ps.fireCooldown > 0) return;
+
+    const ax = ps.aim.x;
+    const ay = ps.aim.y;
+    const mag = Math.sqrt(ax * ax + ay * ay);
+    if (mag < 0.12) return;
+
+    const nx = ax / mag;
+    const ny = ay / mag;
+    const baseAngle = Math.atan2(ny, nx);
+    const harmony = PS_HARMONIES[ps.harmony];
+    const dyn = PS_DYNAMICS[ps.dyn];
+    const count = harmony.count;
+    const spread = harmony.spread;
+    const speed = ps.articulation?.id === "tenuto" ? 4.2 : 6.0;
+    const size = dyn.size + (ps.articulation?.id === "tenuto" ? 4 : 0);
+
+    if (ps.fermataTimer > 0) {
+      for (let i = 0; i < count; i++) {
+        const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
+        const angle = baseAngle + offset;
+        ps.rays.push({
+          x: ps.player.x,
+          y: ps.player.y,
+          angle,
+          life: 8,
+          damage: dyn.damage * 1.15,
+          width: 8 + dyn.size,
+          length: Math.max(GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT) * 1.35,
+          color: "fermata"
+        });
+      }
+      psSoundFire();
+      ps.fireCooldown = Math.max(4, Math.floor(rhythm.cooldown * 0.72));
+      return;
+    }
+
+    for (let i = 0; i < count; i++) {
+      const offset = count === 1 ? 0 : (i - (count - 1) / 2) * spread;
+      const angle = baseAngle + offset;
+      ps.bullets.push({
+        x: ps.player.x + Math.cos(angle) * 18,
+        y: ps.player.y + Math.sin(angle) * 18,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: size,
+        damage: dyn.damage,
+        life: ps.articulation?.id === "tenuto" ? 95 : 74,
+        pierce: ps.articulation?.id === "accent" ? 3 : 0,
+        bounces: ps.articulation?.id === "staccato" ? 3 : 0,
+        chain: ps.articulation?.id === "legato" ? 2 : 0,
+        wiggle: ps.articulation?.id === "trill" ? { phase: Math.random() * Math.PI * 2, amp: 8.5, freq: 0.72 } : null,
+        hitRadius: ps.articulation?.id === "trill" ? size + 8 : size,
+        explode: ps.articulation?.id === "marcato",
+        hitIds: new Set()
+      });
+    }
+
+    psSoundFire();
+    ps.fireCooldown = rhythm.cooldown;
+  }
+
+
+  function psSoundFire() {
+    if (!ps || ps.time < ps.nextFireSound) return;
+    const rhythmGap = PS_RHYTHMS[ps.rhythm]?.cooldown || 10;
+    ps.nextFireSound = ps.time + Math.max(1, Math.floor(rhythmGap * 0.45));
+    const freq = 300 + ps.rhythm * 32 + ps.harmony * 22;
+    beep(freq, 0.024, "square", 0.014);
+  }
+
+  function psSoundEnemyDie(enemy) {
+    const base = enemy.kind === "drum" ? 95 : enemy.kind === "tuba" ? 125 : enemy.kind === "cello" ? 155 : enemy.kind === "trumpet" ? 230 : enemy.kind === "flute" ? 420 : 330;
+    beep(base, enemy.boss ? 0.14 : 0.08, "sawtooth", enemy.boss ? 0.055 : 0.035);
+    setTimeout(() => beep(base * 1.5, 0.05, "square", 0.025), 45);
+    if (enemy.boss) setTimeout(() => beep(base * 0.75, 0.18, "triangle", 0.04), 95);
+  }
+
+  function psSpawnShockwave() {
+    ps.shockwaves.push({
+      x: ps.player.x,
+      y: ps.player.y,
+      r: 14,
+      maxR: 245,
+      damage: PS_DYNAMICS[ps.dyn].damage * 1.65,
+      life: 38,
+      hitIds: new Set()
+    });
+    beep(92, 0.09, "sawtooth", 0.045);
+  }
+
+  function psSpawnTrebleBolts() {
+    const dyn = PS_DYNAMICS[ps.dyn];
+    const burstCount = 4 + Math.floor(Math.random() * 5);
+    for (let i = 0; i < burstCount; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      ps.rays.push({
+        x: ps.player.x,
+        y: ps.player.y,
+        angle,
+        life: 5 + Math.floor(Math.random() * 5),
+        damage: dyn.damage * 0.78,
+        width: 4 + dyn.size * 0.5,
+        length: Math.max(GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT) * psRand(0.95, 1.8),
+        color: "treble",
+        jagged: true
+      });
+    }
+    beep(760 + Math.random() * 360, 0.035, "sawtooth", 0.028);
+  }
+
+  function psExplodeAt(x, y, damage) {
+    const radius = 92;
+    ps.explosions.push({ x, y, r: 10, maxR: radius, life: 18 });
+    ps.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const d = psDist({ x, y }, enemy);
+      if (d < radius + enemy.r) psDamageEnemy(enemy, damage * 0.78);
+    });
+    beep(170, 0.05, "sawtooth", 0.03);
+  }
+
+  function psDamageEnemy(enemy, amount) {
+    enemy.hp -= amount;
+    enemy.hitFlash = 5;
+    ps.particles.push({ x: enemy.x, y: enemy.y, text: "♪", life: 22, vy: -0.45 });
+  }
+
+  function psKillEnemy(enemy) {
+    addScore(enemy.score);
+    ps.kills++;
+    psSoundEnemyDie(enemy);
+    ps.particles.push({ x: enemy.x, y: enemy.y, text: "✦", life: 28, vy: -0.35 });
+  }
+
+  function psChainFrom(enemy, damage, depth) {
+    if (depth <= 0) return;
+    let best = null;
+    let bestDist = 9999;
+    ps.enemies.forEach(other => {
+      if (other === enemy || other.hp <= 0) return;
+      const d = psDist(enemy, other);
+      if (d < 180 && d < bestDist) {
+        best = other;
+        bestDist = d;
+      }
+    });
+    if (!best) return;
+    ps.lines.push({ x1: enemy.x, y1: enemy.y, x2: best.x, y2: best.y, life: 12 });
+    psDamageEnemy(best, damage * 0.9);
+    psChainFrom(best, damage * 0.7, depth - 1);
+  }
+
+  function psTryRevive() {
+    if (ps.hp > 0) return true;
+    if (ps.repeats > 0) {
+      ps.repeats--;
+      ps.hp = ps.maxHp;
+      ps.invuln = 120;
+      psSetMessage(`REPEAT USED: ${ps.repeats} left`, 180);
+      soundWin();
+      return true;
+    }
+    return false;
+  }
+
+  function psDrawPixelPiano(x, y, scale = 1) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(scale, scale);
+    ctx.fillStyle = "#2563eb";
+    ctx.fillRect(-18, -15, 36, 30);
+    ctx.fillStyle = "#60a5fa";
+    ctx.fillRect(-16, -13, 32, 8);
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(-18, -15, 36, 3);
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(-14, -1, 9, 14);
+    ctx.fillRect(-4, -1, 9, 14);
+    ctx.fillRect(6, -1, 9, 14);
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(-14, -1, 9, 14);
+    ctx.strokeRect(-4, -1, 9, 14);
+    ctx.strokeRect(6, -1, 9, 14);
+    ctx.fillStyle = "#111827";
+    ctx.fillRect(-8, -1, 5, 8);
+    ctx.fillRect(2, -1, 5, 8);
+    ctx.fillStyle = "#fde68a";
+    ctx.fillRect(-3, -19, 6, 4);
+    ctx.restore();
+  }
+
+  function psDrawViolin(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.15, 1.15);
+
+    const body = flash ? "#fef3c7" : "#b45309";
+    const bodyDark = flash ? "#fde68a" : "#78350f";
+    const wood = flash ? "#fff7ed" : "#d97706";
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.bezierCurveTo(-12, -17, -21, -5, -12, 3);
+    ctx.bezierCurveTo(-24, 16, -4, 23, 0, 10);
+    ctx.bezierCurveTo(5, 23, 24, 16, 12, 3);
+    ctx.bezierCurveTo(21, -5, 12, -17, 0, -4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = bodyDark;
+    ctx.beginPath();
+    ctx.ellipse(-7, 2, 3, 7, -0.4, 0, Math.PI * 2);
+    ctx.ellipse(7, 2, 3, 7, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = wood;
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(-3, -28, 6, 20);
+    ctx.strokeRect(-3, -28, 6, 20);
+    ctx.fillRect(-8, -32, 16, 5);
+    ctx.strokeRect(-8, -32, 16, 5);
+
+    ctx.strokeStyle = "#fef3c7";
+    ctx.lineWidth = 1;
+    [-3, -1, 1, 3].forEach(offset => {
+      ctx.beginPath();
+      ctx.moveTo(offset, -29);
+      ctx.lineTo(offset * 0.4, 16);
+      ctx.stroke();
+    });
+
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-21, -18);
+    ctx.lineTo(22, 16);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function psDrawTrumpet(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.15, 1.15);
+    const brass = flash ? "#fef3c7" : "#fbbf24";
+    const brassDark = flash ? "#fde68a" : "#b45309";
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = brass;
+
+    ctx.fillRect(-25, -5, 30, 10);
+    ctx.strokeRect(-25, -5, 30, 10);
+    ctx.fillRect(-32, -3, 7, 6);
+    ctx.strokeRect(-32, -3, 7, 6);
+
+    ctx.beginPath();
+    ctx.moveTo(5, -8);
+    ctx.lineTo(27, -17);
+    ctx.lineTo(31, -15);
+    ctx.lineTo(31, 15);
+    ctx.lineTo(27, 17);
+    ctx.lineTo(5, 8);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = brassDark;
+    ctx.fillRect(-13, -15, 4, 10);
+    ctx.fillRect(-6, -17, 4, 12);
+    ctx.fillRect(1, -15, 4, 10);
+    ctx.fillRect(-17, 5, 24, 8);
+    ctx.strokeRect(-17, 5, 24, 8);
+
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.fillRect(-21, -3, 18, 2);
+    ctx.fillRect(13, -9, 11, 3);
+    ctx.restore();
+  }
+
+  function psDrawTuba(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.08, 1.08);
+    const brass = flash ? "#fef3c7" : "#f59e0b";
+    const bright = flash ? "#fde68a" : "#fbbf24";
+    const dark = flash ? "#111827" : "#92400e";
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = brass;
+
+    ctx.beginPath();
+    ctx.ellipse(-5, 5, 18, 20, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#0b1420";
+    ctx.beginPath();
+    ctx.ellipse(-5, 5, 9, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = bright;
+    ctx.beginPath();
+    ctx.moveTo(10, -20);
+    ctx.lineTo(33, -29);
+    ctx.lineTo(36, -26);
+    ctx.lineTo(36, -4);
+    ctx.lineTo(33, -1);
+    ctx.lineTo(10, -9);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = brass;
+    ctx.fillRect(4, -19, 8, 25);
+    ctx.strokeRect(4, -19, 8, 25);
+    ctx.fillRect(-19, -15, 7, 26);
+    ctx.strokeRect(-19, -15, 7, 26);
+
+    ctx.fillStyle = dark;
+    ctx.fillRect(-27, -18, 7, 5);
+    ctx.fillRect(-8, -22, 4, 9);
+    ctx.fillRect(-2, -22, 4, 9);
+    ctx.fillRect(4, -22, 4, 9);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-8, 3, 13, Math.PI * 0.25, Math.PI * 1.25);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function psDrawFlute(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.rotate(-0.22);
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = flash ? "#fef3c7" : "#dbeafe";
+    ctx.fillRect(-29, -4, 58, 8);
+    ctx.strokeRect(-29, -4, 58, 8);
+    ctx.fillStyle = flash ? "#111827" : "#2563eb";
+    for (let i = -16; i <= 18; i += 8) ctx.fillRect(i, -2, 3, 4);
+    ctx.fillStyle = flash ? "#fef3c7" : "#93c5fd";
+    ctx.fillRect(-34, -5, 7, 10);
+    ctx.fillRect(28, -5, 5, 10);
+    ctx.strokeRect(-34, -5, 7, 10);
+    ctx.strokeRect(28, -5, 5, 10);
+    ctx.restore();
+  }
+
+  function psDrawCello(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    ctx.scale(1.06, 1.06);
+    const body = flash ? "#fef3c7" : "#9a3412";
+    const dark = flash ? "#fde68a" : "#431407";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.2;
+    ctx.fillStyle = body;
+    ctx.beginPath();
+    ctx.moveTo(0, -10);
+    ctx.bezierCurveTo(-17, -25, -25, -5, -13, 6);
+    ctx.bezierCurveTo(-28, 22, -6, 37, 0, 20);
+    ctx.bezierCurveTo(6, 37, 28, 22, 13, 6);
+    ctx.bezierCurveTo(25, -5, 17, -25, 0, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = dark;
+    ctx.fillRect(-4, -42, 8, 30);
+    ctx.strokeRect(-4, -42, 8, 30);
+    ctx.fillRect(-10, -47, 20, 6);
+    ctx.strokeRect(-10, -47, 20, 6);
+    ctx.strokeStyle = "#fef3c7";
+    ctx.lineWidth = 1.1;
+    [-4, -1, 1, 4].forEach(offset => {
+      ctx.beginPath();
+      ctx.moveTo(offset, -44);
+      ctx.lineTo(offset * 0.35, 27);
+      ctx.stroke();
+    });
+    ctx.strokeStyle = "#e5e7eb";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 28);
+    ctx.lineTo(0, 42);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function psDrawDrum(x, y, flash) {
+    ctx.save();
+    ctx.translate(Math.round(x), Math.round(y));
+    const shell = flash ? "#fef3c7" : "#dc2626";
+    const rim = flash ? "#fde68a" : "#f8fafc";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.5;
+    ctx.fillStyle = shell;
+    ctx.fillRect(-25, -16, 50, 32);
+    ctx.strokeRect(-25, -16, 50, 32);
+    ctx.fillStyle = rim;
+    ctx.beginPath();
+    ctx.ellipse(0, -16, 25, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, 16, 25, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = "#fef3c7";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-30, -30);
+    ctx.lineTo(4, 0);
+    ctx.moveTo(30, -30);
+    ctx.lineTo(-4, 0);
+    ctx.stroke();
+    ctx.fillStyle = "#fef3c7";
+    ctx.beginPath();
+    ctx.arc(-32, -32, 4, 0, Math.PI * 2);
+    ctx.arc(32, -32, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function psDrawEnemy(enemy) {
+    const p = psWorldToScreen(enemy.x, enemy.y);
+    if (!psPointOnScreen(enemy, 64)) return;
+    const flash = enemy.hitFlash > 0;
+
+    if (enemy.boss) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.strokeStyle = "rgba(251,191,36,0.75)";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 0, enemy.r + 9 + Math.sin(ps.time / 8) * 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.scale(1.35, 1.35);
+      if (enemy.kind === "violin") psDrawViolin(0, 0, flash);
+      else if (enemy.kind === "flute") psDrawFlute(0, 0, flash);
+      else if (enemy.kind === "trumpet") psDrawTrumpet(0, 0, flash);
+      else if (enemy.kind === "cello") psDrawCello(0, 0, flash);
+      else if (enemy.kind === "drum") psDrawDrum(0, 0, flash);
+      else psDrawTuba(0, 0, flash);
+      ctx.restore();
+
+      ctx.fillStyle = "rgba(3,7,18,0.82)";
+      ctx.fillRect(p.x - 28, p.y - enemy.r - 24, 56, 7);
+      ctx.fillStyle = "#fbbf24";
+      ctx.fillRect(p.x - 27, p.y - enemy.r - 23, 54 * Math.max(0, enemy.hp / enemy.maxHp), 5);
+      return;
+    }
+
+    if (enemy.kind === "violin") psDrawViolin(p.x, p.y, flash);
+    else if (enemy.kind === "flute") psDrawFlute(p.x, p.y, flash);
+    else if (enemy.kind === "trumpet") psDrawTrumpet(p.x, p.y, flash);
+    else if (enemy.kind === "cello") psDrawCello(p.x, p.y, flash);
+    else if (enemy.kind === "drum") psDrawDrum(p.x, p.y, flash);
+    else psDrawTuba(p.x, p.y, flash);
+  }
+
+  function psStrokeLinePath(drawPath, color, outerWidth = 7, innerWidth = 3.5) {
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(3,7,18,0.95)";
+    ctx.lineWidth = outerWidth;
+    ctx.beginPath();
+    drawPath();
+    ctx.stroke();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = innerWidth;
+    ctx.beginPath();
+    drawPath();
+    ctx.stroke();
+  }
+
+  function psDrawRhythmSymbol(index, color) {
+    const rhythm = PS_RHYTHMS[index] || PS_RHYTHMS[0];
+    const s = 1.48;
+    ctx.save();
+    ctx.scale(s, s);
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+
+    function noteHead(filled) {
+      ctx.save();
+      ctx.rotate(-0.34);
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = "rgba(3,7,18,0.95)";
+      ctx.fillStyle = filled ? "rgba(3,7,18,0.95)" : "#0b1420";
+      ctx.beginPath();
+      ctx.ellipse(-5, 7, 6, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 1.8;
+      ctx.strokeStyle = color;
+      ctx.fillStyle = filled ? color : "#0b1420";
+      ctx.beginPath();
+      ctx.ellipse(-5, 7, 6, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function stem() {
+      psStrokeLinePath(() => { ctx.moveTo(1, 4); ctx.lineTo(1, -18); }, color, 4.8, 2.4);
+    }
+
+    function flag(y1, y2) {
+      psStrokeLinePath(() => {
+        ctx.moveTo(1, y1);
+        ctx.bezierCurveTo(11, y1 + 1, 11, y2 - 1, 4, y2);
+      }, color, 4.8, 2.4);
+    }
+
+    if (rhythm.label === "Whole") {
+      ctx.save();
+      ctx.rotate(-0.12);
+      ctx.lineWidth = 2.8;
+      ctx.strokeStyle = "rgba(3,7,18,0.95)";
+      ctx.fillStyle = "#0b1420";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.lineWidth = 1.8;
+      ctx.strokeStyle = color;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    } else {
+      const filled = rhythm.label.includes("Quarter") || rhythm.label === "Eighth" || rhythm.label === "16th";
+      noteHead(filled);
+      stem();
+      if (rhythm.label === "Eighth" || rhythm.label === "16th") flag(-18, -7);
+      if (rhythm.label === "16th") flag(-12, -2);
+      if (rhythm.label.includes("Dotted")) {
+        ctx.fillStyle = "rgba(3,7,18,0.95)";
+        ctx.beginPath();
+        ctx.arc(9, 6, 3.3, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(9, 6, 2.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function psDrawRestSymbol(drop) {
+    const color = drop.color;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = color;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.lineCap = "butt";
+
+    if (drop.heal > 1) {
+      const w = 22;
+      const h = 9;
+      const linePad = 4;
+      const lineY = 0;
+      const rectY = drop.heal === 2 ? -h : 0;
+      ctx.beginPath();
+      ctx.moveTo(-w / 2 - linePad, lineY);
+      ctx.lineTo(w / 2 + linePad, lineY);
+      ctx.stroke();
+      ctx.fillRect(-w / 2, rectY, w, h);
+      return;
+    }
+
+    // Quarter rest: preserve the existing hand-drawn zig-zag instead of a music-font glyph.
+    psStrokeLinePath(() => {
+      ctx.moveTo(-5, -22);
+      ctx.lineTo(7, -8);
+      ctx.lineTo(-3, 0);
+      ctx.lineTo(8, 14);
+      ctx.bezierCurveTo(0, 10, -9, 14, -3, 24);
+    }, color, 7, 3.5);
+  }
+
+  function psDrawDrop(drop) {
+    if (!psPointOnScreen(drop, 44)) return;
+    const p = psWorldToScreen(drop.x, drop.y);
+    const pulse = Math.sin((ps.time + drop.pulse) / 16) * 0.12;
+    ctx.save();
+    ctx.translate(Math.round(p.x), Math.round(p.y));
+    ctx.scale(1 + pulse, 1 + pulse);
+
+    if (drop.kind === "upgrade" && drop.track === "R") {
+      psDrawRhythmSymbol(
+        drop.rhythmIndex ?? Math.min(ps.rhythm + 1, PS_RHYTHMS.length - 1),
+        drop.color
+      );
+      ctx.restore();
+      return;
+    }
+
+    if (drop.kind === "rest") {
+      psDrawRestSymbol(drop);
+      ctx.restore();
+      return;
+    }
+
+    ctx.font = `bold ${drop.fontSize || 24}px Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = "rgba(3,7,18,0.92)";
+    ctx.strokeText(drop.label, 0, 1);
+    ctx.fillStyle = drop.color;
+    ctx.shadowColor = drop.color;
+    ctx.shadowBlur = 12;
+    ctx.fillText(drop.label, 0, 1);
+    ctx.restore();
+  }
+
+  function gameInit() {
+    ps = {
+      player: { x: PS_WORLD.width / 2, y: PS_WORLD.height / 2, r: 16 },
+      camera: { x: 0, y: 0 },
+      aim: { x: 1, y: 0 },
+      dpad: { x: 0, y: 0 },
+      bullets: [],
+      rays: [],
+      shockwaves: [],
+      explosions: [],
+      enemies: [],
+      drops: [],
+      particles: [],
+      lines: [],
+      dyn: 0,
+      tempo: 0,
+      rhythm: 0,
+      harmony: 0,
+      articulation: null,
+      hp: 6,
+      maxHp: 6,
+      repeats: 0,
+      invuln: 0,
+      fireCooldown: 0,
+      repeatCooldown: 0,
+      specialCooldown: PS_SPECIAL_FIRST_TIME,
+      bassPulseCooldown: 0,
+      trebleCooldown: 0,
+      nextFireSound: 0,
+      heading: { x: 1, y: 0 },
+      time: 0,
+      kills: 0,
+      message: "Explore the map. Collect symbols. Avoid the instruments.",
+      messageTimer: 280,
+      fermataTimer: 0,
+      trebleTimer: 0,
+      bassTimer: 0
+    };
+
+    setScore(0);
+    psUpdateCamera();
+    psMaintainDrops();
+    psMaintainEnemies();
+    psUpdateHud();
+
+    window.MobileArcadeShell.updateMenuTab("controls", `
+        <h3>Controls</h3>
+        <ul>
+          <li><strong>Left joystick:</strong> move the piano. Ease toward the center to slow down or stop.</li>
+          <li><strong>D-pad:</strong> tap for a quick movement nudge.</li>
+          <li><strong>Right joystick:</strong> aim and fire continuously toward the enemies.</li>
+          <li><strong>MENU:</strong> pause, resume, or return to the player menu.</li>
+        </ul>
+        <p>Move with your left hand and aim with your right hand.</p>
+    `);
+
+    window.MobileArcadeShell.updateMenuTab("instructions", `
+        <h3>How to Play</h3>
+        <p>You are the tiny piano. Instrument enemies chase you through a large scrolling map.</p>
+        <ul>
+          <li>Move around the map and aim your note shots at the enemies.</li>
+          <li>Collect music symbols to upgrade your piano.</li>
+          <li><strong>Dynamics</strong> make your notes bigger and stronger.</li>
+          <li><strong>Tempo</strong> changes how fast you move.</li>
+          <li><strong>Rhythm</strong> changes how quickly you fire.</li>
+          <li><strong>Harmony</strong> adds more notes to your attack.</li>
+          <li><strong>Rests</strong> heal you. <strong>:||</strong> gives an extra life.</li>
+          <li>Special symbols can create rays, piercing lines, or earthquake pulses.</li>
+        </ul>
+        <p>Your score goes up as you survive.</p>
+    `);
+  }
+
+  function gameUpdate() {
+    if (!ps) return;
+    ps.time++;
+    if (ps.messageTimer > 0) ps.messageTimer--;
+    if (ps.invuln > 0) ps.invuln--;
+    if (ps.fermataTimer > 0) ps.fermataTimer--;
+    if (ps.trebleTimer > 0) ps.trebleTimer--;
+    if (ps.bassTimer > 0) ps.bassTimer--;
+    if (ps.trebleCooldown > 0) ps.trebleCooldown--;
+    if (ps.bassPulseCooldown > 0) ps.bassPulseCooldown--;
+    if (ps.fireCooldown > 0) ps.fireCooldown--;
+
+    let mx = sticks.left.x + ps.dpad.x;
+    let my = sticks.left.y + ps.dpad.y;
+    const rawMag = Math.hypot(mx, my);
+    const joystickDeadZone = 0.22;
+    const speed = PS_TEMPOS[ps.tempo].speed;
+
+    if (rawMag > joystickDeadZone) {
+      const nx = mx / rawMag;
+      const ny = my / rawMag;
+      const moveMag = Math.min(1, (rawMag - joystickDeadZone) / (1 - joystickDeadZone));
+      ps.heading.x = nx;
+      ps.heading.y = ny;
+      ps.player.x = psWrapValue(ps.player.x + nx * speed * moveMag, PS_WORLD.width);
+      ps.player.y = psWrapValue(ps.player.y + ny * speed * moveMag, PS_WORLD.height);
+    }
+
+    if (Math.abs(sticks.right.x) > 0.05 || Math.abs(sticks.right.y) > 0.05) {
+      ps.aim.x = sticks.right.x;
+      ps.aim.y = sticks.right.y;
+    }
+
+    psUpdateCamera();
+    psMaintainDrops();
+    psMaintainEnemies();
+    psFire();
+
+    if (ps.bassTimer > 0 && ps.bassPulseCooldown <= 0) {
+      psSpawnShockwave();
+      ps.bassPulseCooldown = 23;
+    }
+
+    if (ps.trebleTimer > 0 && ps.trebleCooldown <= 0) {
+      psSpawnTrebleBolts();
+      ps.trebleCooldown = 8 + Math.floor(Math.random() * 11);
+    }
+
+    ps.enemies.forEach(enemy => {
+      const dx = psWrappedDelta(enemy.x, ps.player.x, PS_WORLD.width);
+      const dy = psWrappedDelta(enemy.y, ps.player.y, PS_WORLD.height);
+      const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+      enemy.x += (dx / mag) * enemy.speed;
+      enemy.y += (dy / mag) * enemy.speed;
+      psWrapEntity(enemy);
+      if (enemy.hitFlash > 0) enemy.hitFlash--;
+
+      if (psDist(enemy, ps.player) < enemy.r + ps.player.r && ps.invuln <= 0) {
+        ps.hp--;
+        ps.invuln = 80;
+        psSetMessage(`Ouch! HP ${ps.hp}/${ps.maxHp}`, 90);
+        soundLose();
+        if (!psTryRevive()) endGame("Out of rests.");
+      }
+    });
+
+    ps.bullets.forEach(bullet => {
+      bullet.x += bullet.vx;
+      bullet.y += bullet.vy;
+      if (bullet.wiggle) {
+        bullet.wiggle.phase += bullet.wiggle.freq;
+        const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 1;
+        const wobble = Math.sin(bullet.wiggle.phase) * bullet.wiggle.amp;
+        bullet.x += (-bullet.vy / spd) * wobble;
+        bullet.y += (bullet.vx / spd) * wobble;
+      }
+      psWrapEntity(bullet);
+      bullet.life--;
+
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0 || bullet.hitIds.has(enemy)) return;
+        if (psDist(bullet, enemy) < (bullet.hitRadius || bullet.r) + enemy.r) {
+          bullet.hitIds.add(enemy);
+          psDamageEnemy(enemy, bullet.damage);
+          if (bullet.explode) psExplodeAt(enemy.x, enemy.y, bullet.damage);
+          if (bullet.chain > 0) psChainFrom(enemy, bullet.damage, bullet.chain);
+
+          if (bullet.bounces > 0) {
+            bullet.bounces--;
+            let target = null;
+            let bestD = 9999;
+            ps.enemies.forEach(other => {
+              if (other === enemy || other.hp <= 0 || bullet.hitIds.has(other)) return;
+              const d = Math.hypot(other.x - enemy.x, other.y - enemy.y);
+              if (d < bestD) { bestD = d; target = other; }
+            });
+            if (target) {
+              const dx = psWrappedDelta(bullet.x, target.x, PS_WORLD.width);
+              const dy = psWrappedDelta(bullet.y, target.y, PS_WORLD.height);
+              const mag = Math.sqrt(dx * dx + dy * dy) || 1;
+              const spd = Math.sqrt(bullet.vx * bullet.vx + bullet.vy * bullet.vy) || 4;
+              bullet.vx = (dx / mag) * spd;
+              bullet.vy = (dy / mag) * spd;
+            } else {
+              bullet.life = 0;
+            }
+          } else if (bullet.pierce > 0) {
+            bullet.pierce--;
+          } else {
+            bullet.life = 0;
+          }
+        }
+      });
+    });
+
+    ps.rays.forEach(ray => {
+      ray.life--;
+      const dx = Math.cos(ray.angle);
+      const dy = Math.sin(ray.angle);
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = psWrappedDelta(ray.x, enemy.x, PS_WORLD.width);
+        const ey = psWrappedDelta(ray.y, enemy.y, PS_WORLD.height);
+        const forward = ex * dx + ey * dy;
+        if (forward < 0 || forward > ray.length) return;
+        const perp = Math.abs(ex * dy - ey * dx);
+        if (perp < enemy.r + ray.width * 0.36) psDamageEnemy(enemy, ray.damage);
+      });
+    });
+
+    ps.shockwaves.forEach(wave => {
+      wave.r += (wave.maxR - wave.r) * 0.16;
+      wave.life--;
+      ps.enemies.forEach(enemy => {
+        if (enemy.hp <= 0 || wave.hitIds.has(enemy)) return;
+        const d = psDist(wave, enemy);
+        if (Math.abs(d - wave.r) < enemy.r + 30) {
+          wave.hitIds.add(enemy);
+          psDamageEnemy(enemy, wave.damage);
+        }
+      });
+    });
+
+    ps.explosions.forEach(explosion => {
+      explosion.r += (explosion.maxR - explosion.r) * 0.35;
+      explosion.life--;
+    });
+
+    ps.enemies = ps.enemies.filter(enemy => {
+      if (enemy.hp > 0) return true;
+      psKillEnemy(enemy);
+      return false;
+    });
+
+    ps.bullets = ps.bullets.filter(b => b.life > 0);
+    ps.rays = ps.rays.filter(r => r.life > 0);
+    ps.shockwaves = ps.shockwaves.filter(w => w.life > 0);
+    ps.explosions = ps.explosions.filter(e => e.life > 0);
+
+    ps.drops.forEach(drop => {
+      if (psDist(drop, ps.player) < drop.r + ps.player.r) {
+        drop.collected = true;
+        psCollectDrop(drop);
+      }
+    });
+    ps.drops = ps.drops.filter(d => !d.collected);
+
+    ps.particles.forEach(p => { p.y += p.vy; p.life--; });
+    ps.particles = ps.particles.filter(p => p.life > 0);
+    ps.lines.forEach(l => l.life--);
+    ps.lines = ps.lines.filter(l => l.life > 0);
+
+    if (ps.time % 60 === 0) addScore(1);
+    psUpdateHud();
+  }
+
+  function gameDraw() {
+    if (!ps) return;
+    ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+    ctx.fillStyle = "#0b1420";
+    ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+
+    ctx.fillStyle = "rgba(96,165,250,0.1)";
+    const grid = 48;
+    const gx = - (ps.camera.x % grid);
+    const gy = - (ps.camera.y % grid);
+    for (let x = gx; x < GAME_CANVAS_LOGICAL_WIDTH; x += grid) ctx.fillRect(Math.floor(x), 0, 1, GAME_CANVAS_LOGICAL_HEIGHT);
+    for (let y = gy; y < GAME_CANVAS_LOGICAL_HEIGHT; y += grid) ctx.fillRect(0, Math.floor(y), GAME_CANVAS_LOGICAL_WIDTH, 1);
+
+    ps.drops.forEach(psDrawDrop);
+
+    ps.lines.forEach(line => {
+      const a = psWorldToScreen(line.x1, line.y1);
+      const b = psWorldToScreen(line.x2, line.y2);
+      ctx.strokeStyle = `rgba(147,197,253,${line.life / 10})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.stroke();
+    });
+
+    ps.rays.forEach(ray => {
+      const p = psWorldToScreen(ray.x, ray.y);
+      const dx = Math.cos(ray.angle);
+      const dy = Math.sin(ray.angle);
+      const drawBolt = (lineWidth, strokeStyle) => {
+        ctx.strokeStyle = strokeStyle;
+        ctx.lineWidth = lineWidth;
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        if (ray.jagged) {
+          const steps = 9;
+          const perpX = -dy;
+          const perpY = dx;
+          for (let i = 1; i <= steps; i++) {
+            const t = i / steps;
+            const jitter = (Math.random() - 0.5) * 34 * (1 - t * 0.35);
+            ctx.lineTo(p.x + dx * ray.length * t + perpX * jitter, p.y + dy * ray.length * t + perpY * jitter);
+          }
+        } else {
+          ctx.lineTo(p.x + dx * ray.length, p.y + dy * ray.length);
+        }
+        ctx.stroke();
+      };
+      drawBolt(ray.width, ray.color === "treble" ? `rgba(96,165,250,${0.24 + ray.life / 10})` : `rgba(147,197,253,${0.2 + ray.life / 10})`);
+      drawBolt(Math.max(1.5, ray.width * 0.22), "rgba(255,255,255,0.78)");
+    });
+
+    ps.shockwaves.forEach(wave => {
+      const p = psWorldToScreen(wave.x, wave.y);
+      ctx.strokeStyle = `rgba(167,139,250,${Math.max(0, wave.life / 28)})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, wave.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, wave.life / 42)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, wave.r * 0.72, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    ps.explosions.forEach(explosion => {
+      const p = psWorldToScreen(explosion.x, explosion.y);
+      ctx.strokeStyle = `rgba(251,191,36,${Math.max(0, explosion.life / 15)})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, explosion.r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = `rgba(251,113,133,${Math.max(0, explosion.life / 42)})`;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, explosion.r * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ps.bullets.forEach(b => {
+      if (!psPointOnScreen(b, 30)) return;
+      const p = psWorldToScreen(b.x, b.y);
+      ctx.fillStyle = ps.articulation?.id === "legato" ? "#93c5fd" : "#ffe08a";
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, b.r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#111827";
+      ctx.font = `bold ${Math.max(8, b.r + 3)}px Arial, sans-serif`;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("♪", p.x, p.y + 0.5);
+    });
+
+    ps.enemies.forEach(psDrawEnemy);
+
+    const playerPos = psWorldToScreen(ps.player.x, ps.player.y);
+    if (ps.invuln % 12 < 6) psDrawPixelPiano(playerPos.x, playerPos.y);
+
+    ctx.fillStyle = "rgba(3,7,18,0.85)";
+    ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, 20);
+    ctx.fillStyle = "#b7ff9e";
+    ctx.font = "bold 11px Courier New, monospace";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillText(psCompactStatsLine(), 6, 10);
+    ctx.textAlign = "right";
+    ctx.fillText(`K ${ps.kills}`, GAME_CANVAS_LOGICAL_WIDTH - 8, 10);
+
+    ps.particles.forEach(p => {
+      if (!psPointOnScreen(p, 26)) return;
+      const sp = psWorldToScreen(p.x, p.y);
+      ctx.globalAlpha = Math.max(0, p.life / 22);
+      ctx.fillStyle = "#fef3c7";
+      ctx.font = "bold 14px Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(p.text, sp.x, sp.y);
+      ctx.globalAlpha = 1;
+    });
+  }
+
+  function gameInput(action) {
+    if (!ps) return;
+
+    if (action === "up") ps.dpad.y = -1;
+    if (action === "down") ps.dpad.y = 1;
+    if (action === "left") ps.dpad.x = -1;
+    if (action === "right") ps.dpad.x = 1;
+
+    if (["up", "down", "left", "right"].includes(action)) {
+      setTimeout(() => {
+        if (!ps) return;
+        if (action === "up" || action === "down") ps.dpad.y = 0;
+        if (action === "left" || action === "right") ps.dpad.x = 0;
+      }, 130);
+    }
+  }
+
+  function gameStop() {
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+    if (!ps) return;
+    ps.bullets = [];
+    ps.rays = [];
+    ps.shockwaves = [];
+    ps.dpad = { x: 0, y: 0 };
+  }
+
+
+    let resizeObserver = null;
+
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      });
+
+      resizeObserver.observe(appFrame);
+    }
+
+    window.addEventListener("orientationchange", () => {
+      setTimeout(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      }, 250);
+    });
+
+    function shutDownMobileArcade() {
+      try {
+        stopGame();
+      } catch (err) {}
+
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
+      }
+
+      audioCtx = null;
+    }
+
+    window.addEventListener("pagehide", shutDownMobileArcade);
+
 
     scaleAppToFrame();
     loadPlayers();
     resetJoystick(sticks.left);
     resetJoystick(sticks.right);
+    configureMobileControls({
+      showDpad: true,
+      showLeftJoystick: true,
+      showRightJoystick: true,
+      faceButtons: [],
+      systemButtons: ["start"],
+      labels: { start: "MENU" }
+    });
     gameInit();
+    resetGameCanvasTransform();
     gameDraw();
   </script>
 </body>
