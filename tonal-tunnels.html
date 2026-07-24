@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+<!-- TONAL TUNNELS MOBILE OVERHAUL v1.1 — LCD HUD and aligned controls -->
 <!-- TONAL TUNNELS STEP 8 VISUAL REFINEMENT BUILD — MOBILE — landing threshold + persistent target + timer HUD + READY/SET/GO -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Tonal Tunnels — Mobile Step 6</title>
+  <title>Tonal Tunnels - Piano Arcade</title>
 
   <style>
     @font-face {
@@ -249,7 +250,7 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
       border: 2px solid #34454b;
@@ -260,7 +261,7 @@
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
       background: #0c1820;
       image-rendering: auto;
@@ -271,7 +272,8 @@
       position: absolute;
       left: 34px;
       right: 34px;
-      top: 35px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -305,7 +307,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -348,10 +350,10 @@
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
-      background: linear-gradient(180deg, #303030, #181818);
+      height: 340.333px;
+      background: #242424;
       touch-action: auto;
       user-select: none;
       -webkit-user-select: none;
@@ -372,24 +374,24 @@
 
     #dpad {
       position: absolute;
-      left: 17px;
-      top: 19px;
-      width: 150px;
-      height: 150px;
+      left: 24px;
+      top: 13px;
+      width: 126px;
+      height: 126px;
       touch-action: manipulation;
     }
 
     .dpadBtn {
       position: absolute;
-      width: 50px;
-      height: 50px;
+      width: 42px;
+      height: 42px;
       border: none;
       background: #111;
       color: rgba(255,255,255,0.86);
       font-family: Arial, sans-serif;
       font-weight: bold;
-      font-size: 22px;
-      line-height: 50px;
+      font-size: 20px;
+      line-height: 42px;
       text-align: center;
       box-shadow:
         inset 0 0 0 2px rgba(255,255,255,0.08),
@@ -402,11 +404,11 @@
       transform: scale(0.94);
     }
 
-    #dpadUp { left: 50px; top: 0; border-radius: 10px 10px 3px 3px; }
-    #dpadLeft { left: 0; top: 50px; border-radius: 10px 3px 3px 10px; }
-    #dpadCenter { left: 50px; top: 50px; border-radius: 4px; pointer-events: none; }
-    #dpadRight { left: 100px; top: 50px; border-radius: 3px 10px 10px 3px; }
-    #dpadDown { left: 50px; top: 100px; border-radius: 3px 3px 10px 10px; }
+    #dpadUp { left: 42px; top: 0; border-radius: 9px 9px 3px 3px; }
+    #dpadLeft { left: 0; top: 42px; border-radius: 9px 3px 3px 9px; }
+    #dpadCenter { left: 42px; top: 42px; border-radius: 4px; pointer-events: none; }
+    #dpadRight { left: 84px; top: 42px; border-radius: 3px 9px 9px 3px; }
+    #dpadDown { left: 42px; top: 84px; border-radius: 3px 3px 9px 9px; }
 
     /* FACE BUTTONS */
 
@@ -423,9 +425,9 @@
     #faceButtons {
       position: absolute;
       right: 8px;
-      top: 14px;
+      top: 0;
       width: 170px;
-      height: 218px;
+      height: 260px;
       touch-action: none;
     }
 
@@ -456,21 +458,10 @@
 
     #buttonY { left: 0; top: 0; }
 
-    /* DASH sits on the right; JUMP is the lower centered face button. */
-    #buttonB {
-      left: 75px;
-      top: 20px;
-    }
-
-    #buttonA {
-      left: 31px;
-      top: 88px;
-    }
-
-    /* USE occupies the exact 112×112 footprint of the removed right joystick. */
+    /* USE is the upper action control; JUMP and DASH share the lower row. */
     #buttonX {
       left: 29px;
-      top: 174px;
+      top: 20px;
       width: 112px;
       height: 112px;
       border-radius: 18px;
@@ -479,6 +470,16 @@
       box-shadow:
         inset 0 0 0 2px rgba(255,255,255,0.34),
         0 10px 18px rgba(0,0,0,0.45);
+    }
+
+    #buttonA {
+      left: 21px;
+      top: 195px;
+    }
+
+    #buttonB {
+      left: 85px;
+      top: 153px;
     }
 
     #buttonX,
@@ -520,8 +521,8 @@
     }
 
     #leftJoystickPad {
-      left: 36px;
-      top: 188px;
+      left: 31px;
+      top: 150px;
     }
 
     #rightJoystickPad {
@@ -561,7 +562,7 @@
     #systemButtons {
       position: absolute;
       left: 50%;
-      top: 326px;
+      top: 278px;
       width: 164px;
       height: 34px;
       transform: translateX(-50%);
@@ -785,7 +786,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -850,8 +851,11 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
-    const GAME_CANVAS_LOGICAL_WIDTH = 390;
-    const GAME_CANVAS_LOGICAL_HEIGHT = 219;
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
     const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
 
     /*
@@ -888,9 +892,21 @@
     let gameCanvasPixelScale = 1;
 
     function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const stageScale = Math.max(1, appScale || 1);
-      const targetScale = Math.min(MAX_GAME_CANVAS_PIXEL_SCALE, dpr * stageScale);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
       const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
       const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
 
@@ -898,9 +914,6 @@
         canvas.width = targetWidth;
         canvas.height = targetHeight;
       }
-
-      canvas.style.width = GAME_CANVAS_LOGICAL_WIDTH + "px";
-      canvas.style.height = GAME_CANVAS_LOGICAL_HEIGHT + "px";
 
       gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
       ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
@@ -5357,13 +5370,14 @@
     const timeText = ttFormatRoomTime(ttRoomTimeRemaining);
     const cue = ttGetReadySetGoCue();
 
-    // The target remains visible throughout the room. On mobile this string is
-    // the persistent LCD readout; desktop uses the canvas HUD drawn below.
-    let text = `TARGET ${ttRoomTarget.label} • ${timeText}`;
-    if (cue) text = `TARGET ${ttRoomTarget.label} • ${cue.label} • ${timeText}`;
-    if (ttRoomIntroPhase === "flight") text = `TARGET ${ttRoomTarget.label} • GO! • ${timeText}`;
-    if (ttFeedbackTimer > 0 && ttFeedbackText) text = `TARGET ${ttRoomTarget.label} • ${ttFeedbackText} • ${timeText}`;
-    if (ttCollapseActive) text = `TARGET ${ttRoomTarget.label} • EXIT BURIED`;
+    // Mobile keeps the complete persistent room HUD in the LCD instead of
+    // covering the cave with the desktop bottom overlay.
+    const roomHud = `ROOM ${ttRoomNumber} • TARGET ${ttRoomTarget.label}`;
+    let text = `${roomHud} • TIME ${timeText}`;
+    if (cue) text = `${roomHud} • ${cue.label} • ${timeText}`;
+    if (ttRoomIntroPhase === "flight") text = `${roomHud} • GO! • ${timeText}`;
+    if (ttFeedbackTimer > 0 && ttFeedbackText) text = `${roomHud} • ${ttFeedbackText} • ${timeText}`;
+    if (ttCollapseActive) text = `${roomHud} • EXIT BURIED`;
 
     if (typeof setMessage === "function") setMessage(text);
     if (typeof questionBox !== "undefined" && questionBox) questionBox.textContent = "";
@@ -7540,7 +7554,7 @@
     }
     ctx.textAlign = "right";
     ctx.fillStyle = "#89a4ae";
-    ctx.fillText(TT_IS_MOBILE ? "MAP TO CLOSE" : "M OR ESC TO CLOSE", panelX + panelW - mapPadding, legendY);
+    ctx.fillText("MAP / CLOSE TO EXIT", panelX + panelW - mapPadding, legendY);
 
     ctx.restore();
   }
@@ -7645,7 +7659,8 @@
     ttDrawCaveLighting();
     ttDrawParticles(true);
     ttDrawRoomArrivalPulse();
-    if (typeof ttDrawDesktopTimerHud === "function") ttDrawDesktopTimerHud();
+    // Target, room, and time live in the LCD on mobile; do not draw the
+    // desktop bottom HUD over the cave.
     ttDrawPowerStatusHud();
     ttDrawAnswerFeedback();
     ttDrawCaveCollapse();
