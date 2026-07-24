@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <title>Landmark Delivery Mobile Step 2</title>
+  <title>Landmark Delivery | Piano Arcade Mobile</title>
 
   <style>
     * {
@@ -18,6 +18,8 @@
       min-height: 100%;
       background: #111;
       font-family: Arial, sans-serif;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #appFrame {
@@ -41,7 +43,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -64,6 +67,19 @@
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+    }
+
+    #appFrame,
+    #menuScreen,
+    #screen,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    button,
+    .joystickPad {
+      touch-action: none;
     }
 
     input,
@@ -223,8 +239,11 @@
       min-width: 110px;
     }
 
+
     /* =========================
-       GAME / EMULATOR
+       GAME / MOBILE CONTROLLER
+       The game world uses the desktop template's full 720 x 520 coordinates.
+       Only the displayed canvas is reduced to fit the 390px mobile shell.
        ========================= */
 
     #gameScreen {
@@ -233,7 +252,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: none;
+      overflow: hidden;
     }
 
     #screen {
@@ -241,19 +261,31 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.45);
+      touch-action: none;
+    }
+
+    /* Overlay the old mobile-style frame on top of the canvas.
+       Because it does not participate in layout, the 720 x 520 game world
+       keeps exactly the same displayed size and aspect ratio. */
+    #screen::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 30;
       border: 1px solid #2b2b2b;
-      box-shadow:
-        inset 0 0 0 1px rgba(255,255,255,0.05),
-        0 1px 3px rgba(0,0,0,0.45);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.05);
+      pointer-events: none;
     }
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
+      touch-action: none;
       background: #f7fbff;
       image-rendering: auto;
     }
@@ -261,10 +293,10 @@
     #gameOverBox {
       display: none;
       position: absolute;
-      left: 34px;
-      right: 34px;
-      top: 66px;
-      padding: 14px 12px;
+      left: 38px;
+      right: 38px;
+      top: 60px;
+      padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
       border-radius: 16px;
@@ -297,7 +329,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -312,15 +344,16 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr auto auto;
       grid-template-rows: 1fr 1fr;
+      column-gap: 12px;
       align-items: center;
-      padding: 5px 16px;
+      padding: 5px 14px;
       pointer-events: none;
     }
 
     #lcdMessage {
-      grid-column: 1 / 3;
+      grid-column: 1 / 4;
       font-size: 14px;
       font-weight: bold;
       white-space: nowrap;
@@ -328,23 +361,42 @@
       text-overflow: ellipsis;
     }
 
-    #lcdScore {
+    #lcdPlayer,
+    #lcdScore,
+    #lcdBest {
       font-size: 12px;
+      white-space: nowrap;
+    }
+
+    #lcdScore {
+      text-align: center;
     }
 
     #lcdBest {
-      font-size: 13px;
       text-align: right;
     }
 
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
+      height: 340.333px;
+      /*
+        FULL-SIZE CONTROLLER DEFAULT:
+        All controller hardware below uses the original mobile dimensions.
+        Fit complete control sets by compressing shell padding and row gaps,
+        not by shrinking the controls themselves.
+      */
+      padding: 3px 14px 15px;
       background: linear-gradient(180deg, #303030, #181818);
-      touch-action: auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-evenly;
+      align-items: stretch;
+      gap: 2px;
+      overflow: hidden;
+      touch-action: none;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -360,15 +412,36 @@
       -webkit-tap-highlight-color: transparent;
     }
 
+    .controlRow {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 54px;
+      flex: 0 0 auto;
+    }
+
+    #primaryControlsRow {
+      min-height: 150px;
+    }
+
+    #stickControlsRow {
+      min-height: 112px;
+      gap: 94px;
+    }
+
+    #systemControlsRow {
+      min-height: 34px;
+    }
+
     /* D-PAD */
 
     #dpad {
-      position: absolute;
-      left: 17px;
-      top: 19px;
+      position: relative;
       width: 150px;
       height: 150px;
-      touch-action: manipulation;
+      flex: 0 0 150px;
+      touch-action: none;
     }
 
     .dpadBtn {
@@ -403,11 +476,10 @@
     /* FACE BUTTONS */
 
     #faceButtons {
-      position: absolute;
-      right: 18px;
-      top: 20px;
+      position: relative;
       width: 150px;
       height: 150px;
+      flex: 0 0 150px;
     }
 
     .faceBtn {
@@ -436,26 +508,29 @@
     #buttonA { left: 92px; top: 46px; }
     #buttonB { left: 46px; top: 92px; }
 
+    #faceButtons.singleFace .faceBtn.singleAction {
+      width: 76px;
+      height: 76px;
+      left: 37px !important;
+      top: 37px !important;
+      border-radius: 22px;
+      padding: 0 8px;
+      font-size: 14px;
+      line-height: 1.05;
+      white-space: normal;
+    }
+
     /* JOYSTICKS */
 
     .joystickPad {
-      position: absolute;
+      position: relative;
       width: 112px;
       height: 112px;
+      flex: 0 0 112px;
       border-radius: 18px;
       background: rgba(255,255,255,0.035);
       box-shadow: inset 0 0 0 2px rgba(255,255,255,0.07);
       touch-action: none;
-    }
-
-    #leftJoystickPad {
-      left: 36px;
-      top: 188px;
-    }
-
-    #rightJoystickPad {
-      right: 37px;
-      top: 188px;
     }
 
     .joystickBase {
@@ -488,19 +563,15 @@
     /* START / SELECT */
 
     #systemButtons {
-      position: absolute;
-      left: 50%;
-      top: 326px;
-      width: 164px;
-      height: 34px;
-      transform: translateX(-50%);
+      min-height: 34px;
       display: flex;
       justify-content: center;
+      align-items: center;
       gap: 12px;
     }
 
     .systemBtn {
-      width: 76px;
+      width: 82px;
       height: 32px;
       border-radius: 999px;
       border: none;
@@ -518,24 +589,8 @@
       filter: brightness(1.2);
     }
 
-    #faceButtons.singleFace .faceBtn.singleAction {
-      width: 76px;
-      height: 76px;
-      left: 37px !important;
-      top: 37px !important;
-      border-radius: 22px;
-      padding: 0 8px;
-      font-size: 14px;
-      line-height: 1.05;
-      white-space: normal;
-    }
-
-    #systemButtons.singleSystem {
-      width: 92px;
-    }
-
     #systemButtons.singleSystem .systemBtn {
-      width: 92px;
+      width: 104px;
     }
 
     /* =========================
@@ -674,6 +729,77 @@
       border-radius: 6px;
     }
 
+
+    /* Landmark Delivery: flat deck, vertical navigation, one action, one menu. */
+    #screen,
+    #gameCanvas,
+    #controls {
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
+    }
+
+    #controls {
+      padding: 0;
+      display: block;
+      background: #242424;
+      overflow: hidden;
+    }
+
+    #primaryControlsRow {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 58px;
+      min-height: 150px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 54px;
+    }
+
+    #stickControlsRow {
+      display: none !important;
+    }
+
+    #systemControlsRow {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 40px;
+      min-height: 34px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #dpadLeft,
+    #dpadCenter,
+    #dpadRight {
+      display: none !important;
+    }
+
+    #dpadUp {
+      left: 50px;
+      top: 20px;
+      border-radius: 10px;
+    }
+
+    #dpadDown {
+      left: 50px;
+      top: 80px;
+      border-radius: 10px;
+    }
+
+    #faceButtons.singleFace .faceBtn.singleAction {
+      font-size: 12px;
+      letter-spacing: 0.2px;
+    }
+
+    #gameOverBox {
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
   </style>
 </head>
 
@@ -707,9 +833,10 @@
         <button id="startGameBtn">Start Game</button>
       </div>
 
+
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -721,39 +848,46 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdScore">SCORE: <span id="score">0</span></div>
+          <div id="lcdPlayer">PLAYER: <span id="playerName">—</span></div>
+          <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
 
         <div id="controls">
-          <div id="dpad">
-            <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
-            <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
-            <button id="dpadCenter" class="dpadBtn"></button>
-            <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
-            <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+          <div id="primaryControlsRow" class="controlRow">
+            <div id="dpad">
+              <button id="dpadUp" class="dpadBtn" data-action="up">▲</button>
+              <button id="dpadLeft" class="dpadBtn" data-action="left">◄</button>
+              <button id="dpadCenter" class="dpadBtn"></button>
+              <button id="dpadRight" class="dpadBtn" data-action="right">►</button>
+              <button id="dpadDown" class="dpadBtn" data-action="down">▼</button>
+            </div>
+
+            <div id="faceButtons">
+              <button id="buttonX" class="faceBtn" data-action="x">X</button>
+              <button id="buttonY" class="faceBtn" data-action="y">Y</button>
+              <button id="buttonA" class="faceBtn" data-action="a">A</button>
+              <button id="buttonB" class="faceBtn" data-action="b">B</button>
+            </div>
           </div>
 
-          <div id="faceButtons">
-            <button id="buttonX" class="faceBtn" data-action="x">X</button>
-            <button id="buttonY" class="faceBtn" data-action="y">Y</button>
-            <button id="buttonA" class="faceBtn" data-action="a">A</button>
-            <button id="buttonB" class="faceBtn" data-action="b">B</button>
+          <div id="stickControlsRow" class="controlRow">
+            <div id="leftJoystickPad" class="joystickPad" data-stick="left">
+              <div class="joystickBase"></div>
+              <div id="leftJoystickKnob" class="joystickKnob"></div>
+            </div>
+
+            <div id="rightJoystickPad" class="joystickPad" data-stick="right">
+              <div class="joystickBase"></div>
+              <div id="rightJoystickKnob" class="joystickKnob"></div>
+            </div>
           </div>
 
-          <div id="leftJoystickPad" class="joystickPad" data-stick="left">
-            <div class="joystickBase"></div>
-            <div id="leftJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="rightJoystickPad" class="joystickPad" data-stick="right">
-            <div class="joystickBase"></div>
-            <div id="rightJoystickKnob" class="joystickKnob"></div>
-          </div>
-
-          <div id="systemButtons">
-            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
-            <button id="startButton" class="systemBtn" data-action="start">START</button>
+          <div id="systemControlsRow" class="controlRow">
+            <div id="systemButtons">
+              <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
+              <button id="startButton" class="systemBtn" data-action="start">START</button>
+            </div>
           </div>
         </div>
       </div>
@@ -774,8 +908,18 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
-    const GAME_CANVAS_LOGICAL_WIDTH = 390;
-    const GAME_CANVAS_LOGICAL_HEIGHT = 219;
+
+    // These must match the desktop template exactly.
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+
+    // The desktop world is displayed proportionally inside the mobile shell.
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
+
+    const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
+    const FIXED_GAME_STEP_MS = 1000 / 60;
 
     /*
       Change STORAGE_KEY for each separate arcade game if you want each game
@@ -787,7 +931,7 @@
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Score";
     const FIRST_TIME_HELP_DEFAULT_VERSION = "howToPlay_v1";
-    let firstTimeHelpVersion = "landmarkDelivery_howToPlay_v1";
+    let firstTimeHelpVersion = "landmarkDelivery_howToPlay_v2";
 
     const appFrame = document.getElementById("appFrame");
     const appStage = document.getElementById("appStage");
@@ -811,9 +955,21 @@
     let gameCanvasPixelScale = 1;
 
     function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const stageScale = Math.max(1, appScale || 1);
-      const targetScale = Math.min(4, dpr * stageScale);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
       const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
       const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
 
@@ -822,17 +978,40 @@
         canvas.height = targetHeight;
       }
 
-      canvas.style.width = GAME_CANVAS_LOGICAL_WIDTH + "px";
-      canvas.style.height = GAME_CANVAS_LOGICAL_HEIGHT + "px";
-
       gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
       ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
       ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function resetGameCanvasTransform() {
+      ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.webkitImageSmoothingEnabled = true;
+      ctx.mozImageSmoothingEnabled = true;
+      ctx.msImageSmoothingEnabled = true;
+    }
+
+    function getGameCanvasSize() {
+      return {
+        width: GAME_CANVAS_LOGICAL_WIDTH,
+        height: GAME_CANVAS_LOGICAL_HEIGHT,
+        pixelScale: gameCanvasPixelScale
+      };
     }
 
     const lcdMessage = document.getElementById("lcdMessage");
+    const playerNameEl = document.getElementById("playerName");
+    const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
+
+    // Desktop game modules commonly write to questionBox.
+    // On mobile, that same content appears in the compact LCD message row.
+    const questionBox = lcdMessage;
+    scoreLabelEl.textContent = String(SCORE_LABEL || "Score").toUpperCase();
 
     const gameOverBox = document.getElementById("gameOverBox");
     const gameOverScore = document.getElementById("gameOverScore");
@@ -843,6 +1022,9 @@
     const rightJoystickPad = document.getElementById("rightJoystickPad");
     const leftJoystickKnob = document.getElementById("leftJoystickKnob");
     const rightJoystickKnob = document.getElementById("rightJoystickKnob");
+    const primaryControlsRow = document.getElementById("primaryControlsRow");
+    const stickControlsRow = document.getElementById("stickControlsRow");
+    const systemControlsRow = document.getElementById("systemControlsRow");
     const dpad = document.getElementById("dpad");
     const faceButtons = document.getElementById("faceButtons");
     const systemButtons = document.getElementById("systemButtons");
@@ -858,6 +1040,8 @@
     let score = 0;
     let running = false;
     let loopId = null;
+    let lastFrameTime = 0;
+    let gameAccumulator = 0;
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
@@ -911,12 +1095,13 @@
         html: `
           <h3>Controls</h3>
           <ul>
-            <li><strong>Move:</strong> D-pad ↑/↓.</li>
-            <li><strong>Tap:</strong> move one staff step.</li>
-            <li><strong>Hold:</strong> move quickly.</li>
-            <li><strong>Action:</strong> PICK UP / DELIVER button.</li>
-            <li><strong>START:</strong> pause and open this menu.</li>
+            <li><strong>Left joystick / D-pad:</strong> Movement when the game uses movement.</li>
+            <li><strong>Right joystick:</strong> Directional aiming and firing when the game uses twin-stick controls.</li>
+            <li><strong>A / B / X / Y:</strong> Game action buttons. Each game should explain what these do.</li>
+            <li><strong>START:</strong> Pause / open this menu.</li>
+            <li><strong>SELECT:</strong> Extra game/system action when a game uses it.</li>
           </ul>
+          <p>The template exposes every mobile control by default. Each game should hide unused controls; the remaining rows recenter automatically.</p>
         `
       },
       {
@@ -924,13 +1109,13 @@
         label: "How to Play",
         html: `
           <h3>How to Play</h3>
+          <p>This is the quick-start screen for new players.</p>
           <ul>
-            <li><strong>Find the shop:</strong> F foods come from Frank. G foods come from Gus.</li>
-            <li><strong>Pick up:</strong> move to the right shop and press Pick Up.</li>
-            <li><strong>Deliver:</strong> use the C-landmark address in the food box, then press Deliver.</li>
-            <li><strong>Stay fresh:</strong> freshness drops right away. Deliver before it spoils to score points.</li>
-            <li><strong>Game over:</strong> spoiled food means you’re fired.</li>
+            <li>Read the goal of the game.</li>
+            <li>Check which buttons actually matter.</li>
+            <li>Tap START any time you need help again.</li>
           </ul>
+          <p>Each game should replace this with short, concrete instructions.</p>
         `
       }
     ];
@@ -1025,7 +1210,7 @@
         gameOverBox.style.display !== "block"
       ) {
         running = true;
-        loop();
+        scheduleGameLoop();
       }
 
       shellMenuWasRunning = false;
@@ -1080,10 +1265,10 @@
     }
 
     /*
-      DEFAULT MOBILE EMULATOR CONTROLS
-      Keep the template's full controller visible by default. Some games may only
-      need one joystick/button, but do that inside the individual game module with
-      MobileArcadeShell.configureControls({...}) instead of changing the template.
+      DEFAULT MOBILE CONTROLS
+      The template includes the full control inventory, but the layout now reflows.
+      Individual games should hide anything they do not use with
+      MobileArcadeShell.configureControls({...}) rather than resizing the game world.
 
       Example future game-specific override:
       MobileArcadeShell.configureControls({
@@ -1126,12 +1311,21 @@
         }
       };
 
-      const visibleFaceButtons = new Set((config.faceButtons || []).map(action => String(action).toLowerCase()));
-      const visibleSystemButtons = new Set((config.systemButtons || []).map(action => String(action).toLowerCase()));
+      const showDpad = config.showDpad !== false;
+      const showLeftJoystick = config.showLeftJoystick !== false;
+      const showRightJoystick = config.showRightJoystick === true;
+      const visibleFaceButtons = new Set(
+        (config.faceButtons || []).map(action => String(action).toLowerCase())
+      );
+      const visibleSystemButtons = new Set(
+        (config.systemButtons || []).map(action => String(action).toLowerCase())
+      );
 
-      setVisible(dpad, config.showDpad !== false);
-      setVisible(leftJoystickPad, config.showLeftJoystick !== false);
-      setVisible(rightJoystickPad, config.showRightJoystick === true);
+      setVisible(dpad, showDpad);
+      setVisible(leftJoystickPad, showLeftJoystick);
+      setVisible(rightJoystickPad, showRightJoystick);
+      setVisible(faceButtons, visibleFaceButtons.size > 0);
+      setVisible(systemButtons, visibleSystemButtons.size > 0);
 
       const faceButtonMap = {
         a: document.getElementById("buttonA"),
@@ -1148,9 +1342,7 @@
         button.classList.toggle("singleAction", isVisible && visibleFaceButtons.size === 1);
       });
 
-      if (faceButtons) {
-        faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
-      }
+      faceButtons.classList.toggle("singleFace", visibleFaceButtons.size === 1);
 
       const systemButtonMap = {
         select: document.getElementById("selectButton"),
@@ -1164,13 +1356,18 @@
         button.textContent = config.labels[action] || action.toUpperCase();
       });
 
-      if (systemButtons) {
-        systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
-      }
+      systemButtons.classList.toggle("singleSystem", visibleSystemButtons.size === 1);
+
+      // Empty rows disappear entirely. Remaining rows automatically redistribute
+      // themselves vertically, so game-specific control sets stay centered.
+      setVisible(primaryControlsRow, showDpad || visibleFaceButtons.size > 0);
+      setVisible(stickControlsRow, showLeftJoystick || showRightJoystick);
+      setVisible(systemControlsRow, visibleSystemButtons.size > 0);
 
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
     }
+
 
     function saveCurrentScoreForSelectedPlayer() {
       if (!selectedPlayer) return;
@@ -1611,13 +1808,17 @@
 
       const centerX = stick.pad.offsetWidth / 2;
       const centerY = stick.pad.offsetHeight / 2;
+      const rawDx = point.x - centerX;
+      const rawDy = point.y - centerY;
+      const rawDistance = Math.hypot(rawDx, rawDy);
+      const limitedDistance = Math.min(stick.maxDistance, rawDistance);
+      const directionX = rawDistance > 0 ? rawDx / rawDistance : 0;
+      const directionY = rawDistance > 0 ? rawDy / rawDistance : 0;
+      const dx = directionX * limitedDistance;
+      const dy = directionY * limitedDistance;
 
-      const limitedX = clamp(point.x, centerX - stick.maxDistance, centerX + stick.maxDistance);
-      const limitedY = clamp(point.y, centerY - stick.maxDistance, centerY + stick.maxDistance);
-
-      const dx = limitedX - centerX;
-      const dy = limitedY - centerY;
-
+      // Normalized analog values in the range -1 through 1.
+      // Game modules can read MobileArcadeShell.sticks.left/right continuously.
       stick.x = dx / stick.maxDistance;
       stick.y = dy / stick.maxDistance;
 
@@ -1671,44 +1872,18 @@
     bindJoystick(sticks.left);
     bindJoystick(sticks.right);
 
-    const HELD_MOVE_START_MS = 210;
-    const HELD_MOVE_REPEAT_MS = 72;
-    const heldMoveButtons = new Map();
-
     function pressButton(button) {
       button.classList.add("pressed");
       setTimeout(() => button.classList.remove("pressed"), 120);
     }
 
-    function startHeldMoveButton(button, action) {
-      if (heldMoveButtons.has(button)) return;
-
-      button.classList.add("pressed");
-      handleInput(action);
-
-      const holdData = {
-        timeoutId: null,
-        intervalId: null
-      };
-
-      holdData.timeoutId = setTimeout(() => {
-        holdData.intervalId = setInterval(() => {
-          if (!running || shellMenu.classList.contains("open")) {
-            stopHeldMoveButton(button);
-            return;
-          }
-
-          handleInput(action);
-        }, HELD_MOVE_REPEAT_MS);
-      }, HELD_MOVE_START_MS);
-
-      heldMoveButtons.set(button, holdData);
-    }
+    const heldMoveButtons = new Map();
+    const HELD_MOVE_START_MS = 260;
+    const HELD_MOVE_REPEAT_MS = 85;
 
     function stopHeldMoveButton(button) {
       const holdData = heldMoveButtons.get(button);
       if (!holdData) return;
-
       clearTimeout(holdData.timeoutId);
       clearInterval(holdData.intervalId);
       heldMoveButtons.delete(button);
@@ -1719,6 +1894,26 @@
       Array.from(heldMoveButtons.keys()).forEach(stopHeldMoveButton);
     }
 
+    function startHeldMoveButton(button, action) {
+      if (heldMoveButtons.has(button)) return;
+
+      button.classList.add("pressed");
+      handleInput(action);
+
+      const holdData = { timeoutId: null, intervalId: null };
+      holdData.timeoutId = setTimeout(() => {
+        holdData.intervalId = setInterval(() => {
+          if (!running || shellMenu.classList.contains("open")) {
+            stopHeldMoveButton(button);
+            return;
+          }
+          handleInput(action);
+        }, HELD_MOVE_REPEAT_MS);
+      }, HELD_MOVE_START_MS);
+
+      heldMoveButtons.set(button, holdData);
+    }
+
     function bindButton(button) {
       const action = button.dataset.action;
       if (!action) return;
@@ -1727,10 +1922,7 @@
         event.preventDefault();
 
         if (action === "up" || action === "down") {
-          try {
-            button.setPointerCapture(event.pointerId);
-          } catch (err) {}
-
+          try { button.setPointerCapture(event.pointerId); } catch (err) {}
           startHeldMoveButton(button, action);
           return;
         }
@@ -1743,13 +1935,11 @@
         button.addEventListener(eventName, event => {
           if (action !== "up" && action !== "down") return;
           event.preventDefault();
-
           try {
             if (button.hasPointerCapture(event.pointerId)) {
               button.releasePointerCapture(event.pointerId);
             }
           } catch (err) {}
-
           stopHeldMoveButton(button);
         });
       });
@@ -1765,31 +1955,60 @@
       score = 0;
       running = true;
 
+      playerNameEl.textContent = selectedPlayer || "Guest";
       scoreEl.textContent = score;
       bestScoreEl.textContent = players[selectedPlayer]?.best || 0;
       gameOverBox.style.display = "none";
 
       setMessage("READY");
+      scaleGameCanvasBackingStore();
+      resetGameCanvasTransform();
       gameInit();
-
-      loop();
+      scheduleGameLoop();
     }
 
     function stopGame() {
       running = false;
+      stopAllHeldMoveButtons();
 
       if (loopId) {
         cancelAnimationFrame(loopId);
         loopId = null;
       }
 
+      lastFrameTime = 0;
+      gameAccumulator = 0;
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
       gameStop();
     }
 
-    function loop() {
+    function scheduleGameLoop() {
       if (!running) return;
 
-      gameUpdate();
+      if (loopId) {
+        cancelAnimationFrame(loopId);
+      }
+
+      lastFrameTime = performance.now();
+      gameAccumulator = 0;
+      loopId = requestAnimationFrame(loop);
+    }
+
+    function loop(timestamp) {
+      if (!running) return;
+
+      const now = Number.isFinite(timestamp) ? timestamp : performance.now();
+      const elapsed = Math.min(100, Math.max(0, now - lastFrameTime));
+      lastFrameTime = now;
+      gameAccumulator += elapsed;
+
+      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+        gameUpdate();
+        gameAccumulator -= FIXED_GAME_STEP_MS;
+      }
+
+      resetGameCanvasTransform();
       gameDraw();
 
       loopId = requestAnimationFrame(loop);
@@ -1828,6 +2047,110 @@
 
       gameInput(action);
     }
+
+    function canvasPointFromClient(clientX, clientY, originalEvent) {
+      const rect = canvas.getBoundingClientRect();
+
+      return {
+        x: (clientX - rect.left) * (GAME_CANVAS_LOGICAL_WIDTH / rect.width),
+        y: (clientY - rect.top) * (GAME_CANVAS_LOGICAL_HEIGHT / rect.height),
+        originalEvent
+      };
+    }
+
+    let activeCanvasPointerId = null;
+
+    canvas.addEventListener("pointerdown", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+
+      event.preventDefault();
+      activeCanvasPointerId = event.pointerId;
+
+      try {
+        canvas.setPointerCapture(event.pointerId);
+      } catch (err) {}
+
+      if (typeof gamePointer === "function") {
+        gamePointer(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+    });
+
+    canvas.addEventListener("pointermove", event => {
+      if (
+        !running ||
+        activeCanvasPointerId === null ||
+        event.pointerId !== activeCanvasPointerId
+      ) return;
+
+      event.preventDefault();
+
+      if (typeof gamePointerMove === "function") {
+        gamePointerMove(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+    });
+
+    function finishCanvasPointer(event) {
+      if (
+        activeCanvasPointerId === null ||
+        event.pointerId !== activeCanvasPointerId
+      ) return;
+
+      event.preventDefault();
+
+      if (typeof gamePointerUp === "function") {
+        gamePointerUp(canvasPointFromClient(event.clientX, event.clientY, event));
+      }
+
+      try {
+        if (canvas.hasPointerCapture(event.pointerId)) {
+          canvas.releasePointerCapture(event.pointerId);
+        }
+      } catch (err) {}
+
+      activeCanvasPointerId = null;
+    }
+
+    canvas.addEventListener("pointerup", finishCanvasPointer);
+    canvas.addEventListener("pointercancel", finishCanvasPointer);
+
+    document.addEventListener("keydown", event => {
+      const tagName = event.target?.tagName;
+      if (tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT") return;
+      if (shellMenu.classList.contains("open")) return;
+      if (gameScreen.style.display !== "block") return;
+
+      const key = event.key.toLowerCase();
+
+      if (event.key === "ArrowUp" || key === "w") {
+        event.preventDefault();
+        handleInput("up");
+      }
+
+      if (event.key === "ArrowDown" || key === "s") {
+        event.preventDefault();
+        handleInput("down");
+      }
+
+      if (event.key === "ArrowLeft" || key === "a") {
+        event.preventDefault();
+        handleInput("left");
+      }
+
+      if (event.key === "ArrowRight" || key === "d") {
+        event.preventDefault();
+        handleInput("right");
+      }
+
+      if (key === " " || key === "enter") {
+        event.preventDefault();
+        handleInput("a");
+      }
+
+      if (key === "m") {
+        event.preventDefault();
+        openShellMenu("instructions");
+      }
+    });
 
     function getAudio() {
       if (!audioCtx) {
@@ -1868,26 +2191,69 @@
       setTimeout(() => beep(523, 0.07, "triangle", 0.055), 55);
     }
 
-    function soundDeliver() {
+function soundDeliver() {
       [523, 659, 784, 1046].forEach((n, i) => {
         setTimeout(() => beep(n, 0.09, "triangle", 0.055), i * 65);
       });
     }
 
-    function soundWrong() {
+function soundWrong() {
       beep(196, 0.08, "square", 0.05);
       setTimeout(() => beep(155, 0.11, "square", 0.04), 75);
     }
 
-    function soundFired() {
+function soundFired() {
       [220, 175, 139, 104].forEach((n, i) => {
         setTimeout(() => beep(n, 0.18, "sawtooth", 0.045), i * 115);
       });
     }
 
     function soundCorrect() { soundPickup(); }
+
     function soundWin() { soundDeliver(); }
+
     function soundLose() { soundFired(); }
+
+    /*
+      COMPATIBLE SHELL API
+      MobileArcadeShell is the native mobile name.
+      ArcadeShell is an alias so desktop game-module code can be reused without
+      renaming its shell calls.
+    */
+    const mobileShellApi = {
+      root: appStage,
+      canvas,
+      ctx,
+      questionBox,
+      gameWidth: GAME_CANVAS_LOGICAL_WIDTH,
+      gameHeight: GAME_CANVAS_LOGICAL_HEIGHT,
+      getCanvasSize: getGameCanvasSize,
+      scaleGameCanvasBackingStore,
+      resetGameCanvasTransform,
+      sticks,
+      setScore,
+      addScore,
+      setMessage,
+      endGame,
+      soundCorrect,
+      soundWin,
+      soundLose,
+      getAudio,
+      savePlayers,
+      loadPlayers,
+      openMenu: openShellMenu,
+      closeMenu: closeShellMenu,
+      exitToPlayerMenu,
+      returnToPlayerMenu: exitToPlayerMenu,
+      saveCurrentScoreForSelectedPlayer,
+      registerMenuTab: registerShellMenuTab,
+      updateMenuTab: updateShellMenuTab,
+      configureControls: configureMobileControls,
+      setFirstTimeHelpVersion
+    };
+
+    window.MobileArcadeShell = mobileShellApi;
+    window.ArcadeShell = mobileShellApi;
 
     /*
       GAME MODULE
@@ -2126,16 +2492,16 @@
     }
 
     function getMapLayout() {
-      return {
-        staffLeft: 86,
-        staffRight: 286,
-        yTop: 32,
-        yBottom: 205,
-        freshnessX: 334,
-        shopX: 44,
-        courierX: 197
-      };
-    }
+    return {
+      staffLeft: 150,
+      staffRight: 570,
+      yTop: 76,
+      yBottom: 470,
+      freshnessX: 636,
+      shopX: 76,
+      courierX: 360
+    };
+  }
 
     function noteY(note, layout) {
       const index = noteIndex(note);
@@ -2173,103 +2539,103 @@
     }
 
     function drawStaffLines(layout) {
-      const trebleLines = ["E4", "G4", "B4", "D5", "F5"];
-      const bassLines = ["G2", "B2", "D3", "F3", "A3"];
+    const trebleLines = ["E4", "G4", "B4", "D5", "F5"];
+    const bassLines = ["G2", "B2", "D3", "F3", "A3"];
 
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 1.7;
-      ctx.lineCap = "round";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
 
-      [trebleLines, bassLines].forEach(lines => {
-        lines.forEach(note => {
-          const y = noteY(note, layout);
-          ctx.beginPath();
-          ctx.moveTo(layout.staffLeft, y);
-          ctx.lineTo(layout.staffRight, y);
-          ctx.stroke();
-        });
-      });
-
-      ["C2", "E2", "C4", "A5", "C6"].forEach(note => {
+    [trebleLines, bassLines].forEach(lines => {
+      lines.forEach(note => {
         const y = noteY(note, layout);
-        ctx.strokeStyle = "#111827";
-        ctx.lineWidth = 1.7;
         ctx.beginPath();
-        ctx.moveTo(layout.courierX - 18, y);
-        ctx.lineTo(layout.courierX + 18, y);
+        ctx.moveTo(layout.staffLeft, y);
+        ctx.lineTo(layout.staffRight, y);
         ctx.stroke();
       });
-    }
+    });
+
+    ["C2", "E2", "C4", "A5", "C6"].forEach(note => {
+      const y = noteY(note, layout);
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(layout.courierX - 36, y);
+      ctx.lineTo(layout.courierX + 36, y);
+      ctx.stroke();
+    });
+  }
 
     function drawCLandmarks(layout) {
-      // Intentionally empty: players should know the C landmarks without visual labels.
-    }
+    // Intentionally empty: players should know the C landmarks without visual labels.
+  }
 
     function drawShopMarker(shop, layout) {
-      const y = noteY(shop.note, layout);
-      const bodyW = 72;
-      const bodyH = 18;
-      const roofH = 12;
-      const x = layout.shopX - bodyW / 2;
-      const bodyTop = y - bodyH / 2;
-      const roofTop = bodyTop - roofH;
+    const y = noteY(shop.note, layout);
+    const bodyW = 132;
+    const bodyH = 31;
+    const roofH = 18;
+    const x = layout.shopX - bodyW / 2;
+    const bodyTop = y - bodyH / 2;
+    const roofTop = bodyTop - roofH;
 
-      ctx.fillStyle = "#ffffff";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 1.15;
-      ctx.beginPath();
-      ctx.moveTo(x, bodyTop);
-      ctx.lineTo(x + bodyW * 0.16, roofTop);
-      ctx.lineTo(x + bodyW * 0.84, roofTop);
-      ctx.lineTo(x + bodyW, bodyTop);
-      ctx.lineTo(x + bodyW, bodyTop + bodyH);
-      ctx.lineTo(x, bodyTop + bodyH);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x, bodyTop);
+    ctx.lineTo(x + bodyW * 0.16, roofTop);
+    ctx.lineTo(x + bodyW * 0.84, roofTop);
+    ctx.lineTo(x + bodyW, bodyTop);
+    ctx.lineTo(x + bodyW, bodyTop + bodyH);
+    ctx.lineTo(x, bodyTop + bodyH);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
 
-      ctx.fillStyle = "#2563eb";
-      ctx.fillRect(x + 5, y - 1.5, bodyW - 10, 3);
+    ctx.fillStyle = "#2563eb";
+    ctx.fillRect(x + 10, y - 2.5, bodyW - 20, 5);
 
-      ctx.fillStyle = "#111827";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "bold 8px Arial, sans-serif";
-      ctx.fillText(shop.title, x + bodyW / 2, roofTop + roofH * 0.78);
-    }
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 15px Arial, sans-serif";
+    ctx.fillText(shop.title, x + bodyW / 2, roofTop + roofH * 0.58);
+  }
 
     function drawCourier(layout) {
-      const y = noteY(currentCourierNote(), layout);
-      const x = layout.courierX;
-      const carrying = deliveryPhase === "carrying";
+    const y = noteY(currentCourierNote(), layout);
+    const x = layout.courierX;
+    const carrying = deliveryPhase === "carrying";
 
-      if (carrying && currentOrder) {
-        drawFoodIcon(currentOrder.item, x + 16, y - 6, 0.18);
-      }
-
-      fillRoundedRect(x - 14, y - 7, 28, 14, 5.5, carrying ? "#dbeafe" : "#dff3ff");
-      strokeRoundedRect(x - 14, y - 7, 28, 14, 5.5, "#111827", 1.1);
-
-      fillRoundedRect(x - 4, y - 12, 10, 7, 3, "#bfdbfe");
-      strokeRoundedRect(x - 4, y - 12, 10, 7, 3, "#111827", 0.9);
-
-      ctx.fillStyle = "#fef3c7";
-      ctx.beginPath();
-      ctx.arc(x + 14, y - 1, 2.2, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#111827";
-      ctx.beginPath();
-      ctx.arc(x - 8, y + 8, 3, 0, Math.PI * 2);
-      ctx.arc(x + 8, y + 8, 3, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#2563eb";
-      ctx.font = "bold 6px Arial, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText("LD", x - 1, y + 1);
+    if (carrying && currentOrder) {
+      drawFoodIcon(currentOrder.item, x + 28, y - 9, 0.34);
     }
+
+    fillRoundedRect(x - 24, y - 11, 48, 22, 8, carrying ? "#dbeafe" : "#dff3ff");
+    strokeRoundedRect(x - 24, y - 11, 48, 22, 8, "#111827", 2);
+
+    fillRoundedRect(x - 7, y - 19, 18, 12, 5, "#bfdbfe");
+    strokeRoundedRect(x - 7, y - 19, 18, 12, 5, "#111827", 1.5);
+
+    ctx.fillStyle = "#fef3c7";
+    ctx.beginPath();
+    ctx.arc(x + 24, y - 2, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#111827";
+    ctx.beginPath();
+    ctx.arc(x - 14, y + 13, 5, 0, Math.PI * 2);
+    ctx.arc(x + 14, y + 13, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#2563eb";
+    ctx.font = "bold 9px Arial, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("LD", x - 1, y + 1);
+  }
 
     const CLEF_PATHS = {
       treble: `M314 801Q300 854 291.0 906.0Q282 958 282 1012Q282 1059 288.5 1100.5Q295 1142 307 1177Q320 1217 341.0 1252.5Q362 1288 385.5 1311.0Q409 1334 427 1334Q451 1334 493 1249Q514 1206 524.0 1156.0Q534 1106 534 1049Q534 978 515.0 907.5Q496 837 459.5 775.0Q423 713 372 666L407 498Q422 500 432.0 501.0Q442 502 447 502Q508 502 556.0 467.5Q604 433 632.5 377.0Q661 321 661 254Q661 177 621.5 115.5Q582 54 503 25Q508 8 532 -117Q538 -147 541.0 -164.5Q544 -182 545.0 -195.0Q546 -208 546 -225Q546 -275 521.5 -314.5Q497 -354 455.5 -376.0Q414 -398 363 -398Q311 -398 271.0 -378.5Q231 -359 208.0 -324.5Q185 -290 185 -245Q185 -197 211.5 -165.0Q238 -133 287 -133Q329 -133 355.5 -163.5Q382 -194 382 -236Q382 -272 357.0 -299.0Q332 -326 292 -326H282Q308 -365 364 -365Q433 -365 472.0 -320.0Q511 -275 511 -205Q511 -188 507.0 -159.5Q503 -131 493 -91Q483 -51 477.5 -25.0Q472 1 470 12Q436 2 390 2Q304 2 222 52Q142 102 96.0 184.0Q50 266 50 361Q50 451 91 530Q132 609 192.5 675.0Q253 741 314 801ZM341 826Q364 838 390.0 870.5Q416 903 440.0 945.0Q464 987 479.0 1029.5Q494 1072 494 1106Q494 1142 483.0 1163.0Q472 1184 445 1184Q421 1184 398.5 1162.0Q376 1140 358.5 1103.5Q341 1067 331.0 1022.0Q321 977 321 930Q321 898 327.5 872.0Q334 846 341 826ZM398 379Q371 373 347.0 353.5Q323 334 308.5 306.5Q294 279 294 248Q294 223 307.0 196.5Q320 170 339 154Q352 142 365 136Q380 129 380 123Q380 120 370 117Q332 126 301.5 151.0Q271 176 253.5 211.5Q236 247 236 287Q236 330 253.5 370.0Q271 410 302.5 442.0Q334 474 374 490L345 641Q229 547 174.5 456.5Q120 366 120 277Q120 212 154.0 156.0Q188 100 247.0 65.5Q306 31 380 31Q400 31 420.5 35.0Q441 39 464 45ZM495 55Q593 97 593 227Q593 270 571.0 305.5Q549 341 512.0 362.0Q475 383 429 383Z`,
@@ -2287,460 +2653,459 @@
     };
 
     const CLEF_CONFIG = {
-      treble: { anchorNote: "G4", x: 112, yOffset: -13, scale: 0.0500 },
-      bass: { anchorNote: "F3", x: 126, yOffset: 0, scale: 0.0500 }
+      treble: { anchorNote: "G4", x: 215, yOffset: -28, scale: 0.1120 },
+      bass: { anchorNote: "F3", x: 250, yOffset: 1, scale: 0.1160 }
     };
 
     function drawPathClef(path, config, glyphAnchor, layout) {
-      ctx.save();
-      ctx.translate(config.x, noteY(config.anchorNote, layout) + config.yOffset);
-      ctx.scale(config.scale, -config.scale);
-      ctx.translate(-glyphAnchor.x, -glyphAnchor.y);
-      ctx.fillStyle = "#111827";
-      ctx.fill(path);
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.translate(config.x, noteY(config.anchorNote, layout) + config.yOffset);
+    ctx.scale(config.scale, -config.scale);
+    ctx.translate(-glyphAnchor.x, -glyphAnchor.y);
+    ctx.fillStyle = "#111827";
+    ctx.fill(path);
+    ctx.restore();
+  }
 
     function drawClefs(layout) {
-      drawPathClef(CLEF_PATH_OBJECTS.treble, CLEF_CONFIG.treble, CLEF_GLYPH_ANCHORS.treble, layout);
-      drawPathClef(CLEF_PATH_OBJECTS.bass, CLEF_CONFIG.bass, CLEF_GLYPH_ANCHORS.bass, layout);
-    }
+    drawPathClef(CLEF_PATH_OBJECTS.treble, CLEF_CONFIG.treble, CLEF_GLYPH_ANCHORS.treble, layout);
+    drawPathClef(CLEF_PATH_OBJECTS.bass, CLEF_CONFIG.bass, CLEF_GLYPH_ANCHORS.bass, layout);
+  }
 
     function drawCenteredHighlightedWord(text, centerX, y, font, highlightColor, restColor) {
-      const cleanText = String(text || "").toUpperCase();
-      const first = cleanText.slice(0, 1);
-      const rest = cleanText.slice(1);
+    const cleanText = String(text || "").toUpperCase();
+    const first = cleanText.slice(0, 1);
+    const rest = cleanText.slice(1);
 
-      ctx.font = font;
-      const firstW = ctx.measureText(first).width;
-      const restW = ctx.measureText(rest).width;
-      const totalW = firstW + restW;
-      let x = centerX - totalW / 2;
+    ctx.font = font;
+    const firstW = ctx.measureText(first).width;
+    const restW = ctx.measureText(rest).width;
+    const totalW = firstW + restW;
+    let x = centerX - totalW / 2;
 
-      ctx.textAlign = "left";
-      ctx.textBaseline = "middle";
-      ctx.fillStyle = highlightColor;
-      ctx.fillText(first, x, y);
-      x += firstW;
-      ctx.fillStyle = restColor;
-      ctx.fillText(rest, x, y);
-    }
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = highlightColor;
+    ctx.fillText(first, x, y);
+    x += firstW;
+    ctx.fillStyle = restColor;
+    ctx.fillText(rest, x, y);
+  }
 
     function drawFoodIcon(item, x, y, scale = 1) {
-      const key = String(item || "").toLowerCase().replace(/[^a-z]/g, "");
+    const key = String(item || "").toLowerCase().replace(/[^a-z]/g, "");
 
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.scale(scale, scale);
-      ctx.lineWidth = 1.15;
-      ctx.strokeStyle = "#111827";
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#111827";
 
-      switch (key) {
-        case "grapes":
-          ctx.fillStyle = "#8b5cf6";
-          [[0, -9], [-8, -1], [8, -1], [-4, 8], [4, 8], [0, 16]].forEach(([cx, cy]) => {
-            ctx.beginPath();
-            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          });
-          ctx.fillStyle = "#22c55e";
+    switch (key) {
+      case "grapes":
+        ctx.fillStyle = "#8b5cf6";
+        [[0, -9], [-8, -1], [8, -1], [-4, 8], [4, 8], [0, 16]].forEach(([cx, cy]) => {
           ctx.beginPath();
-          ctx.ellipse(7, -18, 9, 5, -0.4, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 6, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
-          break;
+        });
+        ctx.fillStyle = "#22c55e";
+        ctx.beginPath();
+        ctx.ellipse(7, -18, 9, 5, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        break;
 
-        case "gumbo":
-          ctx.fillStyle = "#f97316";
+      case "gumbo":
+        ctx.fillStyle = "#f97316";
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 20, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(-20, -2, 40, 9);
+        ctx.strokeRect(-20, -2, 40, 9);
+        ctx.strokeStyle = "#92400e";
+        ctx.beginPath();
+        ctx.moveTo(10, -8);
+        ctx.lineTo(24, -18);
+        ctx.stroke();
+        ctx.strokeStyle = "#111827";
+        break;
+
+      case "granola":
+        fillRoundedRect(-19, -11, 38, 22, 5, "#d6a15f");
+        strokeRoundedRect(-19, -11, 38, 22, 5, "#111827", 2);
+        ctx.fillStyle = "#7c2d12";
+        [[-10, -4], [3, -5], [10, 4], [-8, 7], [0, 3]].forEach(([cx, cy]) => {
           ctx.beginPath();
-          ctx.ellipse(0, 5, 20, 10, 0, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+
+      case "gnocchi":
+        ctx.fillStyle = "#fef3c7";
+        [-13, 0, 13].forEach(cx => {
+          ctx.beginPath();
+          ctx.ellipse(cx, 0, 10, 7, -0.2, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
-          ctx.fillStyle = "#ffffff";
-          ctx.fillRect(-20, -2, 40, 9);
-          ctx.strokeRect(-20, -2, 40, 9);
-          ctx.strokeStyle = "#92400e";
           ctx.beginPath();
-          ctx.moveTo(10, -8);
-          ctx.lineTo(24, -18);
+          ctx.moveTo(cx - 5, -1);
+          ctx.lineTo(cx + 5, 2);
           ctx.stroke();
-          ctx.strokeStyle = "#111827";
-          break;
+        });
+        break;
 
-        case "granola":
-          fillRoundedRect(-19, -11, 38, 22, 5, "#d6a15f");
-          strokeRoundedRect(-19, -11, 38, 22, 5, "#111827", 1.15);
-          ctx.fillStyle = "#7c2d12";
-          [[-10, -4], [3, -5], [10, 4], [-8, 7], [0, 3]].forEach(([cx, cy]) => {
-            ctx.beginPath();
-            ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
-            ctx.fill();
-          });
-          break;
+      case "gelato":
+        ctx.fillStyle = "#f9a8d4";
+        ctx.beginPath();
+        ctx.arc(0, -9, 14, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#d6a15f";
+        ctx.beginPath();
+        ctx.moveTo(-13, 5);
+        ctx.lineTo(13, 5);
+        ctx.lineTo(0, 25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
 
-        case "gnocchi":
-          ctx.fillStyle = "#fef3c7";
-          [-13, 0, 13].forEach(cx => {
-            ctx.beginPath();
-            ctx.ellipse(cx, 0, 10, 7, -0.2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(cx - 5, -1);
-            ctx.lineTo(cx + 5, 2);
-            ctx.stroke();
-          });
-          break;
-
-        case "gelato":
-          ctx.fillStyle = "#f9a8d4";
+      case "guac":
+        ctx.fillStyle = "#c08457";
+        ctx.beginPath();
+        ctx.moveTo(-19, 3);
+        ctx.quadraticCurveTo(0, 19, 19, 3);
+        ctx.lineTo(15, 13);
+        ctx.quadraticCurveTo(0, 24, -15, 13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#4ade80";
+        ctx.beginPath();
+        ctx.ellipse(0, 3, 14, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#166534";
+        [[-5, 1], [2, -1], [8, 3]].forEach(([cx, cy]) => {
           ctx.beginPath();
-          ctx.arc(0, -9, 14, 0, Math.PI * 2);
+          ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+
+      case "garlic":
+        ctx.fillStyle = "#fef3c7";
+        [-8, 0, 8].forEach(cx => {
+          ctx.beginPath();
+          ctx.ellipse(cx, 0, 8, 14, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
-          ctx.fillStyle = "#d6a15f";
+        });
+        ctx.fillStyle = "#22c55e";
+        ctx.fillRect(-2, -23, 4, 10);
+        break;
+
+      case "gyoza":
+        ctx.fillStyle = "#fde68a";
+        ctx.beginPath();
+        ctx.ellipse(0, 3, 21, 11, 0, Math.PI, 0);
+        ctx.lineTo(21, 3);
+        ctx.quadraticCurveTo(0, 18, -21, 3);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = "rgba(17,24,39,0.45)";
+        [-10, -3, 4, 11].forEach(cx => {
           ctx.beginPath();
-          ctx.moveTo(-13, 5);
-          ctx.lineTo(13, 5);
-          ctx.lineTo(0, 25);
+          ctx.moveTo(cx, 1);
+          ctx.lineTo(cx + 4, 10);
+          ctx.stroke();
+        });
+        ctx.strokeStyle = "#111827";
+        break;
+
+      case "greens":
+        ctx.fillStyle = "#4ade80";
+        [[-12, -3, -0.6], [-4, -11, 0.2], [6, -9, -0.25], [13, -1, 0.55], [0, 2, 0.1]].forEach(([cx, cy, rot]) => {
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, 8, 4.6, rot, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        });
+        ctx.strokeStyle = "#166534";
+        ctx.beginPath();
+        ctx.moveTo(-15, 12);
+        ctx.lineTo(15, 12);
+        ctx.stroke();
+        ctx.strokeStyle = "#111827";
+        break;
+
+      case "fries":
+        ctx.fillStyle = "#facc15";
+        [-11, -4, 3, 10].forEach((fx, n) => {
+          ctx.fillRect(fx, -21 + (n % 2) * 3, 5, 25);
+          ctx.strokeRect(fx, -21 + (n % 2) * 3, 5, 25);
+        });
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.moveTo(-18, -2);
+        ctx.lineTo(18, -2);
+        ctx.lineTo(13, 21);
+        ctx.lineTo(-13, 21);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        break;
+
+      case "fruit":
+        ctx.fillStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.arc(0, 2, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#22c55e";
+        ctx.beginPath();
+        ctx.ellipse(8, -15, 10, 5, -0.4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#111827";
+        ctx.fillRect(-1, -18, 3, 8);
+        break;
+
+      case "fudge":
+        fillRoundedRect(-17, -14, 34, 28, 5, "#7c2d12");
+        strokeRoundedRect(-17, -14, 34, 28, 5, "#111827", 2);
+        ctx.fillStyle = "#fed7aa";
+        ctx.fillRect(-10, -6, 20, 3);
+        ctx.fillRect(-8, 5, 16, 3);
+        break;
+
+      case "falafel":
+        ctx.fillStyle = "#b7791f";
+        [-12, 0, 12].forEach(cx => {
+          ctx.beginPath();
+          ctx.arc(cx, 0, 9, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        });
+        ctx.fillStyle = "#fef3c7";
+        [[-15, -2], [-1, 3], [10, -3]].forEach(([cx, cy]) => {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+
+      case "fish":
+        ctx.fillStyle = "#93c5fd";
+        ctx.beginPath();
+        ctx.ellipse(-3, 0, 18, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(13, 0);
+        ctx.lineTo(27, -10);
+        ctx.lineTo(27, 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#111827";
+        ctx.beginPath();
+        ctx.arc(-10, -2, 2, 0, Math.PI * 2);
+        ctx.fill();
+        break;
+
+      case "flan":
+        ctx.fillStyle = "#fcd34d";
+        ctx.beginPath();
+        ctx.moveTo(-18, -7);
+        ctx.lineTo(18, -7);
+        ctx.lineTo(13, 13);
+        ctx.lineTo(-13, 13);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#92400e";
+        ctx.fillRect(-14, -12, 28, 5);
+        break;
+
+      case "fajita":
+        ctx.fillStyle = "#fde68a";
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 21, 11, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.strokeStyle = "#ef4444";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(-12, -2);
+        ctx.lineTo(12, 4);
+        ctx.stroke();
+        ctx.strokeStyle = "#22c55e";
+        ctx.beginPath();
+        ctx.moveTo(-10, 5);
+        ctx.lineTo(10, -4);
+        ctx.stroke();
+        ctx.strokeStyle = "#111827";
+        ctx.lineWidth = 2;
+        break;
+
+      case "fritter":
+        ctx.fillStyle = "#d97706";
+        ctx.beginPath();
+        ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = "#fef3c7";
+        [[-6, -4], [5, 1], [0, 8]].forEach(([cx, cy]) => {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        break;
+
+      case "figs":
+        ctx.fillStyle = "#7c3aed";
+        [[-8, 1], [8, 1]].forEach(cx => {
+          ctx.beginPath();
+          ctx.moveTo(cx, -14);
+          ctx.quadraticCurveTo(cx + 10, -2, cx, 15);
+          ctx.quadraticCurveTo(cx - 10, -2, cx, -14);
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
-          break;
-
-        case "guac":
-          ctx.fillStyle = "#c08457";
+        });
+        ctx.fillStyle = "#f9a8d4";
+        [[-8, 1], [8, 1]].forEach(cx => {
           ctx.beginPath();
-          ctx.moveTo(-19, 3);
-          ctx.quadraticCurveTo(0, 19, 19, 3);
-          ctx.lineTo(15, 13);
-          ctx.quadraticCurveTo(0, 24, -15, 13);
-          ctx.closePath();
+          ctx.arc(cx, 2, 4.5, 0, Math.PI * 2);
           ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#4ade80";
-          ctx.beginPath();
-          ctx.ellipse(0, 3, 14, 7, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#166534";
-          [[-5, 1], [2, -1], [8, 3]].forEach(([cx, cy]) => {
-            ctx.beginPath();
-            ctx.arc(cx, cy, 2.2, 0, Math.PI * 2);
-            ctx.fill();
-          });
-          break;
+        });
+        break;
 
-        case "garlic":
-          ctx.fillStyle = "#fef3c7";
-          [-8, 0, 8].forEach(cx => {
-            ctx.beginPath();
-            ctx.ellipse(cx, 0, 8, 14, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          });
-          ctx.fillStyle = "#22c55e";
-          ctx.fillRect(-2, -23, 4, 10);
-          break;
-
-        case "gyoza":
-          ctx.fillStyle = "#fde68a";
-          ctx.beginPath();
-          ctx.ellipse(0, 3, 21, 11, 0, Math.PI, 0);
-          ctx.lineTo(21, 3);
-          ctx.quadraticCurveTo(0, 18, -21, 3);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-          ctx.strokeStyle = "rgba(17,24,39,0.45)";
-          [-10, -3, 4, 11].forEach(cx => {
-            ctx.beginPath();
-            ctx.moveTo(cx, 1);
-            ctx.lineTo(cx + 4, 10);
-            ctx.stroke();
-          });
-          ctx.strokeStyle = "#111827";
-          break;
-
-        case "greens":
-          ctx.fillStyle = "#4ade80";
-          [[-12, -3, -0.6], [-4, -11, 0.2], [6, -9, -0.25], [13, -1, 0.55], [0, 2, 0.1]].forEach(([cx, cy, rot]) => {
-            ctx.beginPath();
-            ctx.ellipse(cx, cy, 8, 4.6, rot, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          });
-          ctx.strokeStyle = "#166534";
-          ctx.beginPath();
-          ctx.moveTo(-15, 12);
-          ctx.lineTo(15, 12);
-          ctx.stroke();
-          ctx.strokeStyle = "#111827";
-          break;
-
-        case "fries":
-          ctx.fillStyle = "#facc15";
-          [-11, -4, 3, 10].forEach((fx, n) => {
-            ctx.fillRect(fx, -21 + (n % 2) * 3, 5, 25);
-            ctx.strokeRect(fx, -21 + (n % 2) * 3, 5, 25);
-          });
-          ctx.fillStyle = "#ef4444";
-          ctx.beginPath();
-          ctx.moveTo(-18, -2);
-          ctx.lineTo(18, -2);
-          ctx.lineTo(13, 21);
-          ctx.lineTo(-13, 21);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-          break;
-
-        case "fruit":
-          ctx.fillStyle = "#ef4444";
-          ctx.beginPath();
-          ctx.arc(0, 2, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#22c55e";
-          ctx.beginPath();
-          ctx.ellipse(8, -15, 10, 5, -0.4, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#111827";
-          ctx.fillRect(-1, -18, 3, 8);
-          break;
-
-        case "fudge":
-          fillRoundedRect(-17, -14, 34, 28, 5, "#7c2d12");
-          strokeRoundedRect(-17, -14, 34, 28, 5, "#111827", 1.15);
-          ctx.fillStyle = "#fed7aa";
-          ctx.fillRect(-10, -6, 20, 3);
-          ctx.fillRect(-8, 5, 16, 3);
-          break;
-
-        case "falafel":
-          ctx.fillStyle = "#b7791f";
-          [-12, 0, 12].forEach(cx => {
-            ctx.beginPath();
-            ctx.arc(cx, 0, 9, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-          });
-          ctx.fillStyle = "#fef3c7";
-          [[-15, -2], [-1, 3], [10, -3]].forEach(([cx, cy]) => {
-            ctx.beginPath();
-            ctx.arc(cx, cy, 2, 0, Math.PI * 2);
-            ctx.fill();
-          });
-          break;
-
-        case "fish":
-          ctx.fillStyle = "#93c5fd";
-          ctx.beginPath();
-          ctx.ellipse(-3, 0, 18, 10, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(13, 0);
-          ctx.lineTo(27, -10);
-          ctx.lineTo(27, 10);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#111827";
-          ctx.beginPath();
-          ctx.arc(-10, -2, 2, 0, Math.PI * 2);
-          ctx.fill();
-          break;
-
-        case "flan":
-          ctx.fillStyle = "#fcd34d";
-          ctx.beginPath();
-          ctx.moveTo(-18, -7);
-          ctx.lineTo(18, -7);
-          ctx.lineTo(13, 13);
-          ctx.lineTo(-13, 13);
-          ctx.closePath();
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#92400e";
-          ctx.fillRect(-14, -12, 28, 5);
-          break;
-
-        case "fajita":
-          ctx.fillStyle = "#fde68a";
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 21, 11, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.strokeStyle = "#ef4444";
-          ctx.lineWidth = 1.6;
-          ctx.beginPath();
-          ctx.moveTo(-12, -2);
-          ctx.lineTo(12, 4);
-          ctx.stroke();
-          ctx.strokeStyle = "#22c55e";
-          ctx.beginPath();
-          ctx.moveTo(-10, 5);
-          ctx.lineTo(10, -4);
-          ctx.stroke();
-          ctx.strokeStyle = "#111827";
-          ctx.lineWidth = 1.15;
-          break;
-
-        case "fritter":
-          ctx.fillStyle = "#d97706";
-          ctx.beginPath();
-          ctx.arc(0, 0, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-          ctx.fillStyle = "#fef3c7";
-          [[-6, -4], [5, 1], [0, 8]].forEach(([cx, cy]) => {
-            ctx.beginPath();
-            ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-            ctx.fill();
-          });
-          break;
-
-        case "figs":
-          ctx.fillStyle = "#7c3aed";
-          [[-8, 1], [8, 1]].forEach(cx => {
-            ctx.beginPath();
-            ctx.moveTo(cx, -14);
-            ctx.quadraticCurveTo(cx + 10, -2, cx, 15);
-            ctx.quadraticCurveTo(cx - 10, -2, cx, -14);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-          });
-          ctx.fillStyle = "#f9a8d4";
-          [[-8, 1], [8, 1]].forEach(cx => {
-            ctx.beginPath();
-            ctx.arc(cx, 2, 4.5, 0, Math.PI * 2);
-            ctx.fill();
-          });
-          break;
-
-        default:
-          fillRoundedRect(-16, -14, 32, 28, 6, "#e5e7eb");
-          strokeRoundedRect(-16, -14, 32, 28, 6, "#111827", 1.15);
-          ctx.fillStyle = "#111827";
-          ctx.font = "bold 18px Arial, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText("?", 0, 1);
-          break;
-      }
-
-      ctx.restore();
+      default:
+        fillRoundedRect(-16, -14, 32, 28, 6, "#e5e7eb");
+        strokeRoundedRect(-16, -14, 32, 28, 6, "#111827", 2);
+        ctx.fillStyle = "#111827";
+        ctx.font = "bold 18px Arial, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("?", 0, 1);
+        break;
     }
+
+    ctx.restore();
+  }
 
     function drawFoodPanel(layout) {
-      const panelW = 58;
-      const panelH = 46;
-      const x = layout.freshnessX - 22;
-      const y = 18;
+    const panelW = 102;
+    const panelH = 84;
+    const x = layout.freshnessX - 36;
+    const y = 68;
 
-      fillRoundedRect(x, y, panelW, panelH, 6, "rgba(255,255,255,0.88)");
-      strokeRoundedRect(x, y, panelW, panelH, 6, "#111827", 1.1);
+    fillRoundedRect(x, y, panelW, panelH, 14, "rgba(255,255,255,0.86)");
+    strokeRoundedRect(x, y, panelW, panelH, 14, "#111827", 2);
 
-      if (!currentOrder) return;
+    if (!currentOrder) return;
 
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
 
-      if (deliveryPhase === "toPickup") {
-        drawCenteredHighlightedWord(currentOrder.item, x + panelW / 2, y + 22, "bold 9px Arial, sans-serif", "#2563eb", "#111827");
-        return;
-      }
-
-      ctx.fillStyle = "#111827";
-      ctx.font = "bold 9px Arial, sans-serif";
-      ctx.fillText(currentOrder.destination.line1, x + panelW / 2, y + 18);
-      ctx.font = "bold 7px Arial, sans-serif";
-      ctx.fillText(currentOrder.destination.line2, x + panelW / 2, y + 28);
+    if (deliveryPhase === "toPickup") {
+      drawCenteredHighlightedWord(currentOrder.item, x + panelW / 2, y + 42, "bold 18px Arial, sans-serif", "#2563eb", "#111827");
+      return;
     }
+
+    ctx.fillStyle = "#111827";
+    ctx.font = "bold 14px Arial, sans-serif";
+    ctx.fillText(currentOrder.destination.line1, x + panelW / 2, y + 31);
+    ctx.font = "bold 16px Arial, sans-serif";
+    ctx.fillText(currentOrder.destination.line2, x + panelW / 2, y + 55);
+  }
 
     function drawFreshnessBar(layout) {
-      const x = layout.freshnessX;
-      const y = 78;
-      const w = 18;
-      const h = 118;
+    const x = layout.freshnessX;
+    const y = 188;
+    const w = 28;
+    const h = 242;
 
-      ctx.fillStyle = "#111827";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "bold 8px Arial, sans-serif";
-      ctx.fillText("FRESH", x + w / 2, y - 8);
-      ctx.fillText("SPOILED", x + w / 2, y + h + 8);
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 14px Arial, sans-serif";
+    ctx.fillText("FRESH", x + w / 2, y - 15);
+    ctx.fillText("SPOILED", x + w / 2, y + h + 15);
 
-      fillRoundedRect(x, y, w, h, 7, "rgba(255,255,255,0.78)");
-      strokeRoundedRect(x, y, w, h, 7, "#111827", 1.2);
+    fillRoundedRect(x, y, w, h, 12, "rgba(255,255,255,0.78)");
+    strokeRoundedRect(x, y, w, h, 12, "#111827", 2);
 
-      const fillH = h - 6;
-      const fillY = y + 3;
-      const gradient = ctx.createLinearGradient(0, fillY, 0, fillY + fillH);
-      gradient.addColorStop(0, "#6ee7b7");
-      gradient.addColorStop(1, "#fca5a5");
-      fillRoundedRect(x + 3, fillY, w - 6, fillH, 5, gradient);
+    const fillH = h - 8;
+    const fillY = y + 4;
+    const gradient = ctx.createLinearGradient(0, fillY, 0, fillY + fillH);
+    gradient.addColorStop(0, "#6ee7b7");
+    gradient.addColorStop(1, "#fca5a5");
+    fillRoundedRect(x + 4, fillY, w - 8, fillH, 8, gradient);
 
-      ctx.strokeStyle = "rgba(17,24,39,0.25)";
-      ctx.lineWidth = 1;
-      for (let i = 1; i < 4; i += 1) {
-        const tickY = y + (h / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(x + 5, tickY);
-        ctx.lineTo(x + w - 5, tickY);
-        ctx.stroke();
-      }
-
-      const markerY = fillY + (1 - freshnessPercent / 100) * fillH;
-      ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = 0.8;
+    ctx.strokeStyle = "rgba(17,24,39,0.25)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i += 1) {
+      const tickY = y + (h / 4) * i;
       ctx.beginPath();
-      ctx.arc(x + w / 2, markerY, 9, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(x + 5, tickY);
+      ctx.lineTo(x + w - 5, tickY);
       ctx.stroke();
-      ctx.restore();
-      drawFoodIcon(currentOrder ? currentOrder.item : "Fries", x + w / 2, markerY, 0.27);
     }
+
+    const markerY = fillY + (1 - freshnessPercent / 100) * fillH;
+    ctx.save();
+    ctx.fillStyle = "rgba(255,255,255,0.88)";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x + w / 2, markerY, 17, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+    drawFoodIcon(currentOrder ? currentOrder.item : "Fries", x + w / 2, markerY, 0.56);
+  }
 
     function drawMapTitle() {
-      const headerText = deliveryPhase === "fired" ? "You're Fired!" : (deliveryPhase === "toPickup" ? "PICK UP" : "DELIVER");
+    const headerText = deliveryPhase === "fired" ? "You're Fired!" : (deliveryPhase === "toPickup" ? "PICK UP" : "DELIVER");
 
-      ctx.fillStyle = "#101827";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = "bold 16px Arial, sans-serif";
-      ctx.fillText(headerText, GAME_CANVAS_LOGICAL_WIDTH / 2, 12);
-    }
+    ctx.fillStyle = "#101827";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 32px Arial, sans-serif";
+    ctx.fillText(headerText, GAME_CANVAS_LOGICAL_WIDTH / 2, 28);
+  }
 
     function gameDraw() {
-      const layout = getMapLayout();
-      scaleGameCanvasBackingStore();
+    const layout = getMapLayout();
 
-      ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
-      ctx.fillStyle = "#f7fbff";
-      ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+    ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+    ctx.fillStyle = "#f7fbff";
+    ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
 
-      const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CANVAS_LOGICAL_HEIGHT);
-      gradient.addColorStop(0, "#eef6ff");
-      gradient.addColorStop(1, "#fff7df");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+    const gradient = ctx.createLinearGradient(0, 0, 0, GAME_CANVAS_LOGICAL_HEIGHT);
+    gradient.addColorStop(0, "#eef6ff");
+    gradient.addColorStop(1, "#fff7df");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
 
-      drawMapTitle();
-      drawStaffLines(layout);
-      drawClefs(layout);
-      SHOP_MARKERS.forEach(shop => drawShopMarker(shop, layout));
-      drawFoodPanel(layout);
-      drawFreshnessBar(layout);
-      drawCourier(layout);
+    drawMapTitle();
+    drawStaffLines(layout);
+    drawClefs(layout);
+    SHOP_MARKERS.forEach(shop => drawShopMarker(shop, layout));
+    drawFoodPanel(layout);
+    drawFreshnessBar(layout);
+    drawCourier(layout);
 
-    }
+  }
 
     function updateStep6Prompt() {
       if (!currentOrder || deliveryPhase === "fired") return;
@@ -2864,47 +3229,50 @@
       resetJoystick(sticks.right);
     }
 
-    const resizeObserver = new ResizeObserver(() => {
-      scaleAppToFrame();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-      if (!running) gameDraw();
-    });
+    let resizeObserver = null;
 
-    resizeObserver.observe(appFrame);
+    if ("ResizeObserver" in window) {
+      resizeObserver = new ResizeObserver(() => {
+        scaleAppToFrame();
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
+      });
+
+      resizeObserver.observe(appFrame);
+    }
 
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
       }, 250);
     });
 
-    window.MobileArcadeShell = {
-      canvas,
-      ctx,
-      sticks,
-      setScore,
-      addScore,
-      setMessage,
-      endGame,
-      soundCorrect,
-      soundWin,
-      soundLose,
-      getAudio,
-      savePlayers,
-      loadPlayers,
-      openMenu: openShellMenu,
-      closeMenu: closeShellMenu,
-      exitToPlayerMenu,
-      saveCurrentScoreForSelectedPlayer,
-      registerMenuTab: registerShellMenuTab,
-      updateMenuTab: updateShellMenuTab,
-      configureControls: configureMobileControls,
-      setFirstTimeHelpVersion
-    };
+    function shutDownMobileArcade() {
+      try {
+        stopGame();
+      } catch (err) {}
+
+      if (audioCtx && audioCtx.state !== "closed") {
+        audioCtx.close().catch(() => {});
+      }
+
+      audioCtx = null;
+    }
+
+    window.addEventListener("pagehide", shutDownMobileArcade);
+
 
     scaleAppToFrame();
     loadPlayers();
@@ -2912,6 +3280,7 @@
     resetJoystick(sticks.right);
     configureMobileControls();
     gameInit();
+    resetGameCanvasTransform();
     gameDraw();
   </script>
 </body>
