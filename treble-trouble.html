@@ -266,7 +266,7 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
       border: 1px solid #2b2b2b;
@@ -277,7 +277,7 @@
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
       touch-action: pan-y;
       overscroll-behavior-y: auto;
@@ -290,7 +290,8 @@
       position: absolute;
       left: 34px;
       right: 34px;
-      top: 35px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -324,7 +325,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -367,10 +368,10 @@
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
-      background: linear-gradient(180deg, #303030, #181818);
+      height: 340.333px;
+      background: #242424;
       touch-action: pan-y;
       overscroll-behavior-y: auto;
       user-select: none;
@@ -521,7 +522,7 @@
       position: absolute;
       left: 22px;
       right: 22px;
-      top: 34px;
+      top: 40px;
       display: grid;
       grid-template-columns: repeat(8, 1fr);
       grid-template-rows: repeat(2, 86px);
@@ -556,7 +557,7 @@
     }
 
     #controls.letterControlMode #systemButtons {
-      top: 282px;
+      top: 268px;
     }
 
     /* START / SELECT */
@@ -604,6 +605,7 @@
       white-space: normal;
     }
 
+    #systemButtons,
     #systemButtons.singleSystem {
       width: 92px;
     }
@@ -791,7 +793,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -846,8 +848,7 @@
           </div>
 
           <div id="systemButtons">
-            <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
-            <button id="startButton" class="systemBtn" data-action="start">START</button>
+            <button id="startButton" class="systemBtn" data-action="start">MENU</button>
           </div>
         </div>
       </div>
@@ -868,8 +869,11 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
-    const GAME_CANVAS_LOGICAL_WIDTH = 390;
-    const GAME_CANVAS_LOGICAL_HEIGHT = 219;
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
     const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
 
     /*
@@ -882,7 +886,7 @@
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Score";
     const FIRST_TIME_HELP_DEFAULT_VERSION = "trebleTroubleRules_v1";
-    let firstTimeHelpVersion = FIRST_TIME_HELP_DEFAULT_VERSION;
+    let firstTimeHelpVersion = "trebleTroubleRules_v2";
 
     const appFrame = document.getElementById("appFrame");
     const appStage = document.getElementById("appStage");
@@ -906,9 +910,21 @@
     let gameCanvasPixelScale = 1;
 
     function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const stageScale = Math.max(1, appScale || 1);
-      const targetScale = Math.min(MAX_GAME_CANVAS_PIXEL_SCALE, dpr * stageScale);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
       const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
       const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
 
@@ -916,9 +932,6 @@
         canvas.width = targetWidth;
         canvas.height = targetHeight;
       }
-
-      canvas.style.width = GAME_CANVAS_LOGICAL_WIDTH + "px";
-      canvas.style.height = GAME_CANVAS_LOGICAL_HEIGHT + "px";
 
       gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
       ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
@@ -2316,100 +2329,100 @@
     }
   }
 
-    const ANIMATION_AREA_BOTTOM = 92;
-    const STAFF_LEFT = 18;
-    const STAFF_RIGHT = 374;
-    const STAFF_GAP = 12;
-    const STAFF_TOP = 129;
-    const TARGET_BARLINE_X = 92;
-    const CLEF_X = 28;
-    const NOTE_SPAWN_X = GAME_CANVAS_LOGICAL_WIDTH + STAFF_GAP * 2;
-    const NOTE_SPACING_X = GAME_CANVAS_LOGICAL_WIDTH * 0.24;
-    const NOTE_ZOOM_START_X = STAFF_RIGHT + STAFF_GAP * 2;
-    const NOTE_LANDING_X = STAFF_RIGHT;
-    const NOTE_MIN_SCALE = 0.28;
-    const NOTE_VANISH_Y = STAFF_TOP + STAFF_GAP * 2;
-    const BASE_NOTE_SPEED = GAME_CANVAS_LOGICAL_WIDTH * 0.08;
-    const NOTE_SPEED_SQUARED_RAMP = GAME_CANVAS_LOGICAL_WIDTH * GAME_CANVAS_LOGICAL_WIDTH * 0.00037;
-    const SMUFL_G_CLEF = "\uE050";
-    const SMUFL_F_CLEF = "\uE062";
-    const UNICODE_G_CLEF = "\u{1D11E}";
-    const UNICODE_F_CLEF = "\u{1D122}";
-    const CLEF_TYPE = "treble";
-    const MAX_HOUSE_SPIDERS = 10;
+  const ANIMATION_AREA_BOTTOM = 235;
+  const STAFF_LEFT = 45;
+  const STAFF_RIGHT = 690;
+  const STAFF_GAP = 22;
+  const STAFF_TOP = 320;
+  const TARGET_BARLINE_X = 170;
+  const CLEF_X = 68;
+  const NOTE_SPAWN_X = GAME_CANVAS_LOGICAL_WIDTH + STAFF_GAP * 2;
+  const NOTE_SPACING_X = GAME_CANVAS_LOGICAL_WIDTH * 0.24;
+  const NOTE_ZOOM_START_X = STAFF_RIGHT + STAFF_GAP * 2;
+  const NOTE_LANDING_X = STAFF_RIGHT;
+  const NOTE_MIN_SCALE = 0.28;
+  const NOTE_VANISH_Y = STAFF_TOP + STAFF_GAP * 2;
+  const BASE_NOTE_SPEED = GAME_CANVAS_LOGICAL_WIDTH * 0.08;
+  const NOTE_SPEED_SQUARED_RAMP = GAME_CANVAS_LOGICAL_WIDTH * GAME_CANVAS_LOGICAL_WIDTH * 0.00037;
+  const SMUFL_G_CLEF = "\uE050";
+  const SMUFL_F_CLEF = "\uE062";
+  const UNICODE_G_CLEF = "\u{1D11E}";
+  const UNICODE_F_CLEF = "\u{1D122}";
+  const CLEF_TYPE = "treble";
+  const MAX_HOUSE_SPIDERS = 10;
 
-    const NOTE_CHOICES = [
-      { letter: "C", step: -2, ledger: true },
-      { letter: "D", step: -1 },
-      { letter: "E", step: 0 },
-      { letter: "F", step: 1 },
-      { letter: "G", step: 2 },
-      { letter: "A", step: 3 },
-      { letter: "B", step: 4 },
-      { letter: "C", step: 5 },
-      { letter: "D", step: 6 },
-      { letter: "E", step: 7 },
-      { letter: "F", step: 8 },
-      { letter: "G", step: 9 }
-    ];
+  const NOTE_CHOICES = [
+    { letter: "C", step: -2, ledger: true },
+    { letter: "D", step: -1 },
+    { letter: "E", step: 0 },
+    { letter: "F", step: 1 },
+    { letter: "G", step: 2 },
+    { letter: "A", step: 3 },
+    { letter: "B", step: 4 },
+    { letter: "C", step: 5 },
+    { letter: "D", step: 6 },
+    { letter: "E", step: 7 },
+    { letter: "F", step: 8 },
+    { letter: "G", step: 9 }
+  ];
 
-    let activeNotes = [];
-    let correctNotes = 0;
-    let houseSpiders = 0;
-    let lastPitchIndex = -1;
-    let nextNoteId = 1;
-    let lastUpdateTime = 0;
-    let bravuraReady = false;
-    let squishEffects = [];
-    let scurrySpiders = [];
-    let scorePops = [];
-    let burstPieces = [];
-    let floodSpiders = [];
-    let screenFillSpiders = [];
+  let activeNotes = [];
+  let correctNotes = 0;
+  let houseSpiders = 0;
+  let lastPitchIndex = -1;
+  let nextNoteId = 1;
+  let lastUpdateTime = 0;
+  let bravuraReady = false;
+  let squishEffects = [];
+  let scurrySpiders = [];
+  let scorePops = [];
+  let burstPieces = [];
+  let floodSpiders = [];
+  let screenFillSpiders = [];
   let houseDustPuffs = [];
   let explosionDust = [];
   let healthPulseTimer = 0;
   let healthPulseIndex = -1;
   let uiEntranceTime = 0;
-    let houseHitFlash = 0;
-    let houseShake = 0;
-    let thresholdFlash = 0;
-    let difficultyPulse = 0;
-    let doorOpenTimer = 0;
-    let correctFlashTimer = 0;
-    let correctFlashX = 0;
-    let correctFlashY = 0;
-    let effectClock = 0;
-    let gameOverAnimTime = -1;
-    let gameOverOverlayShown = false;
+  let houseHitFlash = 0;
+  let houseShake = 0;
+  let thresholdFlash = 0;
+  let difficultyPulse = 0;
+  let doorOpenTimer = 0;
+  let correctFlashTimer = 0;
+  let correctFlashX = 0;
+  let correctFlashY = 0;
+  let effectClock = 0;
+  let gameOverAnimTime = -1;
+  let gameOverOverlayShown = false;
   let lossSequenceActive = false;
   let pendingLossReason = "The house is overrun!";
 
-    function requestBravuraFont() {
-      if (!document.fonts?.load) return;
-      document.fonts
-        .load(`${STAFF_GAP * 4}px "Bravura"`, SMUFL_G_CLEF + SMUFL_F_CLEF)
-        .then(loadedFonts => {
-          bravuraReady = loadedFonts.length > 0;
-          if (!running && gameScreen.style.display === "block") gameDraw();
-        })
-        .catch(() => {});
-    }
+  function requestBravuraFont() {
+    if (!document.fonts?.load) return;
+    document.fonts
+      .load(`${STAFF_GAP * 4}px "Bravura"`, SMUFL_G_CLEF + SMUFL_F_CLEF)
+      .then(loadedFonts => {
+        bravuraReady = loadedFonts.length > 0;
+        if (!running && gameScreen.style.display === "grid") gameDraw();
+      })
+      .catch(() => {});
+  }
 
-    function roundedRectPath(x, y, width, height, radius) {
-      const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
+  function roundedRectPath(x, y, width, height, radius) {
+    const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
 
   function drawCobwebCorner(x, y, radius, flipX = 1, flipY = 1) {
     ctx.save();
@@ -3805,7 +3818,7 @@
     ctx.restore();
   }
 
-    function drawFiveLineStaff(topY, gap, leftX, rightX) {
+  function drawFiveLineStaff(topY, gap, leftX, rightX) {
     ctx.save();
     ctx.strokeStyle = "#211a2c";
     ctx.lineWidth = GAME_CANVAS_LOGICAL_WIDTH < 500 ? 1.65 : 2.45;
@@ -3820,86 +3833,86 @@
     ctx.restore();
   }
 
-    
+  
 
-    
+  
 
-    function drawClef(type, x, topY, gap) {
-      const isTreble = type === "treble";
-      const fontSize = gap * 4;
-      const referenceLineY = isTreble ? topY + gap * 3 : topY + gap;
-      const smuflGlyph = isTreble ? SMUFL_G_CLEF : SMUFL_F_CLEF;
-      const unicodeGlyph = isTreble ? UNICODE_G_CLEF : UNICODE_F_CLEF;
-      ctx.save();
-      ctx.fillStyle = "#211a2c";
-      ctx.textAlign = "left";
+  function drawClef(type, x, topY, gap) {
+    const isTreble = type === "treble";
+    const fontSize = gap * 4;
+    const referenceLineY = isTreble ? topY + gap * 3 : topY + gap;
+    const smuflGlyph = isTreble ? SMUFL_G_CLEF : SMUFL_F_CLEF;
+    const unicodeGlyph = isTreble ? UNICODE_G_CLEF : UNICODE_F_CLEF;
+    ctx.save();
+    ctx.fillStyle = "#211a2c";
+    ctx.textAlign = "left";
 
-      if (bravuraReady) {
-        ctx.font = `${fontSize}px "Bravura"`;
-        ctx.textBaseline = "alphabetic";
-        ctx.fillText(smuflGlyph, x, referenceLineY);
-      } else {
-        ctx.font = `${fontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`;
-        ctx.textBaseline = "middle";
-        ctx.fillText(unicodeGlyph, x, topY + gap * 2);
-      }
-
-      ctx.restore();
+    if (bravuraReady) {
+      ctx.font = `${fontSize}px "Bravura"`;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(smuflGlyph, x, referenceLineY);
+    } else {
+      ctx.font = `${fontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`;
+      ctx.textBaseline = "middle";
+      ctx.fillText(unicodeGlyph, x, topY + gap * 2);
     }
 
-    function noteYFromStep(step) {
-      const bottomLineY = STAFF_TOP + STAFF_GAP * 4;
-      return bottomLineY - step * (STAFF_GAP / 2);
-    }
+    ctx.restore();
+  }
 
-    function geometryForPitch(pitch) {
-      const y = noteYFromStep(pitch.step);
-      return {
-        y,
-        ledgerYs: pitch.ledger ? [y] : [],
-        staffCenterY: STAFF_TOP + STAFF_GAP * 2
-      };
-    }
+  function noteYFromStep(step) {
+    const bottomLineY = STAFF_TOP + STAFF_GAP * 4;
+    return bottomLineY - step * (STAFF_GAP / 2);
+  }
 
-    function choosePitchIndex() {
-      let index = Math.floor(Math.random() * NOTE_CHOICES.length);
-      if (NOTE_CHOICES.length > 1 && index === lastPitchIndex) {
-        index = (index + 1 + Math.floor(Math.random() * (NOTE_CHOICES.length - 1))) % NOTE_CHOICES.length;
-      }
-      return index;
-    }
+  function geometryForPitch(pitch) {
+    const y = noteYFromStep(pitch.step);
+    return {
+      y,
+      ledgerYs: pitch.ledger ? [y] : [],
+      staffCenterY: STAFF_TOP + STAFF_GAP * 2
+    };
+  }
 
-    function spawnNoteAt(x) {
-      const pitchIndex = choosePitchIndex();
-      const pitch = NOTE_CHOICES[pitchIndex];
-      lastPitchIndex = pitchIndex;
-      const noteGeometry = geometryForPitch(pitch);
-      activeNotes.push({
-        id: nextNoteId++,
-        letter: pitch.letter,
-        x,
-        y: noteGeometry.y,
-        ledgerYs: noteGeometry.ledgerYs,
-        staffCenterY: noteGeometry.staffCenterY
-      });
+  function choosePitchIndex() {
+    let index = Math.floor(Math.random() * NOTE_CHOICES.length);
+    if (NOTE_CHOICES.length > 1 && index === lastPitchIndex) {
+      index = (index + 1 + Math.floor(Math.random() * (NOTE_CHOICES.length - 1))) % NOTE_CHOICES.length;
     }
+    return index;
+  }
 
-    function maintainNoteStream() {
-      if (activeNotes.length === 0) spawnNoteAt(NOTE_SPAWN_X);
-      let rightmost = activeNotes[activeNotes.length - 1];
-      while (rightmost.x <= NOTE_SPAWN_X - NOTE_SPACING_X) {
-        spawnNoteAt(rightmost.x + NOTE_SPACING_X);
-        rightmost = activeNotes[activeNotes.length - 1];
-      }
-    }
+  function spawnNoteAt(x) {
+    const pitchIndex = choosePitchIndex();
+    const pitch = NOTE_CHOICES[pitchIndex];
+    lastPitchIndex = pitchIndex;
+    const noteGeometry = geometryForPitch(pitch);
+    activeNotes.push({
+      id: nextNoteId++,
+      letter: pitch.letter,
+      x,
+      y: noteGeometry.y,
+      ledgerYs: noteGeometry.ledgerYs,
+      staffCenterY: noteGeometry.staffCenterY
+    });
+  }
 
-    function currentNoteSpeed() {
-      const n = correctNotes;
-      const baseSpeedSquared = BASE_NOTE_SPEED * BASE_NOTE_SPEED;
-      // Correct answers arrive faster as the stream speeds up. Growing speed by sqrt(n)
-      // offsets that feedback, so difficulty rises approximately linearly over play time.
-      return Math.sqrt(baseSpeedSquared + n * NOTE_SPEED_SQUARED_RAMP);
+  function maintainNoteStream() {
+    if (activeNotes.length === 0) spawnNoteAt(NOTE_SPAWN_X);
+    let rightmost = activeNotes[activeNotes.length - 1];
+    while (rightmost.x <= NOTE_SPAWN_X - NOTE_SPACING_X) {
+      spawnNoteAt(rightmost.x + NOTE_SPACING_X);
+      rightmost = activeNotes[activeNotes.length - 1];
     }
+  }
+
+  function currentNoteSpeed() {
+    const n = correctNotes;
+    const baseSpeedSquared = BASE_NOTE_SPEED * BASE_NOTE_SPEED;
+    // Correct answers arrive faster as the stream speeds up. Growing speed by sqrt(n)
+    // offsets that feedback, so difficulty rises approximately linearly over play time.
+    return Math.sqrt(baseSpeedSquared + n * NOTE_SPEED_SQUARED_RAMP);
+  }
 
   function addSpiderToHouse() {
     houseSpiders = Math.min(MAX_HOUSE_SPIDERS, houseSpiders + 1);
@@ -3908,7 +3921,7 @@
     return houseSpiders >= MAX_HOUSE_SPIDERS;
   }
 
-    function resolveFrontNote(result) {
+  function resolveFrontNote(result) {
     if (activeNotes.length === 0 || lossSequenceActive) return;
     const frontNote = activeNotes[0];
     activeNotes.shift();
@@ -3937,11 +3950,11 @@
     maintainNoteStream();
   }
 
-    function approachProgressForX(x) {
-      const approachDistance = Math.max(1, NOTE_ZOOM_START_X - NOTE_LANDING_X);
-      const rawProgress = Math.max(0, Math.min(1, (NOTE_ZOOM_START_X - x) / approachDistance));
-      return rawProgress * rawProgress * (3 - 2 * rawProgress);
-    }
+  function approachProgressForX(x) {
+    const approachDistance = Math.max(1, NOTE_ZOOM_START_X - NOTE_LANDING_X);
+    const rawProgress = Math.max(0, Math.min(1, (NOTE_ZOOM_START_X - x) / approachDistance));
+    return rawProgress * rawProgress * (3 - 2 * rawProgress);
+  }
 
   function drawStreamingNote(note) {
     const compact = GAME_CANVAS_LOGICAL_WIDTH < 500;
@@ -3984,7 +3997,7 @@
     );
   }
 
-    function gameInit() {
+  function gameInit() {
     activeNotes = [];
     correctNotes = 0;
     houseSpiders = 0;
@@ -3998,7 +4011,7 @@
     spawnNoteAt(NOTE_SPAWN_X);
   }
 
-    function gameUpdate(deltaSeconds) {
+  function gameUpdate(deltaSeconds) {
     if (lossSequenceActive) {
       updateVisualEffects(deltaSeconds);
       return;
@@ -4015,7 +4028,7 @@
     updateVisualEffects(deltaSeconds);
   }
 
-    function gameDraw() {
+  function gameDraw() {
     ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
     drawBackgroundScene();
     drawAnimationDivider();
@@ -4028,7 +4041,7 @@
     drawActiveEffects();
   }
 
-    function gameInput(action) {
+  function gameInput(action) {
     if (!running || lossSequenceActive || activeNotes.length === 0) return;
     const letter = String(action || "").toUpperCase();
     if (!/^[A-G]$/.test(letter)) return;
@@ -4039,7 +4052,11 @@
     }
   }
 
-    function gameStop() {
+  function gamePointer() {
+    /* Pointer input remains intentionally unused in this staff-reading game. */
+  }
+
+  function gameStop() {
     activeNotes = [];
     lastUpdateTime = 0;
     lossSequenceActive = false;
@@ -4047,11 +4064,15 @@
     resetVisualEffects();
   }
 
+
     const resizeObserver = new ResizeObserver(() => {
       scaleAppToFrame();
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
-      if (!running) gameDraw();
+      if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
     });
 
     resizeObserver.observe(appFrame);
@@ -4061,7 +4082,10 @@
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+        if (!running) {
+          resetGameCanvasTransform();
+          gameDraw();
+        }
       }, 250);
     });
 
