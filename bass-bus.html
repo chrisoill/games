@@ -249,7 +249,7 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
       border: 1px solid #2b2b2b;
@@ -260,7 +260,7 @@
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
       background: #f7fbff;
       image-rendering: auto;
@@ -271,7 +271,8 @@
       position: absolute;
       left: 34px;
       right: 34px;
-      top: 35px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 18px 12px;
       background: rgba(16, 24, 39, 0.93);
       border: 3px solid white;
@@ -305,7 +306,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -348,10 +349,10 @@
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
-      background: linear-gradient(180deg, #303030, #181818);
+      height: 340.333px;
+      background: #242424;
       touch-action: auto;
       user-select: none;
       -webkit-user-select: none;
@@ -501,7 +502,7 @@
       position: absolute;
       left: 22px;
       right: 22px;
-      top: 34px;
+      top: 40px;
       display: grid;
       grid-template-columns: repeat(8, 1fr);
       grid-template-rows: repeat(2, 86px);
@@ -536,7 +537,7 @@
     }
 
     #controls.letterControlMode #systemButtons {
-      top: 282px;
+      top: 268px;
     }
 
     /* START / SELECT */
@@ -584,6 +585,7 @@
       white-space: normal;
     }
 
+    #systemButtons,
     #systemButtons.singleSystem {
       width: 92px;
     }
@@ -763,7 +765,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -840,8 +842,11 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
-    const GAME_CANVAS_LOGICAL_WIDTH = 390;
-    const GAME_CANVAS_LOGICAL_HEIGHT = 219;
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
     const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
 
     /*
@@ -878,9 +883,21 @@
     let gameCanvasPixelScale = 1;
 
     function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const stageScale = Math.max(1, appScale || 1);
-      const targetScale = Math.min(MAX_GAME_CANVAS_PIXEL_SCALE, dpr * stageScale);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
       const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
       const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
 
@@ -888,9 +905,6 @@
         canvas.width = targetWidth;
         canvas.height = targetHeight;
       }
-
-      canvas.style.width = GAME_CANVAS_LOGICAL_WIDTH + "px";
-      canvas.style.height = GAME_CANVAS_LOGICAL_HEIGHT + "px";
 
       gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
       ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
@@ -1325,7 +1339,7 @@
     }
 
     function scaleAppToFrame() {
-      const frameWidth = appFrame.clientWidth;
+      const frameWidth = Math.max(1, appFrame.clientWidth || window.innerWidth || DESIGN_WIDTH);
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
       scaleGameCanvasBackingStore();
@@ -2060,1269 +2074,1762 @@
       }
 
     
-    /* =========================
-       GAME MODULE — BASS BUS STEP 4: NON-PITCHED SOUND EFFECTS
-       Adds continuous city scrolling and outcome animations while preserving the mobile shell,
-       note stream, seven letter buttons, and LCD-based feedback.
-       ========================= */
+  /* =========================
+     GAME MODULE — BASS BUS STEP 4: NON-PITCHED SOUND EFFECTS
+     Adds continuous environmental scrolling plus gameplay animations for correct, wrong,
+     and missed answers while preserving the shared note-stream engine and shell behavior.
+     ========================= */
 
-    const ANIMATION_AREA_BOTTOM = 92;
-    const STAFF_LEFT = 18;
-    const STAFF_RIGHT = 374;
-    const STAFF_GAP = 12;
-    const STAFF_TOP = 142;
-    const TARGET_BARLINE_X = 92;
-    const CLEF_X = 28;
-    const NOTE_SPAWN_X = GAME_CANVAS_LOGICAL_WIDTH + STAFF_GAP * 2;
-    const NOTE_SPACING_X = GAME_CANVAS_LOGICAL_WIDTH * 0.24;
-    const NOTE_ZOOM_START_X = STAFF_RIGHT + STAFF_GAP * 2;
-    const NOTE_LANDING_X = STAFF_RIGHT;
-    const NOTE_MIN_SCALE = 0.28;
-    const NOTE_VANISH_Y = STAFF_TOP + STAFF_GAP * 2;
-    const BASE_NOTE_SPEED = GAME_CANVAS_LOGICAL_WIDTH * 0.08;
-    const NOTE_SPEED_SQUARED_RAMP = GAME_CANVAS_LOGICAL_WIDTH * GAME_CANVAS_LOGICAL_WIDTH * 0.00037;
-    const MAX_MOB_SIZE = 10;
-    const SMUFL_G_CLEF = "\uE050";
-    const SMUFL_F_CLEF = "\uE062";
-    const UNICODE_G_CLEF = "\u{1D11E}";
-    const UNICODE_F_CLEF = "\u{1D122}";
-    const CLEF_TYPE = "bass";
-    const BUS_X = 149;
-    const BUS_Y = 59;
-    const BUS_WIDTH = 92;
-    const BUS_HEIGHT = 31;
-    const BUS_DOOR_CENTER_X = BUS_X + 62;
-    const STOP_GROUND_Y = 95;
-    const PASSENGER_GROUND_Y = 103;
-    const STOP_SPACING = 36;
-    const CHASER_GROUND_Y = 88;
+  const ANIMATION_AREA_BOTTOM = 235;
+  const STAFF_LEFT = 45;
+  const STAFF_RIGHT = 690;
+  const STAFF_GAP = 22;
+  const STAFF_TOP = 320;
+  const TARGET_BARLINE_X = 170;
+  const CLEF_X = 68;
+  const NOTE_SPAWN_X = GAME_CANVAS_LOGICAL_WIDTH + STAFF_GAP * 2;
+  const NOTE_SPACING_X = GAME_CANVAS_LOGICAL_WIDTH * 0.24;
+  const NOTE_ZOOM_START_X = STAFF_RIGHT + STAFF_GAP * 2;
+  const NOTE_LANDING_X = STAFF_RIGHT;
+  const NOTE_MIN_SCALE = 0.28;
+  const NOTE_VANISH_Y = STAFF_TOP + STAFF_GAP * 2;
+  const BASE_NOTE_SPEED = GAME_CANVAS_LOGICAL_WIDTH * 0.08;
+  const NOTE_SPEED_SQUARED_RAMP = GAME_CANVAS_LOGICAL_WIDTH * GAME_CANVAS_LOGICAL_WIDTH * 0.00037;
+  const MAX_MOB_SIZE = 10;
+  const SMUFL_G_CLEF = "\uE050";
+  const SMUFL_F_CLEF = "\uE062";
+  const UNICODE_G_CLEF = "\u{1D11E}";
+  const UNICODE_F_CLEF = "\u{1D122}";
+  const CLEF_TYPE = "bass";
+  const BUS_X = 245;
+  const BUS_Y = 143;
+  const BUS_WIDTH = 230;
+  const BUS_HEIGHT = 72;
+  const BUS_DOOR_CENTER_X = BUS_X + 154.5;
+  const STOP_GROUND_Y = 228;
+  const PASSENGER_GROUND_Y = 243;
+  const STOP_SPACING = 92;
+  const CHASER_GROUND_Y = 212;
 
-    const NOTE_CHOICES = [
-      { letter: "F", step: -1 }, { letter: "G", step: 0 }, { letter: "A", step: 1 },
-      { letter: "B", step: 2 }, { letter: "C", step: 3 }, { letter: "D", step: 4 },
-      { letter: "E", step: 5 }, { letter: "F", step: 6 }, { letter: "G", step: 7 },
-      { letter: "A", step: 8 }, { letter: "B", step: 9 }, { letter: "C", step: 10, ledger: true }
-    ];
-    const STOP_COLORS = ["#c84a44", "#3976a8", "#6f4ba3", "#2d8b64", "#c58a2b"];
-    const WEAPONS = ["torch", "pitchfork", "hoe"];
+  const NOTE_CHOICES = [
+    { letter: "F", step: -1 },
+    { letter: "G", step: 0 },
+    { letter: "A", step: 1 },
+    { letter: "B", step: 2 },
+    { letter: "C", step: 3 },
+    { letter: "D", step: 4 },
+    { letter: "E", step: 5 },
+    { letter: "F", step: 6 },
+    { letter: "G", step: 7 },
+    { letter: "A", step: 8 },
+    { letter: "B", step: 9 },
+    { letter: "C", step: 10, ledger: true }
+  ];
 
-    let activeNotes = [];
-    let correctNotes = 0;
-    let mobSize = 0;
-    let lastEventMessage = "PICK UP PASSENGERS";
-    let lastPitchIndex = -1;
-    let nextNoteId = 1;
-    let lastUpdateTime = 0;
-    let bravuraReady = false;
-    let sceneryBuildings = [];
-    let stopActors = [];
-    let chasers = [];
-    let nextStopActorId = 1;
-    let busDoorOpen = 0;
-    let busDoorHold = 0;
-    let roadStripeOffset = 0;
-    let busDamage = 0;
-    let busShake = 0;
-    let finalOverlayTimer = null;
-    let finalSequence = { active: false, phase: "none", t: 0, overlayQueued: false };
-    let panicPassengers = [];
-    let busMotionClock = 0;
-    let wheelSpin = 0;
-    let cloudOffset = 0;
+  const STOP_COLORS = ["#c84a44", "#3976a8", "#6f4ba3", "#2d8b64", "#c58a2b"];
+  const WEAPONS = ["torch", "pitchfork", "hoe"];
+  const BUILDING_COLORS = [
+    ["#355a75", "#f5cf75"], ["#61798b", "#f4d98f"], ["#294b66", "#ffd778"],
+    ["#536d81", "#f6d88b"], ["#31526a", "#ffd778"], ["#60788a", "#f2d286"]
+  ];
 
-    function requestBravuraFont() {
-      if (!document.fonts?.load) return;
-      document.fonts
-        .load(`${STAFF_GAP * 4}px "Bravura"`, SMUFL_G_CLEF + SMUFL_F_CLEF)
-        .then(loadedFonts => {
-          bravuraReady = loadedFonts.length > 0;
-          if (!running && gameScreen.style.display === "block") gameDraw();
-        })
-        .catch(() => {});
-    }
+  let activeNotes = [];
+  let correctNotes = 0;
+  let mobSize = 0;
+  let lastEventMessage = "NEXT STOP: identify the front stop-sign note.";
+  let lastPitchIndex = -1;
+  let nextNoteId = 1;
+  let lastUpdateTime = 0;
+  let bravuraReady = false;
+  let sceneryBuildings = [];
+  let stopActors = [];
+  let chasers = [];
+  let nextStopActorId = 1;
+  let busDoorOpen = 0;
+  let busDoorHold = 0;
+  let roadStripeOffset = 0;
+  let busDamage = 0;
+  let busShake = 0;
+  let finalOverlayTimer = null;
+  let finalSequence = { active: false, phase: "none", t: 0, overlayQueued: false };
+  let panicPassengers = [];
+  let busMotionClock = 0;
+  let wheelSpin = 0;
+  let cloudOffset = 0;
 
-    function roundedRectPath(x, y, width, height, radius) {
-      const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+  function requestBravuraFont() {
+    if (!document.fonts?.load) return;
+    document.fonts
+      .load(`${STAFF_GAP * 4}px "Bravura"`, SMUFL_G_CLEF + SMUFL_F_CLEF)
+      .then(loadedFonts => {
+        bravuraReady = loadedFonts.length > 0;
+        if (!running && gameScreen.style.display === "block") gameDraw();
+      })
+      .catch(() => {});
+  }
+
+  function roundedRectPath(x, y, width, height, radius) {
+    const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function lerp(a, b, t) {
+    return a + (b - a) * t;
+  }
+
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - clamp(t, 0, 1), 3);
+  }
+
+  function easeInOut(t) {
+    const c = clamp(t, 0, 1);
+    return c < 0.5 ? 4 * c * c * c : 1 - Math.pow(-2 * c + 2, 3) / 2;
+  }
+
+  function wrappedX(value, span, leftPadding = 0) {
+    const normalized = ((value + leftPadding) % span + span) % span;
+    return normalized - leftPadding;
+  }
+
+  function currentBusMotion() {
+    if (finalSequence.active) return { y: 0, tilt: 0 };
+    return {
+      y: Math.sin(busMotionClock * 6.4) * 1.25,
+      tilt: Math.sin(busMotionClock * 3.2 + 0.8) * 0.007
+    };
+  }
+
+  function drawAtmosphereCloud(x, y, scale = 1, alpha = 0.55) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+    [[0,0,15],[14,-4,12],[28,0,14],[-11,3,10],[10,5,16]].forEach(([cx, cy, r]) => {
       ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
-
-    function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
-    function lerp(a, b, t) { return a + (b - a) * t; }
-    function easeOutCubic(t) { return 1 - Math.pow(1 - clamp(t, 0, 1), 3); }
-    function easeInOut(t) { const c = clamp(t, 0, 1); return c < 0.5 ? 4 * c * c * c : 1 - Math.pow(-2 * c + 2, 3) / 2; }
-    function wrappedX(value, span, leftPadding = 0) { const normalized = ((value + leftPadding) % span + span) % span; return normalized - leftPadding; }
-    function currentBusMotion() {
-      if (finalSequence.active) return { y: 0, tilt: 0 };
-      return { y: Math.sin(busMotionClock * 6.4) * 0.55, tilt: Math.sin(busMotionClock * 3.2 + 0.8) * 0.005 };
-    }
-    function drawAtmosphereCloud(x, y, scale = 1, alpha = 0.5) {
-      ctx.save(); ctx.translate(x, y); ctx.scale(scale, scale); ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-      [[0,0,7],[7,-2,5.5],[14,0,6.5],[-5,1,4.5],[5,2.5,7]].forEach(([cx,cy,r]) => { ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fill(); });
-      ctx.restore();
-    }
-    function drawBusExhaust(busY) {
-      if (finalSequence.active) return;
-      ctx.save();
-      for (let i = 0; i < 3; i++) {
-        const p = (busMotionClock * 0.55 + i / 3) % 1;
-        ctx.beginPath();
-        ctx.arc(BUS_X - 2 - p * 17, busY + BUS_HEIGHT - 5.5 - p * 2, 2.2 + p * 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(130,145,156,${0.14 * (1 - p)})`;
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    function drawAnswerImpactBurst(x, y, progress, color = "255,224,102") {
-      const p = clamp(progress, 0, 1);
-      const fade = 1 - p;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.strokeStyle = `rgba(${color},${fade * 0.9})`;
-      ctx.lineWidth = 0.9;
-      for (let i = 0; i < 5; i++) {
-        const angle = i * Math.PI * 2 / 5;
-        ctx.beginPath();
-        ctx.moveTo(Math.cos(angle) * (1.2 + p), Math.sin(angle) * (1.2 + p));
-        ctx.lineTo(Math.cos(angle) * (3.2 + p * 4.2), Math.sin(angle) * (3.2 + p * 4.2));
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    function drawLandingDust(x, y, progress) {
-      const p = clamp(progress, 0, 1);
-      const fade = 1 - p;
-      ctx.save();
-      for (let i = 0; i < 3; i++) {
-        const direction = i === 0 ? -1 : 1;
-        ctx.beginPath();
-        ctx.arc(x + direction * (2 + p * (4 + i)), y - p + (i % 2), 1.4 + p, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(176,160,141,${fade * 0.22})`;
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    function drawBuilding(building) {
-      ctx.save();
-      ctx.fillStyle = building.color;
-      ctx.fillRect(building.x, building.y, building.width, building.height);
-      ctx.fillStyle = "rgba(255,255,255,0.07)";
-      ctx.fillRect(building.x, building.y + 1, building.width, 1.2);
-
-      const winW = 4;
-      const winH = 5;
-      const gapX = 6;
-      const gapY = 6;
-      const padX = 5;
-      const windowAreaTop = building.y + 6;
-      const windowAreaBottom = Math.min(building.y + building.height - 9, 66);
-      const availableW = Math.max(winW, building.width - padX * 2);
-      const availableH = Math.max(winH, windowAreaBottom - windowAreaTop);
-      const cols = Math.max(1, Math.floor((availableW + gapX) / (winW + gapX)));
-      const rows = Math.max(1, Math.floor((availableH + gapY) / (winH + gapY)));
-      const gridW = cols * winW + (cols - 1) * gapX;
-      const gridH = rows * winH + (rows - 1) * gapY;
-      const startX = building.x + (building.width - gridW) / 2;
-      const startY = windowAreaTop + (availableH - gridH) / 2;
-
-      for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-          const wx = startX + col * (winW + gapX);
-          const wy = startY + row * (winH + gapY);
-          const lit = ((row + col + Math.floor(building.width / 4)) % 7) === 0;
-          ctx.fillStyle = lit ? "#ffe8a8" : "rgba(255, 217, 119, 0.72)";
-          ctx.fillRect(wx, wy, winW, winH);
-        }
-      }
-
-      const buildingVariant = (building.width + building.height) % 3;
-      if (buildingVariant === 0 && building.height > 45) {
-        const awningY = building.y + building.height - 10;
-        ctx.fillStyle = "#c55b3d";
-        ctx.fillRect(building.x + 3, awningY, building.width - 6, 3);
-      } else if (buildingVariant === 1) {
-        ctx.fillStyle = "rgba(45,53,62,0.68)";
-        ctx.fillRect(building.x + building.width - 11, building.y - 3, 7, 3);
-      } else {
-        ctx.strokeStyle = "rgba(42,49,57,0.78)";
-        ctx.lineWidth = 0.7;
-        const antennaX = building.x + building.width - 7;
-        ctx.beginPath();
-        ctx.moveTo(antennaX, building.y);
-        ctx.lineTo(antennaX, building.y - 5);
-        ctx.lineTo(antennaX + 3, building.y - 7);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-    function drawBus(x, y, width, height, doorOpen = 0, damage = 0, motionTilt = 0) {
-      const chunkProgress = clamp((damage - 0.18) / 0.82, 0, 1);
-      if (chunkProgress >= 0.995) return;
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(motionTilt);
-
-      if (chunkProgress > 0) {
-        const cutY = lerp(-5, height + 4, chunkProgress);
-        ctx.beginPath();
-        ctx.moveTo(-16, height + 8);
-        ctx.lineTo(-16, cutY + 4);
-        ctx.lineTo(6, cutY + 4);
-        ctx.lineTo(18, cutY - 2);
-        ctx.lineTo(32, cutY + 5);
-        ctx.lineTo(46, cutY - 1);
-        ctx.lineTo(60, cutY + 5);
-        ctx.lineTo(75, cutY + 0);
-        ctx.lineTo(90, cutY + 6);
-        ctx.lineTo(width + 14, cutY + 2);
-        ctx.lineTo(width + 14, height + 8);
-        ctx.closePath();
-        ctx.clip();
-      }
-      const split = damage > 0.58 ? (damage - 0.58) * 14 : 0;
-      roundedRectPath(-split, 4, width + split * 2, height - 10, 7);
-      ctx.fillStyle = "#f6c744";
-      ctx.strokeStyle = "#4a3518";
-      ctx.lineWidth = 1.3;
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  function drawBusExhaust(busY) {
+    if (finalSequence.active) return;
+    ctx.save();
+    for (let i = 0; i < 3; i++) {
+      const p = (busMotionClock * 0.55 + i / 3) % 1;
+      const x = BUS_X - 5 - p * 42;
+      const y = busY + BUS_HEIGHT - 14 - p * 5;
+      ctx.beginPath();
+      ctx.arc(x, y, 5 + p * 7, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(130,145,156,${0.16 * (1 - p)})`;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawAnswerImpactBurst(x, y, progress, color = "255, 224, 102") {
+    const p = clamp(progress, 0, 1);
+    const fade = 1 - p;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = `rgba(${color},${fade * 0.9})`;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const angle = i * Math.PI / 3;
+      const inner = 3 + p * 2;
+      const outer = 7 + p * 10;
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner);
+      ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer);
       ctx.stroke();
-      ctx.save();
-      roundedRectPath(-split, 4, width + split * 2, height - 10, 7);
+    }
+    ctx.beginPath();
+    ctx.arc(0, 0, 3 + p * 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${fade * 0.75})`;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawLandingDust(x, y, progress) {
+    const p = clamp(progress, 0, 1);
+    const fade = 1 - p;
+    ctx.save();
+    for (let i = 0; i < 4; i++) {
+      const direction = i < 2 ? -1 : 1;
+      const spread = 5 + p * (12 + (i % 2) * 5);
+      ctx.beginPath();
+      ctx.arc(x + direction * spread, y - p * 3 + (i % 2) * 2, 3.2 + p * 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(176,160,141,${fade * 0.28})`;
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawBuilding(building) {
+    ctx.save();
+    ctx.fillStyle = building.color;
+    ctx.strokeStyle = "rgba(18, 42, 65, 0.38)";
+    ctx.lineWidth = 2;
+    ctx.fillRect(building.x, building.y, building.width, building.height);
+    ctx.strokeRect(building.x, building.y, building.width, building.height);
+    ctx.fillStyle = "rgba(255,255,255,0.07)";
+    ctx.fillRect(building.x, building.y + 2, building.width, 3);
+
+    // Keep every window fully inside the upper facade. The lower facade remains
+    // window-free so no windows appear to touch the road.
+    const winW = 9;
+    const winH = 10;
+    const gapX = 11;
+    const gapY = 12;
+    const padX = 10;
+    const windowAreaTop = building.y + 12;
+    const windowAreaBottom = Math.min(building.y + building.height - 20, 174);
+    const availableW = Math.max(winW, building.width - padX * 2);
+    const availableH = Math.max(winH, windowAreaBottom - windowAreaTop);
+    const cols = Math.max(1, Math.floor((availableW + gapX) / (winW + gapX)));
+    const rows = Math.max(1, Math.floor((availableH + gapY) / (winH + gapY)));
+    const gridW = cols * winW + (cols - 1) * gapX;
+    const gridH = rows * winH + (rows - 1) * gapY;
+    const startX = building.x + (building.width - gridW) / 2;
+    const startY = windowAreaTop + (availableH - gridH) / 2;
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const wx = startX + col * (winW + gapX);
+        const wy = startY + row * (winH + gapY);
+        const lit = ((row + col + Math.floor(building.width / 10)) % 7) === 0;
+        ctx.fillStyle = lit ? "#ffe6a3" : building.windowColor;
+        ctx.fillRect(wx, wy, winW, winH);
+      }
+    }
+
+    // Small additions only: one storefront treatment and one rooftop detail.
+    const buildingVariant = (building.width + building.height) % 3;
+    if (buildingVariant === 0 && building.height > 105) {
+      const awningY = building.y + building.height - 25;
+      ctx.fillStyle = "#c55b3d";
+      ctx.fillRect(building.x + 7, awningY, building.width - 14, 7);
+      ctx.strokeStyle = "rgba(85,48,34,0.55)";
+      ctx.lineWidth = 1.3;
+      for (let sx = building.x + 13; sx < building.x + building.width - 10; sx += 14) {
+        ctx.beginPath();
+        ctx.moveTo(sx, awningY);
+        ctx.lineTo(sx, awningY + 7);
+        ctx.stroke();
+      }
+    } else if (buildingVariant === 1) {
+      ctx.fillStyle = "rgba(45,53,62,0.68)";
+      ctx.fillRect(building.x + building.width - 29, building.y - 8, 18, 8);
+      ctx.strokeStyle = "rgba(38,45,52,0.82)";
+      ctx.strokeRect(building.x + building.width - 29, building.y - 8, 18, 8);
+    } else {
+      ctx.strokeStyle = "rgba(42,49,57,0.78)";
+      ctx.lineWidth = 1.6;
+      const antennaX = building.x + building.width - 18;
+      ctx.beginPath();
+      ctx.moveTo(antennaX, building.y);
+      ctx.lineTo(antennaX, building.y - 13);
+      ctx.lineTo(antennaX + 8, building.y - 17);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  function drawBus(x, y, width, height, doorOpen = 0, damage = 0, motionTilt = 0) {
+    const chunkProgress = clamp((damage - 0.18) / 0.82, 0, 1);
+    if (chunkProgress >= 0.995) return;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(motionTilt);
+
+    if (chunkProgress > 0) {
+      const cutY = lerp(-10, height + 8, chunkProgress);
+      ctx.beginPath();
+      ctx.moveTo(-40, height + 18);
+      ctx.lineTo(-40, cutY + 10);
+      ctx.lineTo(-6, cutY + 8);
+      ctx.lineTo(24, cutY - 4);
+      ctx.lineTo(54, cutY + 10);
+      ctx.lineTo(88, cutY - 2);
+      ctx.lineTo(124, cutY + 12);
+      ctx.lineTo(160, cutY + 1);
+      ctx.lineTo(198, cutY + 14);
+      ctx.lineTo(width + 38, cutY + 4);
+      ctx.lineTo(width + 38, height + 18);
+      ctx.closePath();
       ctx.clip();
-      ctx.fillStyle = "#d88a1b";
-      ctx.fillRect(-split, height - 10, width + split * 2, 4.5);
-      ctx.restore();
-      roundedRectPath(-split, 4, width + split * 2, height - 10, 7);
-      ctx.strokeStyle = "#4a3518";
-      ctx.lineWidth = 1.3;
-      ctx.stroke();
-      const windowShimmer = (Math.sin(busMotionClock * 2.4) + 1) * 0.5;
-      [8, 24, 40, 72].forEach(windowX => {
-        const wx = windowX + (windowX < 56 ? -split : split);
-        roundedRectPath(wx, 8, 12, 10, 2);
-        ctx.fillStyle = "#cce8f3";
-        ctx.strokeStyle = "#28465f";
-        ctx.lineWidth = 0.9;
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = `rgba(255,255,255,${0.18 + windowShimmer * 0.10})`;
-        ctx.fillRect(wx + 1.8, 9, 3.2, 7.5);
-        ctx.fillStyle = "rgba(255,255,255,0.14)";
-        ctx.fillRect(wx + 6.2, 9.5, 1.3, 6.4);
-      });
-      const doorX = 56;
-      const doorY = 7;
-      const doorW = 12;
-      const doorH = height - 14;
-      roundedRectPath(doorX, doorY, doorW, doorH, 2);
-      ctx.fillStyle = "#ead9b8";
-      ctx.strokeStyle = "#8f7955";
-      ctx.lineWidth = 0.7;
+    }
+
+    const split = damage > 0.58 ? (damage - 0.58) * 34 : 0;
+    roundedRectPath(-split, 4, width + split * 2, height - 10, 16);
+    ctx.fillStyle = "#f6c744";
+    ctx.strokeStyle = "#4a3518";
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.save();
+    roundedRectPath(-split, 4, width + split * 2, height - 10, 16);
+    ctx.clip();
+    ctx.fillStyle = "#d88a1b";
+    ctx.fillRect(-split, height - 24, width + split * 2, 12);
+    ctx.restore();
+    roundedRectPath(-split, 4, width + split * 2, height - 10, 16);
+    ctx.strokeStyle = "#4a3518";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    const windowY = 13;
+    const windowHeight = 24;
+    const windowShimmer = (Math.sin(busMotionClock * 2.4) + 1) * 0.5;
+    [17, 59, 101, 181].forEach(windowX => {
+      const wx = windowX + (windowX < 139 ? -split : split);
+      roundedRectPath(wx, windowY, 31, windowHeight, 4);
+      ctx.fillStyle = "#cce8f3";
+      ctx.strokeStyle = "#28465f";
+      ctx.lineWidth = 2;
       ctx.fill();
       ctx.stroke();
-      ctx.fillStyle = "#b99662";
-      ctx.fillRect(doorX + 1, doorY + doorH * 0.64, doorW - 2, doorH * 0.29);
-
-      const panelGap = 0.8 + doorOpen * 4;
-      const panelW = Math.max(3, (doorW - panelGap) / 2);
-      roundedRectPath(doorX, doorY, panelW, doorH, 2);
-      ctx.fillStyle = "#203b54";
-      ctx.strokeStyle = "#172a3a";
-      ctx.fill();
-      ctx.stroke();
-      roundedRectPath(doorX + doorW - panelW, doorY, panelW, doorH, 2);
-      ctx.fill();
-      ctx.stroke();
-
-      for (const wheelX of [18, width - 18]) {
-        const shiftedX = wheelX + (wheelX < width / 2 ? -split : split);
-        ctx.beginPath(); ctx.arc(shiftedX, height - 3, 4.7, 0, Math.PI * 2); ctx.fillStyle = "#1f2937"; ctx.fill();
-        ctx.save(); ctx.translate(shiftedX, height - 3); ctx.rotate(wheelSpin); ctx.strokeStyle = "#9099a3"; ctx.lineWidth = 0.7;
-        for (let spoke = 0; spoke < 4; spoke++) { const angle = spoke * Math.PI / 2; ctx.beginPath(); ctx.moveTo(Math.cos(angle), Math.sin(angle)); ctx.lineTo(Math.cos(angle) * 3.2, Math.sin(angle) * 3.2); ctx.stroke(); }
-        ctx.restore();
-        ctx.beginPath(); ctx.arc(shiftedX, height - 3, 1.8, 0, Math.PI * 2); ctx.fillStyle = "#aeb7bf"; ctx.fill();
-      }
-
-      ctx.fillStyle = "#ffe8a3";
-      ctx.fillRect(width - 0.8 + split, 17, 1.8, 1.9);
-      ctx.fillStyle = "#a42d2d";
-      ctx.fillRect(-split - 1.2, 18, 1.4, 1.5);
-      ctx.fillStyle = "rgba(255,255,255,0.10)";
-      ctx.fillRect(4, 5.4, width * 0.7, 1.1);
-
-      if (damage > 0.2) {
-        ctx.strokeStyle = "#5d321d";
-        ctx.lineWidth = 1.1;
-        ctx.beginPath();
-        ctx.moveTo(width * 0.43, 5);
-        ctx.lineTo(width * 0.48, 12);
-        ctx.lineTo(width * 0.44, 18);
-        ctx.lineTo(width * 0.51, 24);
-        ctx.stroke();
-      }
-
-      if (damage > 0.48) {
-        const flameAmount = clamp((damage - 0.48) / 0.52, 0, 1);
-        for (const fx of [20, 42, 76]) {
-          const flicker = Math.sin(finalSequence.t * 26 + fx) * 1.5;
-          ctx.fillStyle = "rgba(239, 68, 68, 0.92)";
-          ctx.beginPath();
-          ctx.moveTo(fx - 3, 5);
-          ctx.quadraticCurveTo(fx + flicker, -8 * flameAmount, fx + 3, 5);
-          ctx.closePath();
-          ctx.fill();
-          ctx.fillStyle = "rgba(251, 191, 36, 0.95)";
-          ctx.beginPath();
-          ctx.moveTo(fx - 1.3, 5);
-          ctx.quadraticCurveTo(fx + flicker * 0.5, -4 * flameAmount, fx + 1.3, 5);
-          ctx.closePath();
-          ctx.fill();
-        }
-      }
-      ctx.restore();
-    }
-
-    function drawStopSignPath(centerX, centerY, radius) {
-      ctx.beginPath();
-      for (let i = 0; i < 8; i++) {
-        const angle = -Math.PI / 8 + i * (Math.PI / 4);
-        const px = centerX + Math.cos(angle) * radius;
-        const py = centerY + Math.sin(angle) * radius;
-        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-      }
-      ctx.closePath();
-    }
-
-    function drawStopSignEmblem(x, y, radius = STAFF_GAP * 0.64, rotation = 0) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-      drawStopSignPath(0, 0, radius);
-      ctx.fillStyle = "#d92f2f";
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = Math.max(0.8, radius * 0.18);
-      ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = "#ffffff";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.font = `bold ${Math.max(2.5, radius * 0.42)}px Arial, sans-serif`;
-      ctx.fillText("STOP", 0, 0.2);
-      ctx.restore();
-    }
-
-    function drawPole(poleX, groundY, hasSign = false) {
-      ctx.save();
-      ctx.strokeStyle = "#5b636d";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.moveTo(poleX, groundY); ctx.lineTo(poleX, groundY - 15); ctx.stroke();
-      ctx.beginPath(); ctx.arc(poleX, groundY - 16.5, 1, 0, Math.PI * 2); ctx.fillStyle = "#5b636d"; ctx.fill();
-      if (hasSign) drawStopSignEmblem(poleX, groundY - 21, 4.2, 0);
-      ctx.restore();
-    }
-
-    function drawTinyWeapon(type, x, y, rotation = 0) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      if (type === "torch") {
-        ctx.strokeStyle = "#6d4522";
-        ctx.lineWidth = 1.0;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4, -8); ctx.stroke();
-        ctx.fillStyle = "#f59e0b";
-        ctx.beginPath();
-        ctx.moveTo(4.2, -10.6);
-        ctx.quadraticCurveTo(7.0, -9.0, 5.8, -6.0);
-        ctx.quadraticCurveTo(3.9, -4.6, 3.3, -6.8);
-        ctx.quadraticCurveTo(2.8, -8.7, 4.2, -10.6);
-        ctx.fill();
-      } else if (type === "pitchfork") {
-        ctx.strokeStyle = "#6d4522";
-        ctx.lineWidth = 1.0;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4, -8); ctx.stroke();
-        ctx.strokeStyle = "#59616b";
-        ctx.lineWidth = 0.8;
-        ctx.beginPath();
-        ctx.moveTo(3.0, -9.0); ctx.lineTo(6.2, -9.0);
-        ctx.moveTo(3.5, -9.0); ctx.lineTo(3.5, -12.0);
-        ctx.moveTo(4.6, -9.0); ctx.lineTo(4.6, -12.8);
-        ctx.moveTo(5.7, -9.0); ctx.lineTo(5.7, -12.0);
-        ctx.stroke();
-      } else {
-        ctx.strokeStyle = "#6d4522";
-        ctx.lineWidth = 1.0;
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(4, -8); ctx.stroke();
-        ctx.fillStyle = "#66707a";
-        ctx.beginPath();
-        ctx.moveTo(3.0, -9.2); ctx.lineTo(7.2, -8.6); ctx.lineTo(6.3, -6.0); ctx.lineTo(3.5, -6.4); ctx.closePath();
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-
-    function drawTinyPerson(x, groundY, color, options = {}) {
-      const scale = options.scale ?? 1;
-      const tilt = options.tilt ?? 0;
-      const running = !!options.running;
-      const crouch = !!options.crouch;
-      const runPhase = options.runPhase ?? 0;
-      const tool = options.tool || null;
-      const toolAngle = options.toolAngle ?? 0;
-      const variantSeed = Math.abs(Math.floor((options.variant ?? 0) * 10));
-      const skinTones = ["#d7a77b", "#b97853", "#8f5f43", "#e0b38c", "#6f4937"];
-      const hairColors = ["#2d211c", "#5b3824", "#1f2937", "#7a5237", "#b98a53"];
-      const skinTone = skinTones[variantSeed % skinTones.length];
-      const hairColor = hairColors[(variantSeed * 3 + 1) % hairColors.length];
-      const hairStyle = variantSeed % 4;
-      const legSwing = running ? Math.sin(runPhase) * 2.2 : 0;
-      const armSwing = running ? Math.cos(runPhase) * 2.2 : 0;
-      ctx.save();
-      ctx.translate(x, groundY);
-      ctx.rotate(tilt);
-      ctx.scale(scale, scale);
-      ctx.fillStyle = skinTone;
-      ctx.beginPath(); ctx.arc(0, -12, 2.8, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = hairColor;
-      ctx.strokeStyle = hairColor;
-      if (hairStyle === 0 || hairStyle === 3) { ctx.beginPath(); ctx.arc(0, -12.8, 2.5, Math.PI, Math.PI * 2); ctx.fill(); }
-      else if (hairStyle === 1) { ctx.beginPath(); ctx.arc(-0.5, -12.8, 2.2, Math.PI, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.arc(2.6, -11.7, 0.9, 0, Math.PI * 2); ctx.fill(); }
-      else if (hairStyle === 2) { ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(-2.5, -13.5); ctx.lineTo(2.2, -13.5); ctx.stroke(); }
-      if (hairStyle === 3) { ctx.strokeStyle = "#263442"; ctx.lineWidth = 0.55; ctx.beginPath(); ctx.arc(-1.1, -11.8, 0.75, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.arc(1.1, -11.8, 0.75, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-0.25, -11.8); ctx.lineTo(0.25, -11.8); ctx.stroke(); }
-      ctx.strokeStyle = "#243242"; ctx.lineWidth = 1.4; ctx.beginPath();
-      ctx.moveTo(-1.15, -8.5); ctx.lineTo(-3.6, -6 + armSwing * 0.15); ctx.moveTo(1.15, -8.5); ctx.lineTo(3.6, -6 - armSwing * 0.15);
-      if (crouch) { ctx.moveTo(-0.9, -5.5); ctx.lineTo(-2.7, 0); ctx.moveTo(0.9, -5.5); ctx.lineTo(3.1, -1); }
-      else { ctx.moveTo(-0.9, -4); ctx.lineTo(-3.2 + legSwing, 0); ctx.moveTo(0.9, -4); ctx.lineTo(3.2 - legSwing, 0); }
-      ctx.stroke();
-      ctx.strokeStyle = color; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(0, crouch ? -5.5 : -4); ctx.stroke();
-      if (tool) drawTinyWeapon(tool, 2.2, -2.5, toolAngle);
-      ctx.restore();
-    }
-
-    function buildScenery() {
-      sceneryBuildings = [];
-      let x = -20;
-      const defs = [[48,53,"#355a75"],[38,40,"#60798c"],[54,58,"#294b66"],[48,47,"#536d81"],[42,61,"#31526a"],[31,42,"#60788a"]];
-      for (let i = 0; i < 8; i++) {
-        const def = defs[i % defs.length];
-        sceneryBuildings.push({ x, y: ANIMATION_AREA_BOTTOM - 8 - def[1], width: def[0], height: def[1], color: def[2] });
-        x += def[0] + 14;
-      }
-      stopActors = [];
-      chasers = [];
-      busDoorOpen = 0;
-      busDoorHold = 0;
-      roadStripeOffset = 0;
-      busMotionClock = 0;
-      wheelSpin = 0;
-      cloudOffset = 0;
-    }
-
-    function actorXForNoteX(noteX) {
-      const startX = GAME_CANVAS_LOGICAL_WIDTH + 14;
-      const endX = BUS_X - 6;
-      const t = clamp((NOTE_SPAWN_X - noteX) / Math.max(1, NOTE_SPAWN_X - TARGET_BARLINE_X), 0, 1);
-      return lerp(startX, endX, t);
-    }
-
-    function syncStopActorsToNotes() {
-      const noteById = new Map(activeNotes.map(note => [note.id, note]));
-      stopActors.forEach(actor => {
-        if (actor.state !== "waiting") return;
-        const note = noteById.get(actor.noteId);
-        if (note) actor.x = actorXForNoteX(note.x);
-      });
-    }
-
-    function getTargetStopActor(noteId) {
-      return stopActors.find(actor => actor.noteId === noteId) || null;
-    }
-
-    function noteYFromStep(step) {
-      const bottomLineY = STAFF_TOP + STAFF_GAP * 4;
-      return bottomLineY - step * (STAFF_GAP / 2);
-    }
-
-    function geometryForPitch(pitch) {
-      const y = noteYFromStep(pitch.step);
-      return { y, ledgerYs: pitch.ledger ? [y] : [], staffCenterY: STAFF_TOP + STAFF_GAP * 2 };
-    }
-
-    function choosePitchIndex() {
-      let index = Math.floor(Math.random() * NOTE_CHOICES.length);
-      if (NOTE_CHOICES.length > 1 && index === lastPitchIndex) {
-        index = (index + 1 + Math.floor(Math.random() * (NOTE_CHOICES.length - 1))) % NOTE_CHOICES.length;
-      }
-      return index;
-    }
-
-    function spawnNoteAt(x) {
-      const pitchIndex = choosePitchIndex();
-      const pitch = NOTE_CHOICES[pitchIndex];
-      lastPitchIndex = pitchIndex;
-      const noteGeometry = geometryForPitch(pitch);
-      const noteId = nextNoteId++;
-      activeNotes.push({ id: noteId, letter: pitch.letter, x, y: noteGeometry.y, ledgerYs: noteGeometry.ledgerYs, staffCenterY: noteGeometry.staffCenterY });
-      stopActors.push({ id: nextStopActorId++, noteId, x: actorXForNoteX(x), color: STOP_COLORS[(noteId - 1) % STOP_COLORS.length], weapon: WEAPONS[(noteId - 1) % WEAPONS.length], state: "waiting", action: null, addedToMob: false, phaseSeed: noteId * 0.7 });
-    }
-
-    function maintainNoteStream() {
-      if (activeNotes.length === 0) spawnNoteAt(NOTE_SPAWN_X);
-      let rightmost = activeNotes[activeNotes.length - 1];
-      while (rightmost.x <= NOTE_SPAWN_X - NOTE_SPACING_X) {
-        spawnNoteAt(rightmost.x + NOTE_SPACING_X);
-        rightmost = activeNotes[activeNotes.length - 1];
-      }
-    }
-
-    function currentNoteSpeed() {
-      const n = correctNotes;
-      const baseSpeedSquared = BASE_NOTE_SPEED * BASE_NOTE_SPEED;
-      return Math.sqrt(baseSpeedSquared + n * NOTE_SPEED_SQUARED_RAMP);
-    }
-
-    function worldScrollSpeed() {
-      const noteTravelTime = (STAFF_RIGHT - TARGET_BARLINE_X) / Math.max(1, currentNoteSpeed());
-      return (GAME_CANVAS_LOGICAL_WIDTH - BUS_X) / Math.max(0.1, noteTravelTime);
-    }
-
-    function boardingScaleOnlyIfNeeded(actorX, scrollSpeed) {
-      const baseBoardingDuration = 0.94;
-      const removalBoundaryX = -20;
-      const safetyPadding = 0.05;
-      const availableTime = (actorX - removalBoundaryX) / Math.max(1, scrollSpeed) - safetyPadding;
-
-      // Preserve the original animation unless scrolling would remove it early.
-      // When necessary, shorten it by only the amount required to finish onscreen.
-      if (availableTime >= baseBoardingDuration) return 1;
-      return clamp(availableTime / baseBoardingDuration, 0.45, 1);
-    }
-
-    function approachProgressForX(x) {
-      const approachDistance = Math.max(1, NOTE_ZOOM_START_X - NOTE_LANDING_X);
-      const rawProgress = Math.max(0, Math.min(1, (NOTE_ZOOM_START_X - x) / approachDistance));
-      return rawProgress * rawProgress * (3 - 2 * rawProgress);
-    }
-
-    function getRenderedNotePosition(note) {
-      const approach = approachProgressForX(note.x);
-      return { x: note.x, y: NOTE_VANISH_Y + (note.y - NOTE_VANISH_Y) * approach };
-    }
-
-    function syncMobileStatus(message) {
-      lastEventMessage = message;
-      setMessage(`${message} • MOB ${mobSize}/${MAX_MOB_SIZE}`);
-    }
-    function registerMobMember() {
-      mobSize = Math.min(MAX_MOB_SIZE, mobSize + 1);
-      if (mobSize >= MAX_MOB_SIZE && !finalSequence.active) {
-        finalSequence = { active: true, phase: "waiting", t: 0, overlayQueued: false };
-        activeNotes = [];
-        stopActors = stopActors.filter(actor => actor.state !== "waiting");
-        syncMobileStatus("FINAL PASSENGER HIT");
-      }
-    }
-    function launchStopAnimation(outcome, note) {
-      const actor = getTargetStopActor(note.id);
-      if (!actor) return;
-      const notePos = getRenderedNotePosition(note);
-      actor.state = outcome === "correct" ? "boarding" : "hit";
-
-      const scrollSpeed = worldScrollSpeed();
-      const animationScale = outcome === "correct"
-        ? boardingScaleOnlyIfNeeded(actor.x, scrollSpeed)
-        : 1;
-      const impactTime = (outcome === "correct" ? 0.28 : 0.17) * animationScale;
-      const personImpactX = actor.x - scrollSpeed * impactTime;
-      const impactX = personImpactX + 2.5;
-      const impactY = PASSENGER_GROUND_Y - 8;
-      const dirX = impactX - notePos.x;
-      const dirY = impactY - notePos.y;
-
-      actor.action = {
-        outcome,
-        t: 0,
-        animationScale,
-        startNoteX: notePos.x,
-        startNoteY: notePos.y,
-        impactTime,
-        boardingWaitEnd: 0.20 * animationScale,
-        boardingRunEnd: 0.66 * animationScale,
-        boardingEnd: 0.94 * animationScale,
-        flightDuration: 1.08 * animationScale,
-        sideLandingDuration: 0.22 * animationScale,
-        getUpDuration: 0.30 * animationScale,
-        impactX,
-        impactY,
-        personImpactX,
-        signVelX: dirX / impactTime,
-        signVelY: dirY / impactTime,
-        mobTargetX: BUS_X - 12 - Math.min(chasers.length, MAX_MOB_SIZE - 1) * 10,
-        weapon: actor.weapon,
-        isFinalMiss: outcome !== "correct" && mobSize === MAX_MOB_SIZE - 1
-      };
-
-      actor.addedToMob = false;
-      if (outcome === "correct") soundCorrect(impactTime);
-      else soundWrongFling(impactTime, actor.action.flightDuration, outcome);
-      if (outcome === "correct") {
-        busDoorHold = Math.max(0.44, actor.action.boardingEnd + 0.05);
-        syncMobileStatus("PASSENGER PICKED UP");
-      } else if (outcome === "wrong") {
-        syncMobileStatus("WRONG LETTER");
-      } else {
-        syncMobileStatus("MISSED STOP");
-      }
-    }
-    function resolveFrontNote(outcome) {
-      if (activeNotes.length === 0) return;
-      const note = activeNotes.shift();
-      launchStopAnimation(outcome, note);
-      if (outcome === "correct") {
-        addScore(1);
-        correctNotes++;
-      } else {
-        registerMobMember();
-      }
-      if (running && !finalSequence.active) maintainNoteStream();
-    }
-
-    function updateBuildings(deltaSeconds, scrollSpeed) {
-      const buildingSpeed = scrollSpeed * 0.42;
-      let rightmost = Math.max(...sceneryBuildings.map(b => b.x + b.width));
-      sceneryBuildings.forEach((building, index) => {
-        building.x -= buildingSpeed * deltaSeconds;
-        if (building.x + building.width < -8) {
-          const defs = [[48,53,"#355a75"],[38,40,"#60798c"],[54,58,"#294b66"],[48,47,"#536d81"],[42,61,"#31526a"],[31,42,"#60788a"]];
-          const def = defs[index % defs.length];
-          building.x = rightmost + 14; building.y = ANIMATION_AREA_BOTTOM - 8 - def[1]; building.width = def[0]; building.height = def[1]; building.color = def[2];
-          rightmost = building.x + building.width;
-        }
-      });
-    }
-    function updateStops(deltaSeconds) {
-      const scrollSpeed = finalSequence.active && (finalSequence.phase === "rush" || finalSequence.phase === "destroy") ? 0 : worldScrollSpeed();
-      syncStopActorsToNotes();
-      stopActors = stopActors.filter(actor => {
-        if (actor.state === "waiting") return true;
-        actor.action.t += deltaSeconds;
-
-        if (actor.state === "boarding") {
-          actor.x -= scrollSpeed * deltaSeconds;
-          return actor.x > -20;
-        }
-
-        actor.x -= scrollSpeed * deltaSeconds;
-        const impactTime = actor.action.impactTime;
-        const flightDuration = actor.action.flightDuration;
-        const sideLandingDuration = actor.action.sideLandingDuration;
-        const getUpDuration = actor.action.getUpDuration;
-        const totalDuration = impactTime + flightDuration + sideLandingDuration + getUpDuration;
-
-        if (!actor.addedToMob && actor.action.t >= totalDuration - 0.02) {
-          actor.addedToMob = true;
-          chasers.push({ color: actor.color, weapon: actor.action.weapon, t: 0, phaseSeed: actor.phaseSeed });
-          if (chasers.length > MAX_MOB_SIZE) chasers.shift();
-
-          if (actor.action.isFinalMiss && finalSequence.active && finalSequence.phase === "waiting") {
-            finalSequence.phase = "rush";
-            finalSequence.t = 0;
-            syncMobileStatus("MOB CHARGING BUS");
-          }
-        }
-
-        return actor.action.t < totalDuration;
-      });
-    }
-
-    function updateChasers(deltaSeconds) { chasers.forEach(chaser => chaser.t += deltaSeconds); }
-    function updateDoor(deltaSeconds) {
-      if (busDoorHold > 0) busDoorHold = Math.max(0, busDoorHold - deltaSeconds);
-      const target = busDoorHold > 0 ? 1 : 0;
-      busDoorOpen += (target - busDoorOpen) * Math.min(1, deltaSeconds * 8);
-    }
-
-
-    function spawnPanicPassengers() {
-      panicPassengers = [];
-      const colors = ["#c84a44", "#3976a8", "#6f4ba3", "#2d8b64", "#c58a2b", "#b55e3c"];
-      for (let i = 0; i < 6; i++) {
-        const exitLeft = i < 3;
-        panicPassengers.push({
-          color: colors[i % colors.length],
-          t: 0,
-          duration: 1.05 + (i % 2) * 0.12,
-          startX: BUS_DOOR_CENTER_X - 1 + (i % 2) * 2,
-          startY: BUS_Y + BUS_HEIGHT - 3,
-          targetX: exitLeft ? -36 - i * 10 : GAME_CANVAS_LOGICAL_WIDTH + 36 + (i - 3) * 10,
-          targetY: PASSENGER_GROUND_Y + (i % 2) * 2,
-          variant: i + 20
-        });
-      }
-    }
-
-    function startFinalRush() {
-      finalSequence.phase = "rush";
-      finalSequence.t = 0;
-      busDoorHold = 4.2;
-      busDoorOpen = 1;
-      spawnPanicPassengers();
-      soundMobRush();
-      syncMobileStatus("PASSENGERS FLEE!");
-    }
-
-    function updatePanicPassengers(deltaSeconds) {
-      if (!panicPassengers.length) return;
-      panicPassengers = panicPassengers.filter(passenger => {
-        passenger.t += deltaSeconds;
-        return passenger.t < passenger.duration;
-      });
-    }
-
-    function drawPanicPassengers() {
-      panicPassengers.forEach((passenger, index) => {
-        const p = clamp(passenger.t / passenger.duration, 0, 1);
-        const px = lerp(passenger.startX, passenger.targetX, p);
-        const py = lerp(passenger.startY, passenger.targetY, p) - Math.sin(p * Math.PI) * (5 + (index % 2) * 2);
-        drawTinyPerson(px, py, passenger.color, { running: true, runPhase: passenger.t * 22 + index, scale: 0.92, variant: passenger.variant });
-      });
-    }
-
-    function updateFinalSequence(deltaSeconds) {
-      if (!finalSequence.active || finalSequence.phase === "waiting") return;
-      finalSequence.t += deltaSeconds;
-      updatePanicPassengers(deltaSeconds);
-
-      if (finalSequence.phase === "rush") {
-        if (finalSequence.t >= 1.18) {
-          finalSequence.phase = "destroy";
-          finalSequence.t = 0;
-          panicPassengers = [];
-          soundBusDestruction();
-          syncMobileStatus("BUS DESTROYED!");
-        }
-        return;
-      }
-
-      if (finalSequence.phase === "destroy") {
-        busDamage = clamp(finalSequence.t / 1.9, 0, 1);
-        const shakeStrength = Math.min(9, 2 + busDamage * 9);
-        busShake = Math.sin(finalSequence.t * 55) * shakeStrength
-          + Math.cos(finalSequence.t * 31) * shakeStrength * 0.34;
-        if (finalSequence.t >= 3.1 && !finalSequence.overlayQueued) {
-          finalSequence.overlayQueued = true;
-          finalOverlayTimer = setTimeout(() => endGame("The mob destroyed the bus!"), 190);
-        }
-      }
-    }
-
-    function drawMovingSignLayer(actor) {
-      if (!actor.action) return;
-      const t = actor.action.t;
-      if (actor.state === "boarding") {
-        if (t < actor.action.impactTime) {
-          const poleX = actor.x - 6;
-          const p = easeOutCubic(t / actor.action.impactTime);
-          drawStopSignEmblem(lerp(actor.action.startNoteX, poleX, p), lerp(actor.action.startNoteY, PASSENGER_GROUND_Y - 21, p), 4.2, p * 8);
-        } else if (t < actor.action.impactTime + 0.12) {
-          drawAnswerImpactBurst(actor.x - 6, PASSENGER_GROUND_Y - 21, (t - actor.action.impactTime) / 0.12);
-        }
-        return;
-      }
-      const impactTime = actor.action.impactTime;
-      if (t < impactTime) {
-        const p = clamp(t / impactTime, 0, 1);
-        drawStopSignEmblem(lerp(actor.action.startNoteX, actor.action.impactX, p), lerp(actor.action.startNoteY, actor.action.impactY, p), 4.2, t * 27);
-        return;
-      }
-      const afterImpactTime = t - impactTime;
-      if (afterImpactTime < 0.10) {
-        drawAnswerImpactBurst(actor.action.impactX, actor.action.impactY, afterImpactTime / 0.10, "255,145,88");
-      }
-      const signX = actor.action.impactX + actor.action.signVelX * afterImpactTime;
-      const signY = actor.action.impactY + actor.action.signVelY * afterImpactTime;
-      if (signX > -14 && signY < GAME_CANVAS_LOGICAL_HEIGHT + 20) drawStopSignEmblem(signX, signY, 4.2, t * 27);
-    }
-
-    function drawStopPoleLayer(actor) {
-      const poleX = actor.x - 6;
-      drawPole(poleX, PASSENGER_GROUND_Y, actor.state === "boarding" && actor.action && actor.action.t >= actor.action.impactTime);
-    }
-
-    function shouldDrawStopActorBehindPole(actor) {
-      if (actor.state === "waiting" || actor.state === "boarding") return false;
-      const impactTime = actor.action && actor.action.impactTime != null ? actor.action.impactTime : 0;
-      const flightDuration = actor.action && actor.action.flightDuration != null ? actor.action.flightDuration : 0;
-      const t = actor.action && actor.action.t != null ? actor.action.t : 0;
-      if (t < impactTime) return false;
-      if (flightDuration <= 0) return true;
-      const afterImpact = t - impactTime;
-      if (afterImpact >= flightDuration) return true;
-      return afterImpact / flightDuration > 0.38;
-    }
-
-    function drawCityEnvironment() {
-      ctx.save();
-      const sky = ctx.createLinearGradient(0, 0, 0, ANIMATION_AREA_BOTTOM);
-      sky.addColorStop(0, "#78bde8"); sky.addColorStop(0.70, "#d8eef9"); sky.addColorStop(1, "#f7e2bd");
-      ctx.fillStyle = sky; ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, ANIMATION_AREA_BOTTOM);
-      ctx.fillStyle = "rgba(255,255,255,0.09)"; ctx.fillRect(0, 31, GAME_CANVAS_LOGICAL_WIDTH, 18);
-      const cloudSpan = GAME_CANVAS_LOGICAL_WIDTH + 120;
-      drawAtmosphereCloud(wrappedX(24 + cloudOffset, cloudSpan, 60), 18, 0.78, 0.46);
-      drawAtmosphereCloud(wrappedX(155 + cloudOffset * 0.72, cloudSpan, 60), 29, 0.62, 0.40);
-      drawAtmosphereCloud(wrappedX(292 + cloudOffset * 0.86, cloudSpan, 60), 14, 0.88, 0.50);
-      sceneryBuildings.forEach(drawBuilding);
-      ctx.fillStyle = "rgba(255, 241, 185, 0.88)"; ctx.beginPath(); ctx.arc(344, 22, 13, 0, Math.PI * 2); ctx.fill();
-      const roadTop = 70;
-      const curbTop = 94;
-      const sidewalkTop = 97;
-      const sidewalkBottom = 111;
-      const roadPhase = ((roadStripeOffset % 52) + 52) % 52;
-      const upperDashPhase = ((roadStripeOffset % 38) + 38) % 38;
-      const sidewalkPhase = ((roadStripeOffset % 32) + 32) % 32;
-      const grassPhase = ((roadStripeOffset % 24) + 24) % 24;
-
-      const road = ctx.createLinearGradient(0, roadTop, 0, curbTop);
-      road.addColorStop(0, "#4a5058"); road.addColorStop(0.55, "#555c65"); road.addColorStop(1, "#454b53");
-      ctx.fillStyle = road; ctx.fillRect(0, roadTop, GAME_CANVAS_LOGICAL_WIDTH, curbTop - roadTop);
-
-      ctx.fillStyle = "rgba(255,255,255,0.075)";
-      for (let x = upperDashPhase - 38; x < GAME_CANVAS_LOGICAL_WIDTH + 38; x += 38) ctx.fillRect(x, roadTop + 6, 14, 0.8);
-      const mainDashY = roadTop + Math.round((curbTop - roadTop) * 0.60);
+      ctx.fillStyle = `rgba(255,255,255,${0.18 + windowShimmer * 0.10})`;
+      ctx.fillRect(wx + 4, windowY + 3, 8, windowHeight - 7);
       ctx.fillStyle = "rgba(255,255,255,0.16)";
-      for (let x = roadPhase - 52; x < GAME_CANVAS_LOGICAL_WIDTH + 52; x += 52) ctx.fillRect(x, mainDashY, 18, 1.1);
+      ctx.fillRect(wx + 15, windowY + 4, 3, windowHeight - 9);
+    });
+    roundedRectPath(8 - split, 42, 34, 10, 3);
+    ctx.fillStyle = "#fff3c4";
+    ctx.strokeStyle = "#6c5626";
+    ctx.lineWidth = 1.3;
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#624916";
+    ctx.font = "bold 7px Arial";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("ROUTE", 25 - split, 47);
 
-      ctx.strokeStyle = "rgba(26,31,38,0.22)"; ctx.lineWidth = 0.7;
+    const doorX = 139;
+    const doorY = 10;
+    const doorW = 31;
+    const doorH = height - 24;
+
+    // The visible inner wall and seat sit behind the opening door panels.
+    roundedRectPath(doorX, doorY, doorW, doorH, 2);
+    ctx.fillStyle = "#ead9b8";
+    ctx.strokeStyle = "#8f7955";
+    ctx.lineWidth = 1.5;
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#b99662";
+    ctx.fillRect(doorX + 2, doorY + doorH * 0.65, doorW - 4, doorH * 0.28);
+
+    const panelGap = 1 + doorOpen * 9;
+    const panelW = Math.max(8, (doorW - panelGap) / 2);
+    ctx.fillStyle = "#203b54";
+    ctx.strokeStyle = "#172a3a";
+    ctx.lineWidth = 2;
+    roundedRectPath(doorX, doorY, panelW, doorH, 2);
+    ctx.fill();
+    ctx.stroke();
+    roundedRectPath(doorX + doorW - panelW, doorY, panelW, doorH, 2);
+    ctx.fill();
+    ctx.stroke();
+
+    for (const wheelX of [43, width - 43]) {
+      const shiftedX = wheelX + (wheelX < width / 2 ? -split : split);
       ctx.beginPath();
-      for (let x = roadPhase - 52; x < GAME_CANVAS_LOGICAL_WIDTH + 70; x += 61) {
-        ctx.moveTo(x + 31, roadTop + 20); ctx.lineTo(x + 36, roadTop + 17); ctx.lineTo(x + 40, roadTop + 21);
+      ctx.arc(shiftedX, height - 9, 13, 0, Math.PI * 2);
+      ctx.fillStyle = "#1f2937";
+      ctx.fill();
+      ctx.save();
+      ctx.translate(shiftedX, height - 9);
+      ctx.rotate(wheelSpin);
+      ctx.strokeStyle = "#9099a3";
+      ctx.lineWidth = 1.7;
+      for (let spoke = 0; spoke < 4; spoke++) {
+        const angle = spoke * Math.PI / 2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(angle) * 2.5, Math.sin(angle) * 2.5);
+        ctx.lineTo(Math.cos(angle) * 9.5, Math.sin(angle) * 9.5);
+        ctx.stroke();
       }
-      ctx.stroke();
-
-      ctx.beginPath(); ctx.ellipse(BUS_X + BUS_WIDTH / 2, BUS_Y + BUS_HEIGHT + 1.8, 48, 4.8, 0, 0, Math.PI * 2); ctx.fillStyle = "rgba(16,20,26,0.22)"; ctx.fill();
-      ctx.fillStyle = "#d4b34a"; ctx.fillRect(0, curbTop, GAME_CANVAS_LOGICAL_WIDTH, 0.9);
-      ctx.fillStyle = "#8f969d"; ctx.fillRect(0, curbTop + 0.9, GAME_CANVAS_LOGICAL_WIDTH, 1.7);
-
-      const sidewalk = ctx.createLinearGradient(0, sidewalkTop, 0, sidewalkBottom); sidewalk.addColorStop(0, "#d8d2c7"); sidewalk.addColorStop(1, "#c9c1b5");
-      ctx.fillStyle = sidewalk; ctx.fillRect(0, sidewalkTop, GAME_CANVAS_LOGICAL_WIDTH, sidewalkBottom - sidewalkTop);
-      ctx.strokeStyle = "rgba(118,108,96,0.28)"; ctx.lineWidth = 0.55;
-      ctx.beginPath();
-      for (let x = sidewalkPhase - 32; x <= GAME_CANVAS_LOGICAL_WIDTH + 32; x += 32) { ctx.moveTo(x, sidewalkTop); ctx.lineTo(x + 4, sidewalkBottom); }
-      ctx.stroke();
-
-      const grassTop = sidewalkBottom;
-      const grass = ctx.createLinearGradient(0, grassTop, 0, GAME_CANVAS_LOGICAL_HEIGHT); grass.addColorStop(0, "#7aa85e"); grass.addColorStop(1, "#5f8d45");
-      ctx.fillStyle = grass; ctx.fillRect(0, grassTop, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT - grassTop);
-      ctx.strokeStyle = "rgba(47, 86, 34, 0.46)"; ctx.lineWidth = 0.55;
-      ctx.beginPath();
-      for (let y = grassTop + 1; y < GAME_CANVAS_LOGICAL_HEIGHT + 9; y += 14) {
-        for (let x = grassPhase - 24; x < GAME_CANVAS_LOGICAL_WIDTH + 24; x += 24) {
-          ctx.moveTo(x + 5, y + 1); ctx.lineTo(x + 8, y + 8); ctx.lineTo(x + 11, y + 2);
-        }
-      }
-      ctx.stroke();
-      roundedRectPath(9, 116, GAME_CANVAS_LOGICAL_WIDTH - 18, 96, 10); ctx.fillStyle = "rgba(255, 253, 246, 0.90)"; ctx.strokeStyle = "rgba(70, 61, 50, 0.28)"; ctx.lineWidth = 1.2; ctx.fill(); ctx.stroke();
-      const busMotion = currentBusMotion();
-      const renderedBusY = BUS_Y + busMotion.y;
-      drawBusExhaust(renderedBusY);
-      if (finalSequence.active && finalSequence.phase === "destroy") drawBusRubble(clamp(finalSequence.t / 1.9, 0, 1));
-      drawBus(BUS_X + busShake, renderedBusY, BUS_WIDTH, BUS_HEIGHT, busDoorOpen, busDamage, busMotion.tilt);
-      drawBusDestructionEffects();
-      drawPanicPassengers();
-      stopActors.filter(actor => shouldDrawStopActorBehindPole(actor)).sort((a,b)=>a.x-b.x).forEach(drawStopActor);
-      drawChasers();
-      stopActors.filter(actor => actor.x > -20 && actor.x < GAME_CANVAS_LOGICAL_WIDTH + 20).sort((a,b)=>a.x-b.x).forEach(drawStopPoleLayer);
-      stopActors.filter(actor => actor.state !== "waiting").sort((a,b)=>a.x-b.x).forEach(drawMovingSignLayer);
-      stopActors.filter(actor => !shouldDrawStopActorBehindPole(actor) && (actor.state !== "waiting" || (actor.x > -20 && actor.x < GAME_CANVAS_LOGICAL_WIDTH + 20))).sort((a,b)=>a.x-b.x).forEach(drawStopActor);
       ctx.restore();
+      ctx.beginPath();
+      ctx.arc(shiftedX, height - 9, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "#aeb7bf";
+      ctx.fill();
     }
-    function drawStopActor(actor) {
-      if (actor.state === "waiting") {
-        drawTinyPerson(actor.x, PASSENGER_GROUND_Y, actor.color, { running: false, variant: actor.phaseSeed });
-        return;
-      }
 
-      const t = actor.action.t;
+    ctx.fillStyle = "#ffe8a3";
+    ctx.fillRect(width - 1.5 + split, 31, 4.5, 5);
+    ctx.fillStyle = "#a42d2d";
+    ctx.fillRect(-split - 3, 34, 4, 4);
+    ctx.fillStyle = "rgba(255,255,255,0.10)";
+    ctx.fillRect(10 - split * 0.2, 7, width * 0.72, 3);
+
+    if (damage > 0.18) {
+      ctx.strokeStyle = "#5d321d";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(width * 0.42, 10);
+      ctx.lineTo(width * 0.47, 24);
+      ctx.lineTo(width * 0.43, 36);
+      ctx.lineTo(width * 0.50, 52);
+      ctx.stroke();
+    }
+
+    if (damage > 0.48) {
+      const flameAmount = clamp((damage - 0.48) / 0.52, 0, 1);
+      for (const fx of [48, 96, 184]) {
+        const flicker = Math.sin(finalSequence.t * 25 + fx) * 3;
+        ctx.fillStyle = "rgba(239, 68, 68, 0.92)";
+        ctx.beginPath();
+        ctx.moveTo(fx - 8, 7);
+        ctx.quadraticCurveTo(fx + flicker, -18 * flameAmount, fx + 7, 7);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(251, 191, 36, 0.95)";
+        ctx.beginPath();
+        ctx.moveTo(fx - 3, 7);
+        ctx.quadraticCurveTo(fx + flicker * 0.5, -8 * flameAmount, fx + 3, 7);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawPole(poleX, groundY, hasSign = false) {
+    ctx.save();
+    ctx.strokeStyle = "#5b636d";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(poleX, groundY);
+    ctx.lineTo(poleX, groundY - 42);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(poleX, groundY - 44, 2.6, 0, Math.PI * 2);
+    ctx.fillStyle = "#5b636d";
+    ctx.fill();
+    if (hasSign) drawStopSignEmblem(poleX, groundY - 53, 8.8, 0);
+    ctx.restore();
+  }
+
+  function drawWeapon(type, x, y, rotation = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    if (type === "torch") {
+      ctx.strokeStyle = "#6d4522";
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(8, -16);
+      ctx.stroke();
+      ctx.strokeStyle = "#3a2413";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(5.8, -11.5);
+      ctx.lineTo(8.8, -16.8);
+      ctx.stroke();
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath();
+      ctx.moveTo(8.6, -21.5);
+      ctx.quadraticCurveTo(14.8, -18.5, 12.3, -11.8);
+      ctx.quadraticCurveTo(8.4, -8.8, 6.7, -13.2);
+      ctx.quadraticCurveTo(5.4, -17.3, 8.6, -21.5);
+      ctx.fill();
+      ctx.fillStyle = "#fde68a";
+      ctx.beginPath();
+      ctx.moveTo(9.4, -18.2);
+      ctx.quadraticCurveTo(12.2, -16.6, 10.9, -13.2);
+      ctx.quadraticCurveTo(8.8, -11.5, 8.0, -13.9);
+      ctx.quadraticCurveTo(7.4, -16.1, 9.4, -18.2);
+      ctx.fill();
+    } else if (type === "pitchfork") {
+      ctx.strokeStyle = "#6d4522";
+      ctx.lineWidth = 2.3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(8, -16);
+      ctx.stroke();
+      ctx.strokeStyle = "#59616b";
+      ctx.lineWidth = 1.7;
+      ctx.beginPath();
+      ctx.moveTo(6.1, -18.2);
+      ctx.lineTo(12.3, -18.2);
+      ctx.moveTo(7.0, -18.2);
+      ctx.lineTo(7.0, -25.6);
+      ctx.moveTo(9.2, -18.2);
+      ctx.lineTo(9.2, -26.8);
+      ctx.moveTo(11.4, -18.2);
+      ctx.lineTo(11.4, -25.6);
+      ctx.stroke();
+    } else if (type === "hoe") {
+      ctx.strokeStyle = "#6d4522";
+      ctx.lineWidth = 2.3;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(8, -16);
+      ctx.stroke();
+      ctx.fillStyle = "#66707a";
+      ctx.beginPath();
+      ctx.moveTo(6.3, -18.6);
+      ctx.lineTo(14.8, -17.6);
+      ctx.lineTo(13.0, -13.0);
+      ctx.lineTo(7.3, -13.8);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "#43505a";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawPersonSprite(x, groundY, shirtColor, options = {}) {
+    const scale = options.scale ?? 1;
+    const tilt = options.tilt ?? 0;
+    const runPhase = options.runPhase ?? 0;
+    const running = !!options.running;
+    const crouch = !!options.crouch;
+    const withBag = !!options.hasBag;
+    const tool = options.tool || null;
+    const toolAngle = options.toolAngle ?? 0;
+    const variantSeed = Math.abs(Math.floor((options.variant ?? 0) * 10));
+    const skinTones = ["#d7a77b", "#b97853", "#8f5f43", "#e0b38c", "#6f4937"];
+    const hairColors = ["#2d211c", "#5b3824", "#1f2937", "#7a5237", "#b98a53"];
+    const skinTone = skinTones[variantSeed % skinTones.length];
+    const hairColor = hairColors[(variantSeed * 3 + 1) % hairColors.length];
+    const hairStyle = variantSeed % 5;
+
+    const legSwing = running ? Math.sin(runPhase) * 5 : 0;
+    const armSwing = running ? Math.cos(runPhase) * 6 : 0;
+    const bodyLift = running ? Math.sin(runPhase * 2) * 1.5 : 0;
+
+    ctx.save();
+    ctx.translate(x, groundY + bodyLift);
+    ctx.rotate(tilt);
+    ctx.scale(scale, scale);
+    ctx.lineCap = "round";
+
+    ctx.fillStyle = skinTone;
+    ctx.beginPath();
+    ctx.arc(0, -34, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = hairColor;
+    ctx.fillStyle = hairColor;
+    if (hairStyle === 0 || hairStyle === 3) {
+      ctx.beginPath();
+      ctx.arc(0, -35.5, 6.4, Math.PI, Math.PI * 2);
+      ctx.fill();
+    } else if (hairStyle === 1) {
+      ctx.beginPath();
+      ctx.arc(-1.5, -36, 5.8, Math.PI, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(6.4, -33.2, 2.3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (hairStyle === 2) {
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -37);
+      ctx.lineTo(5, -37);
+      ctx.stroke();
+      ctx.fillRect(-5.5, -39, 9, 2.5);
+    }
+    if (hairStyle === 3) {
+      ctx.strokeStyle = "#263442";
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(-2.7, -33.7, 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(2.7, -33.7, 2, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-0.6, -33.7);
+      ctx.lineTo(0.6, -33.7);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "#243242";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-3, -23);
+    ctx.lineTo(-10, -16 + armSwing * 0.25);
+    ctx.moveTo(3, -23);
+    ctx.lineTo(10, -16 - armSwing * 0.25);
+    if (crouch) {
+      ctx.moveTo(-2, -16);
+      ctx.lineTo(-7.5, -4);
+      ctx.moveTo(2, -16);
+      ctx.lineTo(8.5, -1);
+    } else {
+      ctx.moveTo(-2, -11);
+      ctx.lineTo(-7.5 + legSwing, 0);
+      ctx.moveTo(2, -11);
+      ctx.lineTo(7.5 - legSwing, 0);
+    }
+    ctx.stroke();
+
+    ctx.strokeStyle = shirtColor;
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    if (crouch) {
+      ctx.moveTo(0, -26);
+      ctx.lineTo(0, -16);
+    } else {
+      ctx.moveTo(0, -26);
+      ctx.lineTo(0, -11);
+    }
+    ctx.stroke();
+
+    if (tool) drawWeapon(tool, 5, -7, toolAngle);
+    ctx.restore();
+  }
+
+  function drawStopSignPath(centerX, centerY, radius) {
+    ctx.beginPath();
+    for (let i = 0; i < 8; i++) {
+      const angle = -Math.PI / 8 + i * (Math.PI / 4);
+      const px = centerX + Math.cos(angle) * radius;
+      const py = centerY + Math.sin(angle) * radius;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+  }
+
+  function drawStopSignEmblem(x, y, radius = STAFF_GAP * 0.62, rotation = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    drawStopSignPath(0, 0, radius);
+    ctx.fillStyle = "#d92f2f";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = Math.max(1.5, radius * 0.19);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `bold ${Math.max(4.0, radius * 0.48)}px Arial, sans-serif`;
+    ctx.fillText("STOP", 0, 0.35);
+    ctx.restore();
+  }
+
+  function drawFlyingSign(x, y, rotation = 0, radius = 8.5) {
+    drawStopSignEmblem(x, y, radius, rotation);
+  }
+
+  function buildScenery() {
+    sceneryBuildings = [];
+    let x = -20;
+    for (let i = 0; i < 8; i++) {
+      const widths = [86, 72, 100, 90, 85, 82];
+      const heights = [125, 99, 139, 113, 147, 106];
+      const width = widths[i % widths.length];
+      const height = heights[i % heights.length];
+      const [color, windowColor] = BUILDING_COLORS[i % BUILDING_COLORS.length];
+      sceneryBuildings.push({ x, y: ANIMATION_AREA_BOTTOM - 28 - height, width, height, color, windowColor });
+      x += width + 26;
+    }
+
+    stopActors = [];
+    chasers = [];
+    busDoorOpen = 0;
+    busDoorHold = 0;
+    roadStripeOffset = 0;
+    busMotionClock = 0;
+    wheelSpin = 0;
+    cloudOffset = 0;
+  }
+
+  function actorXForNoteX(noteX) {
+    const startX = GAME_CANVAS_LOGICAL_WIDTH + 28;
+    const endX = BUS_X - 18;
+    const t = clamp((NOTE_SPAWN_X - noteX) / Math.max(1, NOTE_SPAWN_X - TARGET_BARLINE_X), 0, 1);
+    return lerp(startX, endX, t);
+  }
+
+  function syncStopActorsToNotes() {
+    const noteById = new Map(activeNotes.map(note => [note.id, note]));
+    stopActors.forEach(actor => {
+      if (actor.state !== "waiting") return;
+      const note = noteById.get(actor.noteId);
+      if (note) actor.x = actorXForNoteX(note.x);
+    });
+  }
+
+  function getTargetStopActor(noteId) {
+    return stopActors.find(actor => actor.noteId === noteId) || null;
+  }
+
+  function noteYFromStep(step) {
+    const bottomLineY = STAFF_TOP + STAFF_GAP * 4;
+    return bottomLineY - step * (STAFF_GAP / 2);
+  }
+
+  function geometryForPitch(pitch) {
+    const y = noteYFromStep(pitch.step);
+    return {
+      y,
+      ledgerYs: pitch.ledger ? [y] : [],
+      staffCenterY: STAFF_TOP + STAFF_GAP * 2
+    };
+  }
+
+  function choosePitchIndex() {
+    let index = Math.floor(Math.random() * NOTE_CHOICES.length);
+    if (NOTE_CHOICES.length > 1 && index === lastPitchIndex) {
+      index = (index + 1 + Math.floor(Math.random() * (NOTE_CHOICES.length - 1))) % NOTE_CHOICES.length;
+    }
+    return index;
+  }
+
+  function spawnNoteAt(x) {
+    const pitchIndex = choosePitchIndex();
+    const pitch = NOTE_CHOICES[pitchIndex];
+    lastPitchIndex = pitchIndex;
+    const noteGeometry = geometryForPitch(pitch);
+    const noteId = nextNoteId++;
+    activeNotes.push({
+      id: noteId,
+      letter: pitch.letter,
+      x,
+      y: noteGeometry.y,
+      ledgerYs: noteGeometry.ledgerYs,
+      staffCenterY: noteGeometry.staffCenterY
+    });
+    stopActors.push({
+      id: nextStopActorId++,
+      noteId,
+      x: actorXForNoteX(x),
+      color: STOP_COLORS[(noteId - 1) % STOP_COLORS.length],
+      hasBag: noteId % 3 === 0,
+      weapon: WEAPONS[(noteId - 1) % WEAPONS.length],
+      state: "waiting",
+      action: null,
+      addedToMob: false,
+      phaseSeed: noteId * 0.7
+    });
+  }
+
+  function maintainNoteStream() {
+    if (activeNotes.length === 0) spawnNoteAt(NOTE_SPAWN_X);
+    let rightmost = activeNotes[activeNotes.length - 1];
+    while (rightmost.x <= NOTE_SPAWN_X - NOTE_SPACING_X) {
+      spawnNoteAt(rightmost.x + NOTE_SPACING_X);
+      rightmost = activeNotes[activeNotes.length - 1];
+    }
+  }
+
+  function currentNoteSpeed() {
+    const n = correctNotes;
+    const baseSpeedSquared = BASE_NOTE_SPEED * BASE_NOTE_SPEED;
+    return Math.sqrt(baseSpeedSquared + n * NOTE_SPEED_SQUARED_RAMP);
+  }
+
+  function worldScrollSpeed() {
+    const noteTravelTime = (STAFF_RIGHT - TARGET_BARLINE_X) / Math.max(1, currentNoteSpeed());
+    return (GAME_CANVAS_LOGICAL_WIDTH - BUS_X) / Math.max(0.1, noteTravelTime);
+  }
+
+  function boardingScaleOnlyIfNeeded(actorX, scrollSpeed) {
+    const baseBoardingDuration = 1.02;
+    const removalBoundaryX = -40;
+    const safetyPadding = 0.06;
+    const availableTime = (actorX - removalBoundaryX) / Math.max(1, scrollSpeed) - safetyPadding;
+
+    // Keep the original timing until the actor would actually scroll offscreen
+    // before boarding finishes. Then compress only enough to fit the remaining window.
+    if (availableTime >= baseBoardingDuration) return 1;
+    return clamp(availableTime / baseBoardingDuration, 0.45, 1);
+  }
+
+  function approachProgressForX(x) {
+    const approachDistance = Math.max(1, NOTE_ZOOM_START_X - NOTE_LANDING_X);
+    const rawProgress = Math.max(0, Math.min(1, (NOTE_ZOOM_START_X - x) / approachDistance));
+    return rawProgress * rawProgress * (3 - 2 * rawProgress);
+  }
+
+  function getRenderedNotePosition(note) {
+    const approach = approachProgressForX(note.x);
+    return { x: note.x, y: NOTE_VANISH_Y + (note.y - NOTE_VANISH_Y) * approach };
+  }
+  function registerMobMember(cause) {
+    mobSize = Math.min(MAX_MOB_SIZE, mobSize + 1);
+    if (mobSize >= MAX_MOB_SIZE && !finalSequence.active) {
+      finalSequence = { active: true, phase: "waiting", t: 0, overlayQueued: false };
+      activeNotes = [];
+      stopActors = stopActors.filter(actor => actor.state !== "waiting");
+      lastEventMessage = "The final passenger joins the mob...";
+    }
+  }
+  function launchStopAnimation(outcome, note) {
+    const actor = getTargetStopActor(note.id);
+    if (!actor) return;
+    const notePos = getRenderedNotePosition(note);
+    actor.state = outcome === "correct" ? "boarding" : "hit";
+
+    const scrollSpeed = worldScrollSpeed();
+    const animationScale = outcome === "correct"
+      ? boardingScaleOnlyIfNeeded(actor.x, scrollSpeed)
+      : 1;
+    const impactTime = (outcome === "correct" ? 0.32 : 0.20) * animationScale;
+    const personImpactX = actor.x - scrollSpeed * impactTime;
+    const impactX = personImpactX + 5;
+    const impactY = PASSENGER_GROUND_Y - 24;
+    const dirX = impactX - notePos.x;
+    const dirY = impactY - notePos.y;
+
+    actor.action = {
+      outcome,
+      t: 0,
+      animationScale,
+      startNoteX: notePos.x,
+      startNoteY: notePos.y,
+      impactTime,
+      boardingWaitEnd: 0.24 * animationScale,
+      boardingRunEnd: 0.70 * animationScale,
+      boardingEnd: 1.02 * animationScale,
+      flightDuration: 1.25 * animationScale,
+      sideLandingDuration: 0.28 * animationScale,
+      getUpDuration: 0.35 * animationScale,
+      impactX,
+      impactY,
+      personImpactX,
+      signVelX: dirX / impactTime,
+      signVelY: dirY / impactTime,
+      mobTargetX: BUS_X - 34 - Math.min(chasers.length, MAX_MOB_SIZE - 1) * 18,
+      weapon: actor.weapon,
+      isFinalMiss: outcome !== "correct" && mobSize === MAX_MOB_SIZE - 1
+    };
+
+    actor.addedToMob = false;
+    if (outcome === "correct") soundCorrect(impactTime);
+    else soundWrongFling(impactTime, actor.action.flightDuration, outcome);
+    if (outcome === "correct") {
+      busDoorHold = Math.max(0.48, actor.action.boardingEnd + 0.05);
+      lastEventMessage = "Passenger picked up — keep the route moving.";
+    } else if (outcome === "wrong") {
+      lastEventMessage = "Wrong letter — the stop sign nailed the passenger.";
+    } else {
+      lastEventMessage = "Missed stop — the stop sign hit the passenger.";
+    }
+  }
+  function resolveFrontNote(outcome) {
+    if (activeNotes.length === 0) return;
+    const note = activeNotes.shift();
+    launchStopAnimation(outcome, note);
+
+    if (outcome === "correct") {
+      addScore(1);
+      correctNotes++;
+    } else {
+      registerMobMember(outcome);
+    }
+
+    if (running && !finalSequence.active) maintainNoteStream();
+  }
+
+  function updateBuildings(deltaSeconds, scrollSpeed) {
+    const buildingSpeed = scrollSpeed * 0.42;
+    let rightmost = Math.max(...sceneryBuildings.map(building => building.x + building.width));
+    sceneryBuildings.forEach((building, index) => {
+      building.x -= buildingSpeed * deltaSeconds;
+      if (building.x + building.width < -10) {
+        const width = [86, 72, 100, 90, 85, 82][index % 6];
+        const height = [125, 99, 139, 113, 147, 106][index % 6];
+        building.x = rightmost + 26;
+        building.y = ANIMATION_AREA_BOTTOM - 28 - height;
+        building.width = width;
+        building.height = height;
+        rightmost = building.x + width;
+      }
+    });
+  }
+  function updateStops(deltaSeconds) {
+    const scrollSpeed = finalSequence.active && (finalSequence.phase === "rush" || finalSequence.phase === "destroy") ? 0 : worldScrollSpeed();
+    syncStopActorsToNotes();
+    stopActors = stopActors.filter(actor => {
+      if (actor.state === "waiting") return true;
+      actor.action.t += deltaSeconds;
+
       if (actor.state === "boarding") {
-        const waitEnd = actor.action.boardingWaitEnd;
-        const runEnd = actor.action.boardingRunEnd;
-        const boardingEnd = actor.action.boardingEnd;
-        const animationScale = actor.action.animationScale;
-        if (t < waitEnd) {
-          drawTinyPerson(actor.x, PASSENGER_GROUND_Y, actor.color, { variant: actor.phaseSeed });
-        } else if (t < runEnd) {
-          const p = easeInOut((t - waitEnd) / Math.max(0.001, runEnd - waitEnd));
-          const approachX = BUS_DOOR_CENTER_X + 5;
-          drawTinyPerson(lerp(actor.x, approachX, p), PASSENGER_GROUND_Y, actor.color, { running: true, runPhase: (t / animationScale) * 20, variant: actor.phaseSeed });
-        } else if (t < boardingEnd) {
-          const p = easeInOut((t - runEnd) / Math.max(0.001, boardingEnd - runEnd));
-          const approachX = BUS_DOOR_CENTER_X + 5;
-          const insideGroundY = BUS_Y + currentBusMotion().y + 7 + (BUS_HEIGHT - 14) * 0.98;
-          drawTinyPerson(
-            lerp(approachX, BUS_DOOR_CENTER_X + 1, p),
-            lerp(PASSENGER_GROUND_Y, insideGroundY, p) - Math.sin(p * Math.PI) * 7,
-            actor.color,
-            { running: true, runPhase: (t / animationScale) * 22, variant: actor.phaseSeed }
-          );
-        }
-        return;
+        actor.x -= scrollSpeed * deltaSeconds;
+        return actor.x > -40;
       }
 
+      actor.x -= scrollSpeed * deltaSeconds;
       const impactTime = actor.action.impactTime;
       const flightDuration = actor.action.flightDuration;
       const sideLandingDuration = actor.action.sideLandingDuration;
       const getUpDuration = actor.action.getUpDuration;
+      const totalDuration = impactTime + flightDuration + sideLandingDuration + getUpDuration;
 
-      if (t < impactTime) {
-        drawTinyPerson(actor.x, PASSENGER_GROUND_Y, actor.color, { variant: actor.phaseSeed });
-        return;
+      if (!actor.addedToMob && actor.action.t >= totalDuration - 0.02) {
+        actor.addedToMob = true;
+        chasers.push({ color: actor.color, weapon: actor.action.weapon, t: 0, phaseSeed: actor.phaseSeed });
+        if (chasers.length > MAX_MOB_SIZE) chasers.shift();
+
+        if (actor.action.isFinalMiss && finalSequence.active && finalSequence.phase === "waiting") {
+          startFinalRush();
+        }
       }
 
-      const afterImpactTime = t - impactTime;
+      return actor.action.t < totalDuration;
+    });
+  }
 
-      if (afterImpactTime < flightDuration) {
-        const p = clamp(afterImpactTime / flightDuration, 0, 1);
-        drawTinyPerson(
-          lerp(actor.action.personImpactX, actor.action.mobTargetX, p),
-          lerp(PASSENGER_GROUND_Y, CHASER_GROUND_Y, p) - Math.sin(p * Math.PI) * 52,
-          actor.color,
-          {
-            running: true,
-            runPhase: (t / actor.action.animationScale) * 14,
-            tilt: -p * (Math.PI * 4 + Math.PI / 2),
-            variant: actor.phaseSeed
-          }
-        );
-        return;
-      }
+  function updateChasers(deltaSeconds) {
+    chasers.forEach(chaser => { chaser.t += deltaSeconds; });
+  }
+  function updateDoor(deltaSeconds) {
+    if (busDoorHold > 0) busDoorHold = Math.max(0, busDoorHold - deltaSeconds);
+    const target = busDoorHold > 0 ? 1 : 0;
+    busDoorOpen += (target - busDoorOpen) * Math.min(1, deltaSeconds * 8);
+  }
 
-      const landingTime = afterImpactTime - flightDuration;
-      if (landingTime < sideLandingDuration) {
-        drawLandingDust(actor.action.mobTargetX, CHASER_GROUND_Y + 0.4, landingTime / sideLandingDuration);
-        drawTinyPerson(actor.action.mobTargetX, CHASER_GROUND_Y, actor.color, {
-          crouch: true,
-          tilt: -Math.PI / 2,
-          variant: actor.phaseSeed
-        });
-        return;
-      }
 
-      const getUpProgress = clamp((landingTime - sideLandingDuration) / getUpDuration, 0, 1);
-      const easedGetUp = easeOutCubic(getUpProgress);
-      drawTinyPerson(actor.action.mobTargetX, CHASER_GROUND_Y, actor.color, {
-        crouch: easedGetUp < 0.72,
-        tilt: lerp(-Math.PI / 2, 0, easedGetUp),
-        tool: easedGetUp > 0.72 ? actor.action.weapon : null,
-        variant: actor.phaseSeed
+  function spawnPanicPassengers() {
+    panicPassengers = [];
+    const colors = ["#c84a44", "#3976a8", "#6f4ba3", "#2d8b64", "#c58a2b", "#b55e3c", "#4a78b7", "#8f5cc2"];
+    for (let i = 0; i < 8; i++) {
+      const exitLeft = i < 4;
+      panicPassengers.push({
+        color: colors[i % colors.length],
+        hasBag: i % 3 === 0,
+        t: 0,
+        duration: 1.25 + (i % 3) * 0.12,
+        startX: BUS_DOOR_CENTER_X - 2 + (i % 2) * 5,
+        startY: BUS_Y + BUS_HEIGHT - 8,
+        targetX: exitLeft ? -90 - i * 18 : GAME_CANVAS_LOGICAL_WIDTH + 70 + (i - 4) * 18,
+        targetY: PASSENGER_GROUND_Y + (i % 2) * 4,
+        variant: i + 20
       });
     }
-    function getFinalMobTarget(index, chaser) {
-      const slots = [
-        [BUS_X - 8, BUS_Y + BUS_HEIGHT + 1], [BUS_X + 4, BUS_Y + BUS_HEIGHT + 3],
-        [BUS_X + 18, BUS_Y + BUS_HEIGHT], [BUS_X + 32, BUS_Y + BUS_HEIGHT + 3],
-        [BUS_X + 47, BUS_Y + BUS_HEIGHT + 1], [BUS_X + 62, BUS_Y + BUS_HEIGHT + 3],
-        [BUS_X + 76, BUS_Y + BUS_HEIGHT], [BUS_X + BUS_WIDTH + 7, BUS_Y + BUS_HEIGHT + 2],
-        [BUS_X + 23, BUS_Y + BUS_HEIGHT - 5], [BUS_X + 65, BUS_Y + BUS_HEIGHT - 6]
-      ];
-      const [baseX, baseY] = slots[index % slots.length];
-      return {
-        x: clamp(baseX + Math.sin((index + 1) * 12.9898 + chaser.phaseSeed) * 3.3, BUS_X - 10, BUS_X + BUS_WIDTH + 9),
-        y: baseY + Math.cos((index + 1) * 7.233 + chaser.phaseSeed) * 1.4
-      };
+  }
+
+  function startFinalRush() {
+    finalSequence.phase = "rush";
+    finalSequence.t = 0;
+    busDoorHold = 4.5;
+    busDoorOpen = 1;
+    spawnPanicPassengers();
+    soundMobRush();
+    lastEventMessage = "Panic! Passengers flee as the mob charges the bus!";
+  }
+
+  function updatePanicPassengers(deltaSeconds) {
+    if (!panicPassengers.length) return;
+    panicPassengers = panicPassengers.filter(passenger => {
+      passenger.t += deltaSeconds;
+      return passenger.t < passenger.duration;
+    });
+  }
+
+  function drawPanicPassengers() {
+    panicPassengers.forEach((passenger, index) => {
+      const p = clamp(passenger.t / passenger.duration, 0, 1);
+      const px = lerp(passenger.startX, passenger.targetX, p);
+      const py = lerp(passenger.startY, passenger.targetY, p) - Math.sin(p * Math.PI) * (10 + (index % 3) * 4);
+      drawPersonSprite(px, py, passenger.color, {
+        running: true,
+        runPhase: passenger.t * 24 + index,
+        hasBag: passenger.hasBag,
+        scale: 0.94,
+        variant: passenger.variant
+      });
+    });
+  }
+
+  function updateFinalSequence(deltaSeconds) {
+    if (!finalSequence.active || finalSequence.phase === "waiting") return;
+    finalSequence.t += deltaSeconds;
+    updatePanicPassengers(deltaSeconds);
+
+    if (finalSequence.phase === "rush") {
+      if (finalSequence.t >= 1.35) {
+        finalSequence.phase = "destroy";
+        finalSequence.t = 0;
+        panicPassengers = [];
+        soundBusDestruction();
+        lastEventMessage = "The bus is smashed into rubble!";
+      }
+      return;
     }
 
-    function drawBusDestructionEffects() {
-      if (!finalSequence.active || finalSequence.phase !== "destroy") return;
-      const t = finalSequence.t;
-      const progress = clamp(t / 2.05, 0, 1);
-      ctx.save();
-      ctx.translate(BUS_X + busShake, BUS_Y);
+    if (finalSequence.phase === "destroy") {
+      busDamage = clamp(finalSequence.t / 2.1, 0, 1);
+      const shakeStrength = Math.min(18, 4 + busDamage * 18);
+      busShake = Math.sin(finalSequence.t * 55) * shakeStrength
+        + Math.cos(finalSequence.t * 31) * shakeStrength * 0.34;
+      if (finalSequence.t >= 3.45 && !finalSequence.overlayQueued) {
+        finalSequence.overlayQueued = true;
+        finalOverlayTimer = setTimeout(() => endGame("The mob destroyed the bus!"), 220);
+      }
+    }
+  }
 
-      const pieces = [
-        [0.12, 8, 10, 14, 5, -48, -58, -8, "#f6c744"],
-        [0.22, 27, 8, 12, 4, -28, -74, 9, "#d88a1b"],
-        [0.32, 43, 18, 13, 5, 18, -68, -10, "#f6c744"],
-        [0.40, 58, 9, 10, 12, 44, -61, 11, "#203b54"],
-        [0.50, 76, 8, 15, 5, 58, -53, 9, "#f6c744"],
-        [0.60, 84, 22, 11, 4, 70, -40, 12, "#d88a1b"]
-      ];
-      pieces.forEach((piece, index) => {
-        const [delay, x, y, w, h, vx, vy, spin, color] = piece;
-        const pt = t - delay;
-        if (pt <= 0) return;
-        const px = x + vx * pt;
-        const py = y + vy * pt + 34 * pt * pt;
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(spin * pt);
-        ctx.fillStyle = color;
-        ctx.strokeStyle = "#4a3518";
-        ctx.lineWidth = 0.8;
-        ctx.fillRect(-w / 2, -h / 2, w, h);
-        ctx.strokeRect(-w / 2, -h / 2, w, h);
-        ctx.restore();
-        if (index < 4) {
-          ctx.fillStyle = "rgba(187,225,242,0.84)";
+  function drawMovingSignLayer(actor) {
+    if (!actor.action) return;
+    const t = actor.action.t;
+    if (actor.state === "boarding") {
+      if (t < actor.action.impactTime) {
+        const poleX = actor.x - 14;
+        const p = easeOutCubic(t / actor.action.impactTime);
+        drawFlyingSign(
+          lerp(actor.action.startNoteX, poleX, p),
+          lerp(actor.action.startNoteY, PASSENGER_GROUND_Y - 53, p),
+          p * 7,
+          8.2
+        );
+      } else if (t < actor.action.impactTime + 0.14) {
+        drawAnswerImpactBurst(actor.x - 14, PASSENGER_GROUND_Y - 53, (t - actor.action.impactTime) / 0.14);
+      }
+      return;
+    }
+
+    const impactTime = actor.action.impactTime;
+    if (t < impactTime) {
+      const p = clamp(t / impactTime, 0, 1);
+      drawFlyingSign(
+        lerp(actor.action.startNoteX, actor.action.impactX, p),
+        lerp(actor.action.startNoteY, actor.action.impactY, p),
+        t * 25,
+        8.2
+      );
+      return;
+    }
+
+    const afterImpactTime = t - impactTime;
+    if (afterImpactTime < 0.12) {
+      drawAnswerImpactBurst(actor.action.impactX, actor.action.impactY, afterImpactTime / 0.12, "255, 145, 88");
+    }
+    const signX = actor.action.impactX + actor.action.signVelX * afterImpactTime;
+    const signY = actor.action.impactY + actor.action.signVelY * afterImpactTime;
+    if (signX > -30 && signY < GAME_CANVAS_LOGICAL_HEIGHT + 40) {
+      drawFlyingSign(signX, signY, t * 25, 8.2);
+    }
+  }
+
+  function drawStopPoleLayer(actor) {
+    const poleX = actor.x - 14;
+    drawPole(poleX, PASSENGER_GROUND_Y, actor.state === "boarding" && actor.action && actor.action.t >= actor.action.impactTime);
+  }
+
+  function shouldDrawStopActorBehindPole(actor) {
+    if (actor.state === "waiting" || actor.state === "boarding") return false;
+    const impactTime = actor.action && actor.action.impactTime != null ? actor.action.impactTime : 0;
+    const flightDuration = actor.action && actor.action.flightDuration != null ? actor.action.flightDuration : 0;
+    const t = actor.action && actor.action.t != null ? actor.action.t : 0;
+    if (t < impactTime) return false;
+    if (flightDuration <= 0) return true;
+    const afterImpact = t - impactTime;
+    if (afterImpact >= flightDuration) return true;
+    return afterImpact / flightDuration > 0.38;
+  }
+
+  function drawCityEnvironment() {
+    ctx.save();
+    const sky = ctx.createLinearGradient(0, 0, 0, ANIMATION_AREA_BOTTOM);
+    sky.addColorStop(0, "#78bde8");
+    sky.addColorStop(0.68, "#d8eef9");
+    sky.addColorStop(1, "#f7e2bd");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, ANIMATION_AREA_BOTTOM);
+
+    ctx.fillStyle = "rgba(255, 242, 179, 0.9)";
+    ctx.beginPath();
+    ctx.arc(638, 54, 31, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "rgba(255,255,255,0.10)";
+    ctx.fillRect(0, ANIMATION_AREA_BOTTOM - 108, GAME_CANVAS_LOGICAL_WIDTH, 42);
+    const cloudSpan = GAME_CANVAS_LOGICAL_WIDTH + 260;
+    drawAtmosphereCloud(wrappedX(70 + cloudOffset, cloudSpan, 130), 54, 0.90, 0.52);
+    drawAtmosphereCloud(wrappedX(330 + cloudOffset * 0.72, cloudSpan, 130), 87, 0.72, 0.44);
+    drawAtmosphereCloud(wrappedX(590 + cloudOffset * 0.86, cloudSpan, 130), 38, 1.02, 0.58);
+
+    sceneryBuildings.forEach(drawBuilding);
+
+    const roadTop = 182;
+    const curbTop = 224;
+    const sidewalkTop = 228;
+    const sidewalkBottom = 268;
+
+    // Each repeating layer derives its own phase from one continuous world offset.
+    // Because roadStripeOffset moves left at the same speed as the passengers,
+    // people remain visually anchored to the same sidewalk crack.
+    const roadPhase = ((roadStripeOffset % 120) + 120) % 120;
+    const crackPhase = ((roadStripeOffset % 137) + 137) % 137;
+    const upperDashPhase = ((roadStripeOffset % 88) + 88) % 88;
+    const sidewalkPhase = ((roadStripeOffset % 72) + 72) % 72;
+    const grassPhase = ((roadStripeOffset % 48) + 48) % 48;
+
+    const road = ctx.createLinearGradient(0, roadTop, 0, curbTop);
+    road.addColorStop(0, "#4a5058");
+    road.addColorStop(0.55, "#555c65");
+    road.addColorStop(1, "#454b53");
+    ctx.fillStyle = road;
+    ctx.fillRect(0, roadTop, GAME_CANVAS_LOGICAL_WIDTH, curbTop - roadTop);
+
+    // Exactly two dashed road rows: one subtle upper row and one stronger center row.
+    const upperDashY = roadTop + 10;
+    ctx.fillStyle = "rgba(255,255,255,0.085)";
+    for (let x = upperDashPhase - 88; x < GAME_CANVAS_LOGICAL_WIDTH + 88; x += 88) {
+      ctx.fillRect(x, upperDashY, 33, 1.7);
+    }
+
+    const mainDashY = roadTop + Math.round((curbTop - roadTop) * 0.60);
+    ctx.fillStyle = "rgba(255,255,255,0.18)";
+    for (let x = roadPhase - 120; x < GAME_CANVAS_LOGICAL_WIDTH + 120; x += 120) {
+      ctx.fillRect(x, mainDashY, 46, 2.3);
+    }
+
+    // Sparse cracks add road texture without becoming another dashed row.
+    ctx.strokeStyle = "rgba(26,31,38,0.24)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    for (let x = crackPhase - 137; x < GAME_CANVAS_LOGICAL_WIDTH + 150; x += 137) {
+      ctx.moveTo(x + 74, roadTop + 34);
+      ctx.lineTo(x + 83, roadTop + 30);
+      ctx.lineTo(x + 91, roadTop + 36);
+    }
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(BUS_X + BUS_WIDTH / 2, BUS_Y + BUS_HEIGHT + 3, 124, 11.5, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(16, 20, 26, 0.22)";
+    ctx.fill();
+
+    // The gold belongs only on the curb, never inside the sidewalk.
+    ctx.fillStyle = "#d4b34a";
+    ctx.fillRect(0, curbTop, GAME_CANVAS_LOGICAL_WIDTH, 2.5);
+    ctx.fillStyle = "#8f969d";
+    ctx.fillRect(0, curbTop + 2.5, GAME_CANVAS_LOGICAL_WIDTH, 3.5);
+
+    const sidewalk = ctx.createLinearGradient(0, sidewalkTop, 0, sidewalkBottom);
+    sidewalk.addColorStop(0, "#d8d2c7");
+    sidewalk.addColorStop(1, "#c9c1b5");
+    ctx.fillStyle = sidewalk;
+    ctx.fillRect(0, sidewalkTop, GAME_CANVAS_LOGICAL_WIDTH, sidewalkBottom - sidewalkTop);
+
+    ctx.strokeStyle = "rgba(118,108,96,0.28)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = sidewalkPhase - 72; x <= GAME_CANVAS_LOGICAL_WIDTH + 72; x += 72) {
+      ctx.moveTo(x, sidewalkTop);
+      ctx.lineTo(x + 9, sidewalkBottom);
+    }
+    ctx.stroke();
+
+    const grassTop = sidewalkBottom;
+    const grass = ctx.createLinearGradient(0, grassTop, 0, GAME_CANVAS_LOGICAL_HEIGHT);
+    grass.addColorStop(0, "#7aa85e");
+    grass.addColorStop(1, "#5f8d45");
+    ctx.fillStyle = grass;
+    ctx.fillRect(0, grassTop, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT - grassTop);
+
+    // Grass blades fill the entire green field. Their rows stay vertically fixed;
+    // only their x positions scroll left with the road and sidewalk.
+    ctx.strokeStyle = "rgba(47, 86, 34, 0.48)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = grassTop + 3; y < GAME_CANVAS_LOGICAL_HEIGHT + 18; y += 28) {
+      for (let x = grassPhase - 48; x < GAME_CANVAS_LOGICAL_WIDTH + 48; x += 48) {
+        ctx.moveTo(x + 7, y + 1);
+        ctx.lineTo(x + 13, y + 13);
+        ctx.lineTo(x + 20, y + 2);
+        ctx.moveTo(x + 29, y + 3);
+        ctx.lineTo(x + 35, y + 17);
+        ctx.lineTo(x + 42, y + 4);
+      }
+    }
+    ctx.stroke();
+
+    roundedRectPath(22, 280, GAME_CANVAS_LOGICAL_WIDTH - 44, 166, 18);
+    ctx.fillStyle = "rgba(255, 253, 246, 0.90)";
+    ctx.strokeStyle = "rgba(70, 61, 50, 0.28)";
+    ctx.lineWidth = 2;
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = "#ece7dc";
+    ctx.fillRect(0, 472, GAME_CANVAS_LOGICAL_WIDTH, 48);
+    ctx.strokeStyle = "#9f978b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 472);
+    ctx.lineTo(GAME_CANVAS_LOGICAL_WIDTH, 472);
+    ctx.stroke();
+
+    const busMotion = currentBusMotion();
+    const renderedBusY = BUS_Y + busMotion.y;
+    drawBusExhaust(renderedBusY);
+    if (finalSequence.active && finalSequence.phase === "destroy") drawBusRubble(clamp(finalSequence.t / 2.1, 0, 1));
+    drawBus(BUS_X + busShake, renderedBusY, BUS_WIDTH, BUS_HEIGHT, busDoorOpen, busDamage, busMotion.tilt);
+    drawBusDestructionEffects();
+
+    drawPanicPassengers();
+
+    stopActors
+      .filter(actor => shouldDrawStopActorBehindPole(actor))
+      .sort((a, b) => a.x - b.x)
+      .forEach(actor => drawStopActor(actor));
+
+    drawChasers();
+
+    stopActors
+      .filter(actor => actor.x > -50 && actor.x < GAME_CANVAS_LOGICAL_WIDTH + 50)
+      .sort((a, b) => a.x - b.x)
+      .forEach(actor => drawStopPoleLayer(actor));
+
+    stopActors
+      .filter(actor => actor.state !== "waiting")
+      .sort((a, b) => a.x - b.x)
+      .forEach(actor => drawMovingSignLayer(actor));
+
+    stopActors
+      .filter(actor => !shouldDrawStopActorBehindPole(actor) && (actor.state !== "waiting" || (actor.x > -50 && actor.x < GAME_CANVAS_LOGICAL_WIDTH + 50)))
+      .sort((a, b) => a.x - b.x)
+      .forEach(actor => drawStopActor(actor));
+
+    ctx.fillStyle = "#3f382f";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = "bold 18px Arial, sans-serif";
+    ctx.fillText(lastEventMessage, GAME_CANVAS_LOGICAL_WIDTH / 2, 496);
+    ctx.restore();
+  }
+  function drawStopActor(actor) {
+    if (actor.state === "waiting") {
+      drawPersonSprite(actor.x, PASSENGER_GROUND_Y, actor.color, {
+        hasBag: actor.hasBag,
+        runPhase: performance.now() / 220 + actor.phaseSeed,
+        variant: actor.phaseSeed
+      });
+      return;
+    }
+
+    const t = actor.action.t;
+    if (actor.state === "boarding") {
+      const waitEnd = actor.action.boardingWaitEnd;
+      const runEnd = actor.action.boardingRunEnd;
+      const boardingEnd = actor.action.boardingEnd;
+      const animationScale = actor.action.animationScale;
+      if (t < waitEnd) {
+        drawPersonSprite(actor.x, PASSENGER_GROUND_Y, actor.color, { hasBag: actor.hasBag, variant: actor.phaseSeed });
+      } else if (t < runEnd) {
+        const p = easeInOut((t - waitEnd) / Math.max(0.001, runEnd - waitEnd));
+        const approachX = BUS_DOOR_CENTER_X + 14;
+        drawPersonSprite(lerp(actor.x, approachX, p), PASSENGER_GROUND_Y, actor.color, {
+          running: true,
+          runPhase: (t / animationScale) * 18,
+          hasBag: actor.hasBag,
+          variant: actor.phaseSeed
+        });
+      } else if (t < boardingEnd) {
+        const p = easeInOut((t - runEnd) / Math.max(0.001, boardingEnd - runEnd));
+        const approachX = BUS_DOOR_CENTER_X + 14;
+        const insideGroundY = BUS_Y + currentBusMotion().y + 10 + (BUS_HEIGHT - 24) * 0.98;
+        const px = lerp(approachX, BUS_DOOR_CENTER_X + 1, p);
+        const py = lerp(PASSENGER_GROUND_Y, insideGroundY, p) - Math.sin(p * Math.PI) * 17;
+        drawPersonSprite(px, py, actor.color, {
+          running: true,
+          runPhase: (t / animationScale) * 20,
+          hasBag: actor.hasBag,
+          variant: actor.phaseSeed
+        });
+      }
+      return;
+    }
+
+    const impactTime = actor.action.impactTime;
+    const flightDuration = actor.action.flightDuration;
+    const sideLandingDuration = actor.action.sideLandingDuration;
+    const getUpDuration = actor.action.getUpDuration;
+
+    if (t < impactTime) {
+      drawPersonSprite(actor.x, PASSENGER_GROUND_Y, actor.color, { hasBag: actor.hasBag, variant: actor.phaseSeed });
+      return;
+    }
+
+    const afterImpactTime = t - impactTime;
+
+    if (afterImpactTime < flightDuration) {
+      const p = clamp(afterImpactTime / flightDuration, 0, 1);
+      const px = lerp(actor.action.personImpactX, actor.action.mobTargetX, p);
+      const py = lerp(PASSENGER_GROUND_Y, CHASER_GROUND_Y, p) - Math.sin(p * Math.PI) * 122;
+      drawPersonSprite(px, py, actor.color, {
+        tilt: -p * (Math.PI * 4 + Math.PI / 2),
+        running: true,
+        runPhase: (t / actor.action.animationScale) * 15,
+        hasBag: actor.hasBag,
+        variant: actor.phaseSeed
+      });
+      return;
+    }
+
+    const landingTime = afterImpactTime - flightDuration;
+    if (landingTime < sideLandingDuration) {
+      drawLandingDust(actor.action.mobTargetX, CHASER_GROUND_Y + 1, landingTime / sideLandingDuration);
+      drawPersonSprite(actor.action.mobTargetX, CHASER_GROUND_Y, actor.color, {
+        tilt: -Math.PI / 2,
+        crouch: true,
+        hasBag: actor.hasBag,
+        variant: actor.phaseSeed
+      });
+      return;
+    }
+
+    const getUpProgress = clamp((landingTime - sideLandingDuration) / getUpDuration, 0, 1);
+    const easedGetUp = easeOutCubic(getUpProgress);
+    drawPersonSprite(actor.action.mobTargetX, CHASER_GROUND_Y, actor.color, {
+      tilt: lerp(-Math.PI / 2, 0, easedGetUp),
+      crouch: easedGetUp < 0.72,
+      hasBag: actor.hasBag,
+      tool: easedGetUp > 0.72 ? actor.action.weapon : null,
+      variant: actor.phaseSeed
+    });
+  }
+  function getFinalMobTarget(index, chaser) {
+    const slots = [
+      [BUS_X - 17, BUS_Y + BUS_HEIGHT + 2],
+      [BUS_X + 11, BUS_Y + BUS_HEIGHT + 5],
+      [BUS_X + 45, BUS_Y + BUS_HEIGHT + 1],
+      [BUS_X + 80, BUS_Y + BUS_HEIGHT + 6],
+      [BUS_X + 118, BUS_Y + BUS_HEIGHT + 2],
+      [BUS_X + 156, BUS_Y + BUS_HEIGHT + 6],
+      [BUS_X + 192, BUS_Y + BUS_HEIGHT + 1],
+      [BUS_X + BUS_WIDTH + 15, BUS_Y + BUS_HEIGHT + 4],
+      [BUS_X + 55, BUS_Y + BUS_HEIGHT - 12],
+      [BUS_X + 164, BUS_Y + BUS_HEIGHT - 14]
+    ];
+    const [baseX, baseY] = slots[index % slots.length];
+    const jitterX = Math.sin((index + 1) * 12.9898 + chaser.phaseSeed) * 8;
+    const jitterY = Math.cos((index + 1) * 7.233 + chaser.phaseSeed) * 3.5;
+    return {
+      x: clamp(baseX + jitterX, BUS_X - 21, BUS_X + BUS_WIDTH + 20),
+      y: baseY + jitterY
+    };
+  }
+
+  function drawBusDestructionEffects() {
+    if (!finalSequence.active || finalSequence.phase !== "destroy") return;
+    const t = finalSequence.t;
+    const p = clamp(t / 2.15, 0, 1);
+
+    ctx.save();
+    ctx.translate(BUS_X + busShake, BUS_Y);
+
+    const debris = [
+      { delay: 0.18, x: 20,  y: 20, w: 34, h: 13, vx: -105, vy: -122, spin: -6.5, color: "#f6c744" },
+      { delay: 0.26, x: 68,  y: 14, w: 28, h: 10, vx: -62,  vy: -158, spin:  8.0, color: "#d88a1b" },
+      { delay: 0.34, x: 105, y: 40, w: 31, h: 12, vx:  38,  vy: -145, spin: -9.5, color: "#f6c744" },
+      { delay: 0.42, x: 145, y: 18, w: 24, h: 28, vx:  92,  vy: -132, spin: 10.0, color: "#203b54" },
+      { delay: 0.52, x: 181, y: 16, w: 36, h: 12, vx: 128,  vy: -116, spin:  7.2, color: "#f6c744" },
+      { delay: 0.62, x: 86,  y: 55, w: 42, h: 9,  vx: -28,  vy: -86,  spin: -5.5, color: "#d88a1b" },
+      { delay: 0.72, x: 204, y: 51, w: 25, h: 10, vx: 150,  vy: -78,  spin: 11.0, color: "#d88a1b" }
+    ];
+
+    debris.forEach((piece, index) => {
+      const pt = t - piece.delay;
+      if (pt <= 0) return;
+      const px = piece.x + piece.vx * pt;
+      const py = piece.y + piece.vy * pt + 72 * pt * pt;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(piece.spin * pt);
+      ctx.fillStyle = piece.color;
+      ctx.strokeStyle = "#4a3518";
+      ctx.lineWidth = 2;
+      ctx.fillRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+      ctx.strokeRect(-piece.w / 2, -piece.h / 2, piece.w, piece.h);
+      ctx.restore();
+
+      if (index < 5) {
+        ctx.fillStyle = "rgba(187, 225, 242, 0.82)";
+        for (let shard = 0; shard < 3; shard++) {
+          const sx = px + Math.sin(index * 4 + shard * 2.2) * (12 + shard * 5);
+          const sy = py + Math.cos(index * 3 + shard) * 9;
           ctx.beginPath();
-          ctx.moveTo(px - 3, py - 3);
-          ctx.lineTo(px + 3, py + 1);
-          ctx.lineTo(px - 1, py + 4);
+          ctx.moveTo(sx, sy - 4);
+          ctx.lineTo(sx + 5, sy + 3);
+          ctx.lineTo(sx - 4, sy + 2);
           ctx.closePath();
           ctx.fill();
         }
-      });
-
-      if (t > 0.38) {
-        const wt = t - 0.38;
-        ctx.save();
-        ctx.translate(18 - 41 * wt, BUS_HEIGHT - 3 - 50 * wt + 36 * wt * wt);
-        ctx.rotate(-11 * wt);
-        ctx.beginPath(); ctx.arc(0,0,4.7,0,Math.PI*2); ctx.fillStyle="#1f2937"; ctx.fill();
-        ctx.beginPath(); ctx.arc(0,0,1.8,0,Math.PI*2); ctx.fillStyle="#aeb7bf"; ctx.fill();
-        ctx.restore();
       }
+    });
 
-      if (t > 0.24) {
-        const strength = clamp((t - 0.24) / 0.8, 0, 1);
-        [[8,24,1],[22,10,2],[37,23,3],[53,9,4],[69,22,5],[84,11,6]].forEach(([fx,fy,seed]) => {
-          const flicker = Math.sin(t * 34 + seed * 1.7) * 3;
-          ctx.fillStyle = "rgba(220,38,38,0.95)";
-          ctx.beginPath();
-          ctx.moveTo(fx-4,fy+3); ctx.quadraticCurveTo(fx+flicker,fy-19*strength,fx+4,fy+3); ctx.closePath(); ctx.fill();
-          ctx.fillStyle = "rgba(251,146,60,0.98)";
-          ctx.beginPath();
-          ctx.moveTo(fx-2,fy+2); ctx.quadraticCurveTo(fx+flicker*.45,fy-11*strength,fx+2,fy+2); ctx.closePath(); ctx.fill();
-        });
-        for (let i=0;i<8;i++) {
-          const rise=(t*16+i*7)%50;
-          const sx=8+(i*12)%80+Math.sin(t*4+i)*3;
-          ctx.beginPath();
-          ctx.arc(sx,5-rise,3.5+(i%3)*1.7+progress,0,Math.PI*2);
-          ctx.fillStyle=`rgba(55,65,81,${0.34+progress*0.22})`;
-          ctx.fill();
-        }
-      }
-      ctx.restore();
-    }
-
-
-    function drawBusRubble(progress) {
-      if (progress <= 0.55) return;
+    if (t > 0.46) {
+      const wheelT = t - 0.46;
+      const wheelX = 42 - 88 * wheelT;
+      const wheelY = BUS_HEIGHT - 8 - 105 * wheelT + 78 * wheelT * wheelT;
       ctx.save();
-      ctx.translate(BUS_X + busShake, BUS_Y);
-      const rubbleY = BUS_HEIGHT - 2;
-      for (const [rx, rw, rh, col] of [[10,10,4,"#d88a1b"],[22,8,4,"#f6c744"],[34,10,5,"#b99662"],[48,8,4,"#203b54"],[61,11,5,"#d88a1b"],[76,10,4,"#f6c744"]]) {
-        ctx.save();
-        ctx.translate(rx, rubbleY);
-        ctx.rotate((rx % 5 - 2) * 0.08);
-        ctx.fillStyle = col;
-        ctx.strokeStyle = "#4a3518";
-        ctx.lineWidth = 0.9;
-        ctx.fillRect(-rw / 2, -rh / 2, rw, rh);
-        ctx.strokeRect(-rw / 2, -rh / 2, rw, rh);
-        ctx.restore();
-      }
+      ctx.translate(wheelX, wheelY);
+      ctx.rotate(-10 * wheelT);
+      ctx.beginPath();
+      ctx.arc(0, 0, 13, 0, Math.PI * 2);
+      ctx.fillStyle = "#1f2937";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(0, 0, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "#aeb7bf";
+      ctx.fill();
       ctx.restore();
     }
 
-    function drawChasers() {
-      const escalation = clamp(mobSize - 6, 0, 3);
-      chasers.forEach((chaser, index) => {
-        const normalX = BUS_X - 12 - index * 10;
-        const target = getFinalMobTarget(index, chaser);
-        let x = normalX;
-        let y = CHASER_GROUND_Y + Math.sin(chaser.t * 8 + chaser.phaseSeed);
-        let runPhase = chaser.t * 16 + index;
-        const scale = 0.92 + (index % 3) * 0.035;
-        let toolAngle = 0;
+    if (t > 0.32) {
+      const flameStrength = clamp((t - 0.32) / 0.9, 0, 1);
+      for (const [fx, fy, seed] of [[22,55,1],[56,20,2],[92,50,3],[128,17,4],[164,47,5],[202,22,6]]) {
+        const flicker = Math.sin(t * 31 + seed * 1.7) * 7;
+        ctx.fillStyle = "rgba(220, 38, 38, 0.94)";
+        ctx.beginPath();
+        ctx.moveTo(fx - 11, fy + 6);
+        ctx.quadraticCurveTo(fx + flicker, fy - 42 * flameStrength, fx + 11, fy + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(251, 146, 60, 0.98)";
+        ctx.beginPath();
+        ctx.moveTo(fx - 6, fy + 5);
+        ctx.quadraticCurveTo(fx + flicker * 0.5, fy - 26 * flameStrength, fx + 6, fy + 5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = "rgba(253, 224, 71, 0.96)";
+        ctx.beginPath();
+        ctx.moveTo(fx - 3, fy + 4);
+        ctx.quadraticCurveTo(fx, fy - 13 * flameStrength, fx + 3, fy + 4);
+        ctx.closePath();
+        ctx.fill();
+      }
 
-        if (!finalSequence.active && escalation > 0) {
-          const waveSpeed = escalation === 1 ? 2.2 : escalation === 2 ? 3.3 : 4.4;
-          const wave = Math.sin(chaser.t * waveSpeed + chaser.phaseSeed + index * 0.35);
-          toolAngle = escalation === 1 ? Math.max(0, wave) * 0.10 : wave * (0.08 + escalation * 0.025);
-          if (escalation >= 2) {
-            const stompSpeed = escalation === 2 ? 1.3 : 1.9;
-            const stompCycle = (chaser.t * stompSpeed + index * 0.19) % 1;
-            if (stompCycle < 0.18) {
-              const stompProgress = stompCycle / 0.18;
-              y -= Math.sin(stompProgress * Math.PI) * (escalation === 2 ? 0.65 : 1.0);
-              drawLandingDust(x, CHASER_GROUND_Y + 0.4, stompProgress);
-            }
+      for (let smoke = 0; smoke < 9; smoke++) {
+        const rise = (t * 34 + smoke * 17) % 110;
+        const sx = 28 + (smoke * 29) % 190 + Math.sin(t * 4 + smoke) * 8;
+        const sy = 15 - rise;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 8 + (smoke % 3) * 4 + p * 4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(55, 65, 81, ${0.34 + p * 0.23})`;
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+
+  function drawBusRubble(progress) {
+    if (progress <= 0.55) return;
+    ctx.save();
+    ctx.translate(BUS_X + busShake, BUS_Y);
+    const rubbleY = BUS_HEIGHT - 6;
+    for (const [rx, rw, rh, col] of [[22,24,9,"#d88a1b"],[48,18,8,"#f6c744"],[78,26,10,"#b99662"],[112,20,8,"#203b54"],[146,28,11,"#d88a1b"],[180,22,9,"#f6c744"]]) {
+      ctx.save();
+      ctx.translate(rx, rubbleY + Math.sin(rx) * 1.5);
+      ctx.rotate((rx % 5 - 2) * 0.08);
+      ctx.fillStyle = col;
+      ctx.strokeStyle = "#4a3518";
+      ctx.lineWidth = 1.6;
+      ctx.fillRect(-rw / 2, -rh / 2, rw, rh);
+      ctx.strokeRect(-rw / 2, -rh / 2, rw, rh);
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function drawChasers() {
+    const escalation = clamp(mobSize - 6, 0, 3);
+    chasers.forEach((chaser, index) => {
+      const normalX = BUS_X - 34 - index * 18;
+      const finalTarget = getFinalMobTarget(index, chaser);
+      let x = normalX;
+      let y = CHASER_GROUND_Y + Math.sin(chaser.t * 7 + chaser.phaseSeed) * 2;
+      let runPhase = chaser.t * 16 + index;
+      let scale = 0.96 + (index % 3) * 0.025;
+      let toolAngle = 0;
+
+      if (!finalSequence.active && escalation > 0) {
+        const waveSpeed = escalation === 1 ? 2.1 : escalation === 2 ? 3.1 : 4.2;
+        const wave = Math.sin(chaser.t * waveSpeed + chaser.phaseSeed + index * 0.35);
+        toolAngle = escalation === 1
+          ? Math.max(0, wave) * 0.12
+          : wave * (0.10 + escalation * 0.035);
+
+        if (escalation >= 2) {
+          const stompSpeed = escalation === 2 ? 1.25 : 1.85;
+          const stompCycle = (chaser.t * stompSpeed + index * 0.19) % 1;
+          if (stompCycle < 0.18) {
+            const stompProgress = stompCycle / 0.18;
+            y -= Math.sin(stompProgress * Math.PI) * (escalation === 2 ? 1.5 : 2.3);
+            drawLandingDust(x, CHASER_GROUND_Y + 1, stompProgress);
           }
         }
+      }
 
-        if (finalSequence.active && finalSequence.phase === "rush") {
-          const p = easeInOut(clamp(finalSequence.t / 1.05, 0, 1));
-          x = lerp(normalX, target.x, p);
-          y = lerp(y, target.y, p) - Math.sin(p * Math.PI) * (3.5 + index % 4);
-          runPhase = finalSequence.t * (28 + index % 4) + index;
-        } else if (finalSequence.active && finalSequence.phase === "destroy") {
-          x = target.x + Math.sin(finalSequence.t * (18 + index % 5) + chaser.phaseSeed) * (1.3 + (index % 3) * 0.4);
-          y = target.y + Math.cos(finalSequence.t * (20 + index % 4) + index);
-          runPhase = finalSequence.t * (26 + index % 5) + index;
-        }
+      if (finalSequence.active && finalSequence.phase === "rush") {
+        const p = easeInOut(clamp(finalSequence.t / 1.05, 0, 1));
+        x = lerp(normalX, finalTarget.x, p);
+        y = lerp(y, finalTarget.y, p) - Math.sin(p * Math.PI) * (9 + (index % 4) * 3);
+        runPhase = finalSequence.t * (27 + index % 4) + index;
+      } else if (finalSequence.active && finalSequence.phase === "destroy") {
+        x = finalTarget.x + Math.sin(finalSequence.t * (17 + index % 5) + chaser.phaseSeed) * (3 + index % 3);
+        y = finalTarget.y + Math.cos(finalSequence.t * (19 + index % 4) + index) * 2.5;
+        runPhase = finalSequence.t * (25 + index % 5) + index;
+      }
 
-        drawTinyPerson(x, y, chaser.color, {
-          tool: chaser.weapon,
-          toolAngle,
-          running: true,
-          runPhase,
-          scale,
-          variant: chaser.phaseSeed
-        });
+      drawPersonSprite(x, y, chaser.color, {
+        tool: chaser.weapon,
+        toolAngle,
+        running: true,
+        runPhase,
+        scale,
+        variant: chaser.phaseSeed
       });
+    });
+  }
+
+  function drawAnimationDivider() {
+    // Road, curb, sidewalk, and grass now provide their own visual separation.
+  }
+
+  function drawFiveLineStaff(topY, gap, leftX, rightX) {
+    ctx.save();
+    ctx.strokeStyle = "#172033";
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    for (let line = 0; line < 5; line++) {
+      const y = topY + line * gap;
+      ctx.moveTo(leftX, y);
+      ctx.lineTo(rightX, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawTargetBarline(x, topY, bottomY) {
+    ctx.save();
+    ctx.fillStyle = "rgba(246, 199, 68, 0.12)";
+    ctx.fillRect(x - 9, topY - 13, 18, bottomY - topY + 26);
+    ctx.strokeStyle = "#18324a";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x, topY - 10);
+    ctx.lineTo(x, bottomY + 14);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawClef(type, x, topY, gap) {
+    const isTreble = type === "treble";
+    const fontSize = gap * 4;
+    const referenceLineY = isTreble ? topY + gap * 3 : topY + gap;
+    const smuflGlyph = isTreble ? SMUFL_G_CLEF : SMUFL_F_CLEF;
+    const unicodeGlyph = isTreble ? UNICODE_G_CLEF : UNICODE_F_CLEF;
+    ctx.save();
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "left";
+    if (bravuraReady) {
+      ctx.font = `${fontSize}px "Bravura"`;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(smuflGlyph, x, referenceLineY);
+    } else {
+      ctx.font = `${fontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`;
+      ctx.textBaseline = "middle";
+      ctx.fillText(unicodeGlyph, x, topY + gap * 2);
+    }
+    ctx.restore();
+  }
+
+  function drawStreamingNote(note) {
+    const approach = approachProgressForX(note.x);
+    const scale = NOTE_MIN_SCALE + (1 - NOTE_MIN_SCALE) * approach;
+    const renderY = NOTE_VANISH_Y + (note.y - NOTE_VANISH_Y) * approach;
+    const signRadius = STAFF_GAP * 0.62;
+    const ledgerHalfWidth = STAFF_GAP * 1.08;
+
+    ctx.save();
+    ctx.translate(note.x, renderY);
+    ctx.scale(scale, scale);
+    ctx.lineCap = "round";
+    ctx.strokeStyle = "#172033";
+    ctx.lineWidth = 2.6;
+    for (const ledgerY of note.ledgerYs) {
+      const relativeLedgerY = ledgerY - note.y;
+      ctx.beginPath();
+      ctx.moveTo(-ledgerHalfWidth, relativeLedgerY);
+      ctx.lineTo(ledgerHalfWidth, relativeLedgerY);
+      ctx.stroke();
+    }
+    drawStopSignPath(0, 0, signRadius);
+    ctx.fillStyle = "#d92f2f";
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.1;
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `bold ${Math.max(4.0, signRadius * 0.48)}px Arial, sans-serif`;
+    ctx.fillText("STOP", 0, 0.35);
+    ctx.restore();
+  }
+  function gameInit() {
+    activeNotes = [];
+    correctNotes = 0;
+    mobSize = 0;
+    lastEventMessage = "NEXT STOP: identify the front stop-sign note.";
+    lastPitchIndex = -1;
+    nextNoteId = 1;
+    nextStopActorId = 1;
+    lastUpdateTime = performance.now();
+    busDamage = 0;
+    busShake = 0;
+    finalSequence = { active: false, phase: "none", t: 0, overlayQueued: false };
+    panicPassengers = [];
+    if (finalOverlayTimer) clearTimeout(finalOverlayTimer);
+    finalOverlayTimer = null;
+    buildScenery();
+    panicPassengers = [];
+    requestBravuraFont();
+    spawnNoteAt(NOTE_SPAWN_X);
+  }
+  function gameUpdate() {
+    const now = performance.now();
+    const deltaSeconds = Math.min(0.05, Math.max(0, (now - lastUpdateTime) / 1000));
+    lastUpdateTime = now;
+
+    if (!finalSequence.active) {
+      const noteDistance = currentNoteSpeed() * deltaSeconds;
+      for (const note of activeNotes) note.x -= noteDistance;
+      maintainNoteStream();
     }
 
-    function drawAnimationDivider() {
-      // The curb and grass now separate the animation area from the staff area.
+    const sceneryFrozen = finalSequence.active && (finalSequence.phase === "rush" || finalSequence.phase === "destroy");
+    const scrollSpeed = sceneryFrozen ? 0 : worldScrollSpeed();
+    if (!sceneryFrozen) {
+      roadStripeOffset -= scrollSpeed * deltaSeconds;
+      busMotionClock += deltaSeconds;
+      wheelSpin += scrollSpeed * deltaSeconds * 0.045;
+      cloudOffset -= scrollSpeed * deltaSeconds * 0.035;
+      updateBuildings(deltaSeconds, scrollSpeed);
     }
+    updateStops(deltaSeconds);
+    updateChasers(deltaSeconds);
+    updateDoor(deltaSeconds);
+    updateFinalSequence(deltaSeconds);
 
-    function drawFiveLineStaff(topY, gap, leftX, rightX) {
-      ctx.save(); ctx.strokeStyle = "#172033"; ctx.lineWidth = 1.6; ctx.setLineDash([]); ctx.beginPath();
-      for (let line = 0; line < 5; line++) { const y = topY + line * gap; ctx.moveTo(leftX, y); ctx.lineTo(rightX, y); }
-      ctx.stroke(); ctx.restore();
-    }
-
-    function drawTargetBarline(x, topY, bottomY) {
-      ctx.save(); ctx.fillStyle = "rgba(246, 199, 68, 0.12)"; ctx.fillRect(x - 5, topY - 7, 10, bottomY - topY + 14); ctx.strokeStyle = "#18324a"; ctx.lineWidth = 3.3; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(x, topY - 6); ctx.lineTo(x, bottomY + 7); ctx.stroke(); ctx.restore();
-    }
-
-    function drawClef(type, x, topY, gap) {
-      const isTreble = type === "treble";
-      const fontSize = gap * 4;
-      const referenceLineY = isTreble ? topY + gap * 3 : topY + gap;
-      const smuflGlyph = isTreble ? SMUFL_G_CLEF : SMUFL_F_CLEF;
-      const unicodeGlyph = isTreble ? UNICODE_G_CLEF : UNICODE_F_CLEF;
-      ctx.save(); ctx.fillStyle = "#111827"; ctx.textAlign = "left";
-      if (bravuraReady) { ctx.font = `${fontSize}px "Bravura"`; ctx.textBaseline = "alphabetic"; ctx.fillText(smuflGlyph, x, referenceLineY); }
-      else { ctx.font = `${fontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`; ctx.textBaseline = "middle"; ctx.fillText(unicodeGlyph, x, topY + gap * 2); }
-      ctx.restore();
-    }
-
-    function drawStreamingNote(note) {
-      const approach = approachProgressForX(note.x);
-      const scale = NOTE_MIN_SCALE + (1 - NOTE_MIN_SCALE) * approach;
-      const renderY = NOTE_VANISH_Y + (note.y - NOTE_VANISH_Y) * approach;
-      const signRadius = STAFF_GAP * 0.64;
-      const ledgerHalfWidth = STAFF_GAP * 1.08;
-      ctx.save(); ctx.translate(note.x, renderY); ctx.scale(scale, scale); ctx.lineCap = "round"; ctx.strokeStyle = "#172033"; ctx.lineWidth = 1.9;
-      for (const ledgerY of note.ledgerYs) { const relativeLedgerY = ledgerY - note.y; ctx.beginPath(); ctx.moveTo(-ledgerHalfWidth, relativeLedgerY); ctx.lineTo(ledgerHalfWidth, relativeLedgerY); ctx.stroke(); }
-      drawStopSignPath(0, 0, signRadius); ctx.fillStyle = "#d92f2f"; ctx.strokeStyle = "#111827"; ctx.lineWidth = 1.15; ctx.fill(); ctx.stroke();
-      ctx.fillStyle = "#ffffff"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.font = `bold ${Math.max(2.5, signRadius * 0.42)}px Arial, sans-serif`; ctx.fillText("STOP", 0, 0.2); ctx.restore();
-    }
-    function gameInit() {
-      activeNotes = [];
-      correctNotes = 0;
-      mobSize = 0;
-      lastEventMessage = "PICK UP PASSENGERS";
-      lastPitchIndex = -1;
-      nextNoteId = 1;
-      nextStopActorId = 1;
-      lastUpdateTime = performance.now();
-      busDamage = 0;
-      busShake = 0;
-      finalSequence = { active: false, phase: "none", t: 0, overlayQueued: false };
-      panicPassengers = [];
-      if (finalOverlayTimer) clearTimeout(finalOverlayTimer);
-      finalOverlayTimer = null;
-      buildScenery();
-      setMessage(`PICK UP PASSENGERS • MOB 0/${MAX_MOB_SIZE}`);
-      requestBravuraFont();
-      spawnNoteAt(NOTE_SPAWN_X);
-    }
-    function gameUpdate() {
-      const now = performance.now();
-      const deltaSeconds = Math.min(0.05, Math.max(0, (now - lastUpdateTime) / 1000));
-      lastUpdateTime = now;
-
-      if (!finalSequence.active) {
-        const noteDistance = currentNoteSpeed() * deltaSeconds;
-        for (const note of activeNotes) note.x -= noteDistance;
-        maintainNoteStream();
+    if (!finalSequence.active) {
+      while (running && activeNotes.length > 0 && activeNotes[0].x <= TARGET_BARLINE_X) {
+        resolveFrontNote("missed");
       }
+    }
+  }
 
-      const sceneryFrozen = finalSequence.active && (finalSequence.phase === "rush" || finalSequence.phase === "destroy");
-      const scrollSpeed = sceneryFrozen ? 0 : worldScrollSpeed();
-      if (!sceneryFrozen) {
-        roadStripeOffset -= scrollSpeed * deltaSeconds;
-        busMotionClock += deltaSeconds;
-        wheelSpin += scrollSpeed * deltaSeconds * 0.075;
-        cloudOffset -= scrollSpeed * deltaSeconds * 0.035;
-        updateBuildings(deltaSeconds, scrollSpeed);
-      }
-      updateStops(deltaSeconds);
-      updateChasers(deltaSeconds);
-      updateDoor(deltaSeconds);
-      updateFinalSequence(deltaSeconds);
+  function gameDraw() {
+    ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
+    drawCityEnvironment();
+    drawAnimationDivider();
+    drawMobHud();
+    drawFiveLineStaff(STAFF_TOP, STAFF_GAP, STAFF_LEFT, STAFF_RIGHT);
+    drawClef(CLEF_TYPE, CLEF_X, STAFF_TOP, STAFF_GAP);
+    for (let i = activeNotes.length - 1; i >= 0; i--) drawStreamingNote(activeNotes[i]);
+    drawTargetBarline(TARGET_BARLINE_X, STAFF_TOP, STAFF_TOP + STAFF_GAP * 4);
+  }
 
-      if (!finalSequence.active) {
-        while (running && activeNotes.length > 0 && activeNotes[0].x <= TARGET_BARLINE_X) {
-          resolveFrontNote("missed");
-        }
-      }
-    }
+  function drawMobHud() {
+    const boardX = 178;
+    const boardY = 18;
+    const boardWidth = 322;
+    const boardHeight = 48;
+    const radius = 11;
+    const gap = 10;
+    const totalWidth = MAX_MOB_SIZE * radius * 2 + (MAX_MOB_SIZE - 1) * gap;
+    const startX = boardX + (boardWidth - totalWidth) / 2 + radius;
+    const iconY = boardY + boardHeight / 2 + 1;
 
-    function gameDraw() {
-      ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
-      drawCityEnvironment(); drawAnimationDivider(); drawMobHud(); drawFiveLineStaff(STAFF_TOP, STAFF_GAP, STAFF_LEFT, STAFF_RIGHT); drawClef(CLEF_TYPE, CLEF_X, STAFF_TOP, STAFF_GAP); for (let i = activeNotes.length - 1; i >= 0; i--) drawStreamingNote(activeNotes[i]); drawTargetBarline(TARGET_BARLINE_X, STAFF_TOP, STAFF_TOP + STAFF_GAP * 4);
+    ctx.save();
+    roundedRectPath(boardX, boardY, boardWidth, boardHeight, 14);
+    ctx.fillStyle = "rgba(18, 42, 65, 0.95)";
+    ctx.strokeStyle = "#f6c744";
+    ctx.lineWidth = 3;
+    ctx.fill();
+    ctx.stroke();
+    for (let index = 0; index < MAX_MOB_SIZE; index++) {
+      const isMissed = index < mobSize;
+      const x = startX + index * (radius * 2 + gap);
+      drawStopSignPath(x, iconY, radius);
+      ctx.fillStyle = isMissed ? "#d92f2f" : "rgba(220, 229, 236, 0.16)";
+      ctx.strokeStyle = "#1f2937";
+      ctx.lineWidth = 1.8;
+      ctx.fill();
+      ctx.stroke();
     }
+    ctx.restore();
+  }
+  function gameInput(action) {
+    if (!running || finalSequence.active || activeNotes.length === 0) return;
+    const letter = String(action || "").toUpperCase();
+    if (!/^[A-G]$/.test(letter)) return;
+    if (letter === activeNotes[0].letter) resolveFrontNote("correct");
+    else resolveFrontNote("wrong");
+  }
+function gamePointer() {
+    /* Pointer input remains intentionally unused in Bass Bus. */
+  }
+  function gameStop() {
+    activeNotes = [];
+    sceneryBuildings = [];
+    stopActors = [];
+    chasers = [];
+    busDoorHold = 0;
+    busDoorOpen = 0;
+    roadStripeOffset = 0;
+    busMotionClock = 0;
+    wheelSpin = 0;
+    cloudOffset = 0;
+    busDamage = 0;
+    busShake = 0;
+    finalSequence = { active: false, phase: "none", t: 0, overlayQueued: false };
+    panicPassengers = [];
+    if (finalOverlayTimer) clearTimeout(finalOverlayTimer);
+    finalOverlayTimer = null;
+    lastUpdateTime = 0;
+    resetJoystick(sticks.left);
+    resetJoystick(sticks.right);
+  }
 
-    function drawMobHud() {
-      const boardX = 96, boardY = 4, boardWidth = 184, boardHeight = 20, radius = 5.3, gap = 5;
-      const totalWidth = MAX_MOB_SIZE * radius * 2 + (MAX_MOB_SIZE - 1) * gap;
-      const startX = boardX + (boardWidth - totalWidth) / 2 + radius;
-      const iconY = boardY + boardHeight / 2 + 0.5;
-      ctx.save(); roundedRectPath(boardX, boardY, boardWidth, boardHeight, 6); ctx.fillStyle = "rgba(18, 42, 65, 0.95)"; ctx.strokeStyle = "#f6c744"; ctx.lineWidth = 1.2; ctx.fill(); ctx.stroke();
-      for (let index = 0; index < MAX_MOB_SIZE; index++) { const isMissed = index < mobSize; const x = startX + index * (radius * 2 + gap); drawStopSignPath(x, iconY, radius); ctx.fillStyle = isMissed ? "#d92f2f" : "rgba(220, 229, 236, 0.16)"; ctx.strokeStyle = "#1f2937"; ctx.lineWidth = 0.9; ctx.fill(); ctx.stroke(); }
-      ctx.restore();
-    }
-    function gameInput(action) {
-      if (!running || finalSequence.active || activeNotes.length === 0) return;
-      const letter = String(action || "").toUpperCase();
-      if (!/^[A-G]$/.test(letter)) return;
-      if (letter === activeNotes[0].letter) resolveFrontNote("correct");
-      else resolveFrontNote("wrong");
-    }
-    function gameStop() {
-      activeNotes = [];
-      sceneryBuildings = [];
-      stopActors = [];
-      chasers = [];
-      busDoorHold = 0;
-      busDoorOpen = 0;
-      roadStripeOffset = 0;
-      busMotionClock = 0;
-      wheelSpin = 0;
-      cloudOffset = 0;
-      busDamage = 0;
-      busShake = 0;
-      finalSequence = { active: false, phase: "none", t: 0, overlayQueued: false };
-      panicPassengers = [];
-      if (finalOverlayTimer) clearTimeout(finalOverlayTimer);
-      finalOverlayTimer = null;
-      lastUpdateTime = 0;
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
-    }
 
     const resizeObserver = new ResizeObserver(() => {
       scaleAppToFrame();
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
-      if (!running) gameDraw();
+      if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
     });
 
     resizeObserver.observe(appFrame);
@@ -3332,7 +3839,10 @@
         scaleAppToFrame();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
-        if (!running) gameDraw();
+        if (!running) {
+        resetGameCanvasTransform();
+        gameDraw();
+      }
       }, 250);
     });
 
