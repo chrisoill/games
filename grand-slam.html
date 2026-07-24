@@ -266,7 +266,7 @@
       left: 0;
       top: 0;
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       overflow: hidden;
       background: #0b1420;
       border: 1px solid #2b2b2b;
@@ -277,7 +277,7 @@
 
     #gameCanvas {
       width: 390px;
-      height: 219px;
+      height: 281.667px;
       display: block;
       touch-action: pan-y;
       overscroll-behavior-y: auto;
@@ -290,7 +290,8 @@
       position: absolute;
       left: 34px;
       right: 34px;
-      top: 35px;
+      top: 50%;
+      transform: translateY(-50%);
       padding: 18px 12px;
       background: rgba(6, 20, 38, 0.96);
       border: 3px solid #d7ad4a;
@@ -324,7 +325,7 @@
     #lcd {
       position: absolute;
       left: 0;
-      top: 219px;
+      top: 281.667px;
       width: 390px;
       height: 48px;
       background:
@@ -367,10 +368,10 @@
     #controls {
       position: absolute;
       left: 0;
-      top: 267px;
+      top: 329.667px;
       width: 390px;
-      height: 400px;
-      background: linear-gradient(180deg, #303030, #181818);
+      height: 340.333px;
+      background: #242424;
       touch-action: pan-y;
       overscroll-behavior-y: auto;
       user-select: none;
@@ -521,7 +522,7 @@
       position: absolute;
       left: 22px;
       right: 22px;
-      top: 34px;
+      top: 40px;
       display: grid;
       grid-template-columns: repeat(8, 1fr);
       grid-template-rows: repeat(2, 86px);
@@ -556,7 +557,7 @@
     }
 
     #controls.letterControlMode #systemButtons {
-      top: 282px;
+      top: 268px;
     }
 
     /* START / SELECT */
@@ -604,6 +605,7 @@
       white-space: normal;
     }
 
+    #systemButtons,
     #systemButtons.singleSystem {
       width: 92px;
     }
@@ -783,7 +785,7 @@
 
       <div id="gameScreen">
         <div id="screen">
-          <canvas id="gameCanvas" width="390" height="219"></canvas>
+          <canvas id="gameCanvas" width="720" height="520"></canvas>
 
           <div id="gameOverBox">
             <h1>Game Over</h1>
@@ -794,7 +796,7 @@
         </div>
 
         <div id="lcd">
-          <div id="lcdMessage"></div>
+          <div id="lcdMessage">SWING</div>
           <div id="lcdScore">SCORE: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
@@ -860,8 +862,11 @@
   <script>
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
-    const GAME_CANVAS_LOGICAL_WIDTH = 390;
-    const GAME_CANVAS_LOGICAL_HEIGHT = 219;
+    const GAME_CANVAS_LOGICAL_WIDTH = 720;
+    const GAME_CANVAS_LOGICAL_HEIGHT = 520;
+    const GAME_CANVAS_DISPLAY_WIDTH = 390;
+    const GAME_CANVAS_DISPLAY_HEIGHT =
+      GAME_CANVAS_DISPLAY_WIDTH * GAME_CANVAS_LOGICAL_HEIGHT / GAME_CANVAS_LOGICAL_WIDTH;
     const MAX_GAME_CANVAS_PIXEL_SCALE = 4;
 
     /*
@@ -898,9 +903,21 @@
     let gameCanvasPixelScale = 1;
 
     function scaleGameCanvasBackingStore() {
+      canvas.style.width = GAME_CANVAS_DISPLAY_WIDTH + "px";
+      canvas.style.height = GAME_CANVAS_DISPLAY_HEIGHT + "px";
+
+      const rect = canvas.getBoundingClientRect();
+      const cssWidth = Math.max(1, rect.width || GAME_CANVAS_DISPLAY_WIDTH * appScale);
+      const cssHeight = Math.max(1, rect.height || GAME_CANVAS_DISPLAY_HEIGHT * appScale);
       const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const stageScale = Math.max(1, appScale || 1);
-      const targetScale = Math.min(MAX_GAME_CANVAS_PIXEL_SCALE, dpr * stageScale);
+
+      const scaleX = (cssWidth / GAME_CANVAS_LOGICAL_WIDTH) * dpr;
+      const scaleY = (cssHeight / GAME_CANVAS_LOGICAL_HEIGHT) * dpr;
+      const targetScale = Math.min(
+        MAX_GAME_CANVAS_PIXEL_SCALE,
+        Math.max(1, scaleX, scaleY)
+      );
+
       const targetWidth = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_WIDTH * targetScale));
       const targetHeight = Math.max(1, Math.round(GAME_CANVAS_LOGICAL_HEIGHT * targetScale));
 
@@ -908,9 +925,6 @@
         canvas.width = targetWidth;
         canvas.height = targetHeight;
       }
-
-      canvas.style.width = GAME_CANVAS_LOGICAL_WIDTH + "px";
-      canvas.style.height = GAME_CANVAS_LOGICAL_HEIGHT + "px";
 
       gameCanvasPixelScale = targetWidth / GAME_CANVAS_LOGICAL_WIDTH;
       ctx.setTransform(gameCanvasPixelScale, 0, 0, gameCanvasPixelScale, 0, 0);
@@ -1343,7 +1357,7 @@
     }
 
     function scaleAppToFrame() {
-      const frameWidth = appFrame.clientWidth;
+      const frameWidth = Math.max(1, appFrame.clientWidth || window.innerWidth || DESIGN_WIDTH);
       appScale = frameWidth / DESIGN_WIDTH;
       document.documentElement.style.setProperty("--app-scale", appScale);
       scaleGameCanvasBackingStore();
@@ -2367,82 +2381,82 @@
   }
 
     /* =========================
-       GAME MODULE — GRAND SLAM STEP 4 SFX
-       The existing grand-staff stream, spacing, zoom, pitch range, and uncapped
-       square-root speed curve remain intact. Correct answers score and accelerate
-       the stream. Wrong letters and missed notes each cause one stadium-damage hit.
-       Ten total damage hits end the game. Step 2 adds the dome, field, stands,
-       translucent notation panel, baseball notes, pitcher, catcher boundary, and themed HUD.
-       Action animation and new sound design remain reserved for later steps.
-       ========================= */
+     GAME MODULE — GRAND SLAM STEP 4 SFX
+     The existing grand-staff stream, spacing, zoom, pitch range, and uncapped
+     square-root speed curve remain intact. Correct answers score and accelerate
+     the stream. Wrong letters and missed notes each cause one stadium-damage hit.
+     Ten total damage hits end the game. Step 2 adds the dome, field, stands,
+     translucent notation panel, baseball notes, pitcher, catcher boundary, and themed HUD.
+     Action animation and new sound design remain reserved for later steps.
+     ========================= */
 
-    const ANIMATION_AREA_BOTTOM = 78;
-    const STAFF_LEFT = 20;
-    const STAFF_RIGHT = 378;
-    const TREBLE_STAFF_TOP = 134;
-    const BASS_STAFF_TOP = 170;
-    const STAFF_GAP = 6;
-    const TARGET_BARLINE_X = 80;
-    const CLEF_X = 31;
-    const NOTE_SPAWN_X = STAFF_RIGHT + STAFF_GAP / 36;
-    const NOTE_SPACING_X = GAME_CANVAS_LOGICAL_WIDTH * 0.24;
-    const NOTE_ZOOM_START_X = STAFF_RIGHT + STAFF_GAP * 2;
-    const NOTE_LANDING_X = STAFF_RIGHT;
-    const NOTE_MIN_SCALE = 0.28;
-    const NOTE_VANISH_Y = (TREBLE_STAFF_TOP + BASS_STAFF_TOP + STAFF_GAP * 4) / 2;
-    const BASE_NOTE_SPEED = GAME_CANVAS_LOGICAL_WIDTH * 0.08;
-    const NOTE_SPEED_SQUARED_RAMP = GAME_CANVAS_LOGICAL_WIDTH * GAME_CANVAS_LOGICAL_WIDTH * 0.00037;
-    const MAX_STADIUM_DAMAGE = 10;
-    const SMUFL_BRACE = "\uE000";
-    const SMUFL_G_CLEF = "\uE050";
-    const SMUFL_F_CLEF = "\uE062";
-    const UNICODE_BRACE = "\u{1D114}";
-    const UNICODE_G_CLEF = "\u{1D11E}";
-    const UNICODE_F_CLEF = "\u{1D122}";
+  const ANIMATION_AREA_BOTTOM = 190;
+  const STAFF_LEFT = 48;
+  const STAFF_RIGHT = 690;
+  const TREBLE_STAFF_TOP = 250;
+  const BASS_STAFF_TOP = 390;
+  const STAFF_GAP = 18;
+  const TARGET_BARLINE_X = 170;
+  const CLEF_X = 68;
+  const NOTE_SPAWN_X = STAFF_RIGHT + STAFF_GAP / 36;
+  const NOTE_SPACING_X = GAME_CANVAS_LOGICAL_WIDTH * 0.24;
+  const NOTE_ZOOM_START_X = STAFF_RIGHT + STAFF_GAP * 2;
+  const NOTE_LANDING_X = STAFF_RIGHT;
+  const NOTE_MIN_SCALE = 0.28;
+  const NOTE_VANISH_Y = (TREBLE_STAFF_TOP + BASS_STAFF_TOP + STAFF_GAP * 4) / 2;
+  const BASE_NOTE_SPEED = GAME_CANVAS_LOGICAL_WIDTH * 0.08;
+  const NOTE_SPEED_SQUARED_RAMP = GAME_CANVAS_LOGICAL_WIDTH * GAME_CANVAS_LOGICAL_WIDTH * 0.00037;
+  const MAX_STADIUM_DAMAGE = 10;
+  const SMUFL_BRACE = "\uE000";
+  const SMUFL_G_CLEF = "\uE050";
+  const SMUFL_F_CLEF = "\uE062";
+  const UNICODE_BRACE = "\u{1D114}";
+  const UNICODE_G_CLEF = "\u{1D11E}";
+  const UNICODE_F_CLEF = "\u{1D122}";
 
-    const NOTE_CHOICES = [
-      { letter: "F", staff: "bass", step: -1 },
-      { letter: "G", staff: "bass", step: 0 },
-      { letter: "A", staff: "bass", step: 1 },
-      { letter: "B", staff: "bass", step: 2 },
-      { letter: "C", staff: "bass", step: 3 },
-      { letter: "D", staff: "bass", step: 4 },
-      { letter: "E", staff: "bass", step: 5 },
-      { letter: "F", staff: "bass", step: 6 },
-      { letter: "G", staff: "bass", step: 7 },
-      { letter: "A", staff: "bass", step: 8 },
-      { letter: "B", staff: "bass", step: 9 },
-      { letter: "C", staff: "middle", step: 0, ledger: true },
-      { letter: "D", staff: "treble", step: -1 },
-      { letter: "E", staff: "treble", step: 0 },
-      { letter: "F", staff: "treble", step: 1 },
-      { letter: "G", staff: "treble", step: 2 },
-      { letter: "A", staff: "treble", step: 3 },
-      { letter: "B", staff: "treble", step: 4 },
-      { letter: "C", staff: "treble", step: 5 },
-      { letter: "D", staff: "treble", step: 6 },
-      { letter: "E", staff: "treble", step: 7 },
-      { letter: "F", staff: "treble", step: 8 },
-      { letter: "G", staff: "treble", step: 9 }
-    ];
+  const NOTE_CHOICES = [
+    { letter: "F", staff: "bass", step: -1 },
+    { letter: "G", staff: "bass", step: 0 },
+    { letter: "A", staff: "bass", step: 1 },
+    { letter: "B", staff: "bass", step: 2 },
+    { letter: "C", staff: "bass", step: 3 },
+    { letter: "D", staff: "bass", step: 4 },
+    { letter: "E", staff: "bass", step: 5 },
+    { letter: "F", staff: "bass", step: 6 },
+    { letter: "G", staff: "bass", step: 7 },
+    { letter: "A", staff: "bass", step: 8 },
+    { letter: "B", staff: "bass", step: 9 },
+    { letter: "C", staff: "middle", step: 0, ledger: true },
+    { letter: "D", staff: "treble", step: -1 },
+    { letter: "E", staff: "treble", step: 0 },
+    { letter: "F", staff: "treble", step: 1 },
+    { letter: "G", staff: "treble", step: 2 },
+    { letter: "A", staff: "treble", step: 3 },
+    { letter: "B", staff: "treble", step: 4 },
+    { letter: "C", staff: "treble", step: 5 },
+    { letter: "D", staff: "treble", step: 6 },
+    { letter: "E", staff: "treble", step: 7 },
+    { letter: "F", staff: "treble", step: 8 },
+    { letter: "G", staff: "treble", step: 9 }
+  ];
 
-    let activeNotes = [];
-    let correctNotes = 0;
-    let stadiumDamage = 0;
-    let stadiumTargets = [];
-    let collapseState = { active: false, ruined: false, elapsed: 0, duration: 2.45, debris: [], fallingObjects: [], domePieces: [], dustClouds: [] };
+  let activeNotes = [];
+  let correctNotes = 0;
+  let stadiumDamage = 0;
+  let stadiumTargets = [];
+  let collapseState = { active: false, ruined: false, elapsed: 0, duration: 2.45, debris: [], fallingObjects: [], domePieces: [], dustClouds: [] };
   let starField = [];
   let ruinAftermathFrame = null;
   let aftermathMeteorOffset = Math.random() * 10000;
-    let feedbackText = "";
-    let feedbackKind = "neutral";
-    let feedbackUntil = 0;
-    let lastPitchIndex = -1;
-    let nextNoteId = 1;
-    let lastUpdateTime = 0;
-    let bravuraReady = false;
-    const animationState = {
-        pitcher: {
+  let feedbackText = "";
+  let feedbackKind = "neutral";
+  let feedbackUntil = 0;
+  let lastPitchIndex = -1;
+  let nextNoteId = 1;
+  let lastUpdateTime = 0;
+  let bravuraReady = false;
+  const animationState = {
+    pitcher: {
       active: false,
       noteId: null,
       elapsed: 0,
@@ -2457,7 +2471,7 @@
       currentY: NOTE_VANISH_Y,
       targetY: NOTE_VANISH_Y
     },
-        result: {
+    result: {
       active: false,
       type: "",
       elapsed: 0,
@@ -2482,9 +2496,9 @@
       ledgerYs: [],
       noteId: 0,
       pendingGameOver: false
-    }
-    };
-
+    },
+    results: []
+  };
   const visualAnimationState = {
     time: 0,
     crowdEvents: [],
@@ -2492,14 +2506,14 @@
     catcherReaction: { type: "", elapsed: 99, duration: 0 }
   };
 
-    function clamp01(value) {
-        return Math.max(0, Math.min(1, value));
-    }
+  function clamp01(value) {
+    return Math.max(0, Math.min(1, value));
+  }
 
-    function smoothStep(value) {
-        const t = clamp01(value);
-        return t * t * (3 - 2 * t);
-    }
+  function smoothStep(value) {
+    const t = clamp01(value);
+    return t * t * (3 - 2 * t);
+  }
 
   function resetVisualAnimationState() {
     visualAnimationState.time = 0;
@@ -2610,7 +2624,6 @@
     return { x: offsetX, y: offsetY, cheer, recoil };
   }
 
-
 function lerpValue(start, end, amount) {
     return start + (end - start) * amount;
   }
@@ -2698,7 +2711,7 @@ function lerpValue(start, end, amount) {
     return { x: end.x, y: end.y };
   }
 
-    function resetAnimationState() {
+  function resetAnimationState() {
     animationState.pitcher.active = false;
     animationState.pitcher.noteId = null;
     animationState.pitcher.elapsed = 0;
@@ -2736,32 +2749,33 @@ function lerpValue(start, end, amount) {
     animationState.result.pendingGameOver = false;
     animationState.results = [];
   }
+
   function createStadiumTargets() {
     const width = GAME_CANVAS_LOGICAL_WIDTH;
     const height = GAME_CANVAS_LOGICAL_HEIGHT;
     const compact = width <= 400;
 
-    const standTop = height * 0.325;
-    const standBottom = height * 0.505;
-    const healthBottomY = 24;
-    const scoreTopY = 18;
-    const scoreH = 14;
-    const billboardCenterY = healthBottomY + (standTop - healthBottomY) * 0.28;
-    const billboardH = 14;
+    const standTop = height * 0.255;
+    const standBottom = height * 0.67;
+    const healthBottomY = 78;
+    const scoreTopY = 42;
+    const scoreH = 34;
+    const billboardCenterY = healthBottomY + (standTop - healthBottomY) * 0.14;
+    const billboardH = 28;
     const billboardTopY = billboardCenterY - billboardH / 2;
-    const speakerTopY = scoreTopY + scoreH + 12;
-    const speakerScale = 0.74;
-    const speakerH = 19 * speakerScale;
-    const floodTopY = 47;
-    const floodScale = 0.76;
-    const floodPanelH = (3 * 4.4 + 2 * 2 + 4) * floodScale;
-    const bannerTopY = 28;
-    const bannerH = 26;
-    const railBottomY = standTop + 6;
-    const cartBaseY = railBottomY + (standBottom - railBottomY) * 0.12;
-    const cartH = 12;
-    const billboardLeftX = width * 0.27;
-    const billboardRightX = width * 0.73;
+    const speakerTopY = scoreTopY + scoreH + 18;
+    const speakerScale = 1;
+    const speakerH = 29 * speakerScale;
+    const floodTopY = 84;
+    const floodScale = 1;
+    const floodPanelH = (3 * 6.4 + 2 * 2.8 + 6) * floodScale;
+    const bannerTopY = 52;
+    const bannerH = 38;
+    const railBottomY = standTop + 9;
+    const cartBaseY = railBottomY + (standBottom - railBottomY) * 0.10;
+    const cartH = 18;
+    const billboardLeftX = width * 0.25;
+    const billboardRightX = width * 0.75;
 
     const definitions = [
       { id: "billboard-left", kind: "billboard", side: -1, x: billboardLeftX, y: billboardTopY + billboardH * 0.52, w: compact ? 68 : 114, h: billboardH },
@@ -2881,9 +2895,8 @@ function lerpValue(start, end, amount) {
   }
 
   function shouldDrawOriginalStadiumTarget(targetId) {
-    // Once the dome collapse starts, buildCollapseFallingObjects() owns every
-    // upper attached object. Hiding the normal stadium copy prevents a second,
-    // stationary version from remaining suspended behind the falling one.
+    // During the collapse, the falling-object system owns these drawings.
+    // Hiding the stationary originals prevents duplicate objects in midair.
     if (collapseState.active || collapseState.ruined) return false;
     const target = findStadiumTarget(targetId);
     return !target || !target.damaged || target.damageMode === "broken";
@@ -3937,7 +3950,6 @@ function lerpValue(start, end, amount) {
     /* No giant collapse text; the game-over box handles messaging. */
   }
 
-
   function getHomeRunLandingPoint() {
     const compact = GAME_CANVAS_LOGICAL_WIDTH <= 400;
     const standTop = GAME_CANVAS_LOGICAL_HEIGHT * (compact ? 0.325 : 0.255);
@@ -4352,64 +4364,78 @@ function lerpValue(start, end, amount) {
   }
 
 
-    function requestBravuraFont() {
-      if (!document.fonts?.load) return;
-      document.fonts
-        .load(`${STAFF_GAP * 4}px "Bravura"`, SMUFL_BRACE + SMUFL_G_CLEF + SMUFL_F_CLEF)
-        .then(loadedFonts => {
-          bravuraReady = loadedFonts.length > 0;
-          if (!running && gameScreen.style.display === "grid") gameDraw();
-        })
-        .catch(() => {});
-    }
-    function roundedRectPath(x, y, width, height, radius) {
-      const r = Math.max(0, Math.min(radius, width / 2, height / 2));
-      ctx.beginPath();
-      ctx.moveTo(x + r, y);
-      ctx.lineTo(x + width - r, y);
-      ctx.quadraticCurveTo(x + width, y, x + width, y + r);
-      ctx.lineTo(x + width, y + height - r);
-      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
-      ctx.lineTo(x + r, y + height);
-      ctx.quadraticCurveTo(x, y + height, x, y + height - r);
-      ctx.lineTo(x, y + r);
-      ctx.quadraticCurveTo(x, y, x + r, y);
-      ctx.closePath();
-    }
+  function requestBravuraFont() {
+    if (!document.fonts?.load) return;
+    document.fonts
+      .load(`${STAFF_GAP * 4}px "Bravura"`, SMUFL_BRACE + SMUFL_G_CLEF + SMUFL_F_CLEF)
+      .then(loadedFonts => {
+        bravuraReady = loadedFonts.length > 0;
+        if (!running && gameScreen.style.display === "grid") gameDraw();
+      })
+      .catch(() => {});
+  }
+  function roundedRectPath(x, y, width, height, radius) {
+    const r = Math.max(0, Math.min(radius, width / 2, height / 2));
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + width - r, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+    ctx.lineTo(x + width, y + height - r);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+    ctx.lineTo(x + r, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
 
-    function drawBaseball(x, y, radius, rotation = 0, options = {}) {
-      const muted = options.muted === true;
-      const damaged = options.damaged === true;
+  function drawBaseball(x, y, radius, rotation = 0, options = {}) {
+    const muted = options.muted === true;
+    const damaged = options.damaged === true;
 
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(rotation);
-      ctx.shadowColor = muted ? "transparent" : "rgba(2, 8, 23, 0.24)";
-      ctx.shadowBlur = muted ? 0 : radius * 0.45;
-      ctx.shadowOffsetY = muted ? 0 : radius * 0.18;
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.shadowColor = muted ? "transparent" : "rgba(2, 8, 23, 0.24)";
+    ctx.shadowBlur = muted ? 0 : radius * 0.45;
+    ctx.shadowOffsetY = muted ? 0 : radius * 0.18;
 
-      const ballFill = damaged ? "#d95545" : muted ? "rgba(226,232,240,0.8)" : "#fffdf5";
-      const ballStroke = damaged ? "#7f1d1d" : muted ? "#64748b" : "#172033";
+    const ballFill = damaged ? "#d95545" : muted ? "rgba(226,232,240,0.8)" : "#fffdf5";
+    const ballStroke = damaged ? "#7f1d1d" : muted ? "#64748b" : "#172033";
+    if (!damaged && !muted) {
+      const leather = ctx.createRadialGradient(-radius * 0.34, -radius * 0.42, radius * 0.04, radius * 0.08, radius * 0.12, radius * 1.22);
+      leather.addColorStop(0, "#ffffff");
+      leather.addColorStop(0.42, "#fffdf3");
+      leather.addColorStop(0.78, "#f1eadb");
+      leather.addColorStop(1, "#c9c0ae");
+      ctx.fillStyle = leather;
+    } else {
       ctx.fillStyle = ballFill;
-      ctx.strokeStyle = ballStroke;
-      ctx.lineWidth = Math.max(1, radius * 0.14);
+    }
+    ctx.strokeStyle = ballStroke;
+    ctx.lineWidth = Math.max(1, radius * 0.14);
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.shadowColor = "transparent";
+    if (!damaged) {
+      const shine = ctx.createRadialGradient(-radius * 0.35, -radius * 0.4, 0, -radius * 0.3, -radius * 0.35, radius * 0.85);
+      shine.addColorStop(0, "rgba(255,255,255,0.85)");
+      shine.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = shine;
       ctx.beginPath();
-      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.arc(0, 0, radius * 0.84, 0, Math.PI * 2);
       ctx.fill();
-      ctx.stroke();
 
-      ctx.shadowColor = "transparent";
-      if (!damaged) {
-        const shine = ctx.createRadialGradient(-radius * 0.35, -radius * 0.4, 0, -radius * 0.3, -radius * 0.35, radius * 0.85);
-        shine.addColorStop(0, "rgba(255,255,255,0.85)");
-        shine.addColorStop(1, "rgba(255,255,255,0)");
-        ctx.fillStyle = shine;
-        ctx.beginPath();
-        ctx.arc(0, 0, radius * 0.84, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.fillStyle = "rgba(96, 78, 55, 0.08)";
+      ctx.beginPath();
+      ctx.ellipse(radius * 0.10, radius * 0.48, radius * 0.62, radius * 0.22, 0.18, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-      const seamColor = damaged ? "rgba(255,245,235,0.92)" : muted ? "rgba(100,116,139,0.78)" : "#c83b38";
+    const seamColor = damaged ? "rgba(255,245,235,0.92)" : muted ? "rgba(100,116,139,0.78)" : "#c83b38";
       ctx.save();
       ctx.beginPath();
       ctx.arc(0, 0, Math.max(0.1, radius - Math.max(0.5, radius * 0.05)), 0, Math.PI * 2);
@@ -4426,26 +4452,26 @@ function lerpValue(start, end, amount) {
       ctx.stroke();
       ctx.restore();
 
-      if (damaged) {
-        ctx.strokeStyle = "rgba(74, 20, 20, 0.82)";
-        ctx.lineWidth = Math.max(1, radius * 0.12);
-        ctx.beginPath();
-        ctx.moveTo(-radius * 0.55, -radius * 0.18);
-        ctx.lineTo(-radius * 0.08, radius * 0.02);
-        ctx.lineTo(radius * 0.1, radius * 0.5);
-        ctx.lineTo(radius * 0.56, radius * 0.72);
-        ctx.stroke();
-      }
-
-      ctx.restore();
+    if (damaged) {
+      ctx.strokeStyle = "rgba(74, 20, 20, 0.82)";
+      ctx.lineWidth = Math.max(1, radius * 0.12);
+      ctx.beginPath();
+      ctx.moveTo(-radius * 0.55, -radius * 0.18);
+      ctx.lineTo(-radius * 0.08, radius * 0.02);
+      ctx.lineTo(radius * 0.1, radius * 0.5);
+      ctx.lineTo(radius * 0.56, radius * 0.72);
+      ctx.stroke();
     }
 
-    function drawStadiumEnvironment() {
+    ctx.restore();
+  }
+
+  function drawStadiumEnvironment() {
       const width = GAME_CANVAS_LOGICAL_WIDTH;
       const height = GAME_CANVAS_LOGICAL_HEIGHT;
       const compact = width <= 400;
-      const standTop = compact ? height * 0.325 : height * 0.255;
-      const standBottom = compact ? height * 0.505 : height * 0.67;
+      const standTop = compact ? height * 0.27 : height * 0.255;
+      const standBottom = compact ? height * 0.66 : height * 0.67;
       const domePeakY = compact ? 8 : 10;
       const domeShoulderY = compact ? 20 : 24;
       const domeSideY = compact ? 38 : 44;
@@ -4548,37 +4574,37 @@ function lerpValue(start, end, amount) {
         ctx.stroke();
 
         if (options.logoText) {
-          const badgeR = compact ? 4.8 : 10;
-          const badgeX = leftX + (compact ? 8.5 : 17);
+          const badgeR = compact ? 5.5 : 10;
+          const badgeX = leftX + (compact ? 10 : 17);
           const badgeY = topY + h * 0.5;
           ctx.fillStyle = accent;
           ctx.beginPath();
           ctx.arc(badgeX, badgeY, badgeR, 0, Math.PI * 2);
           ctx.fill();
           ctx.fillStyle = "#13202b";
-          ctx.font = `bold ${compact ? 4.1 : 8}px Arial, sans-serif`;
+          ctx.font = `bold ${compact ? 4.6 : 8}px Arial, sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
           ctx.fillText(options.logoText, badgeX, badgeY + 0.3);
 
           ctx.fillStyle = "#eef7ff";
           ctx.textAlign = "left";
-          ctx.font = `bold ${compact ? 4.9 : 10.5}px Arial, sans-serif`;
+          ctx.font = `bold ${compact ? 5.8 : 10.5}px Arial, sans-serif`;
           ctx.fillText(title, leftX + (compact ? 19 : 31), topY + h * 0.43);
           if (subtitle) {
             ctx.fillStyle = "#f6cf70";
-            ctx.font = `bold ${compact ? 4.2 : 8.2}px Arial, sans-serif`;
+            ctx.font = `bold ${compact ? 4.8 : 8.2}px Arial, sans-serif`;
             ctx.fillText(subtitle, leftX + (compact ? 19 : 31), topY + h * 0.72);
           }
         } else {
           ctx.fillStyle = "#eef7ff";
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.font = `bold ${compact ? 5.0 : 11.5}px Arial, sans-serif`;
+          ctx.font = `bold ${compact ? 6.0 : 11.5}px Arial, sans-serif`;
           ctx.fillText(title, centerX, topY + h * 0.38);
           if (subtitle) {
             ctx.fillStyle = "#f6cf70";
-            ctx.font = `bold ${compact ? 4.3 : 8.8}px Arial, sans-serif`;
+            ctx.font = `bold ${compact ? 5.0 : 8.8}px Arial, sans-serif`;
             ctx.fillText(subtitle, centerX, topY + h * 0.72);
           }
         }
@@ -4656,8 +4682,8 @@ function lerpValue(start, end, amount) {
       }
 
       function drawCountryBanner(x, topY, colors, label) {
-        const bannerW = compact ? 10 : 22;
-        const bannerH = compact ? 18 : 38;
+        const bannerW = compact ? 14 : 22;
+        const bannerH = compact ? 26 : 38;
         const anchorY = boardAnchorYForX(x) - (compact ? 2 : 4);
         ctx.save();
         ctx.strokeStyle = "rgba(210, 220, 230, 0.66)";
@@ -4679,7 +4705,7 @@ function lerpValue(start, end, amount) {
       }
 
       function drawFlagBundle(x, y, palette) {
-        const poleH = compact ? 12 : 26;
+        const poleH = compact ? 18 : 26;
         ctx.save();
         for (let i = 0; i < 3; i++) {
           const px = x + (i - 1) * (compact ? 5 : 7);
@@ -4692,8 +4718,8 @@ function lerpValue(start, end, amount) {
           ctx.fillStyle = palette[i % palette.length];
           ctx.beginPath();
           ctx.moveTo(px, y - poleH + 1);
-          ctx.lineTo(px + (compact ? 6 : 12), y - poleH + (compact ? 2.5 : 5));
-          ctx.lineTo(px, y - poleH + (compact ? 5.5 : 10));
+          ctx.lineTo(px + (compact ? 8 : 12), y - poleH + (compact ? 3 : 5));
+          ctx.lineTo(px, y - poleH + (compact ? 7 : 10));
           ctx.closePath();
           ctx.fill();
         }
@@ -4738,27 +4764,26 @@ function lerpValue(start, end, amount) {
         ctx.restore();
       }
 
-      const scoreTopY = compact ? 18 : 42;
-      const scoreW = compact ? 70 : 136;
-      const scoreH = compact ? 14 : 34;
-      if (!upperCollapsed) {
-        drawBoard(width * 0.5, scoreTopY, scoreW, scoreH, "#f0c25e", "SCOREBOARD", `RUNS ${score}`);
-      }
-
-      const billboardCenterY = healthBottomY + (standTop - healthBottomY) * 0.28;
-      const billboardH = compact ? 14 : 28;
+      const scoreTopY = compact ? 42 : 42;
+      const scoreW = compact ? 78 : 136;
+      const scoreH = compact ? 18 : 34;
+      const billboardCenterY = healthBottomY + (standTop - healthBottomY) * 0.14;
+      const billboardH = compact ? 18 : 28;
       const billboardTopY = billboardCenterY - billboardH / 2;
-      if (shouldDrawOriginalStadiumTarget("billboard-left")) drawBoard(width * 0.27, billboardTopY, compact ? 68 : 114, billboardH, "#7cd0ff", "Frank's Food", "", { logoText: "FF" });
-      if (shouldDrawOriginalStadiumTarget("billboard-right")) drawBoard(width * 0.73, billboardTopY, compact ? 66 : 108, billboardH, "#ff8a6b", "Gus's Grub", "", { logoText: "GG" });
-
       const speakerBoxTopY = scoreTopY + scoreH + (compact ? 12 : 18);
-      if (shouldDrawOriginalStadiumTarget("speaker-left")) drawSpeakerPole(width * 0.4, speakerBoxTopY, standTop, compact ? 0.74 : 1);
-      if (shouldDrawOriginalStadiumTarget("speaker-right")) drawSpeakerPole(width * 0.6, speakerBoxTopY, standTop, compact ? 0.74 : 1);
-      if (shouldDrawOriginalStadiumTarget("floodlight-left")) drawFloodlightPole(width * 0.08, compact ? 47 : 84, standTop, compact ? 0.76 : 1);
-      if (shouldDrawOriginalStadiumTarget("floodlight-right")) drawFloodlightPole(width * 0.92, compact ? 47 : 84, standTop, compact ? 0.76 : 1);
-
-      if (shouldDrawOriginalStadiumTarget("banner-left")) drawCountryBanner(width * 0.14, compact ? 28 : 52, ["#2b74b9", "#f5efe2", "#d64e45"], "AL");
-      if (shouldDrawOriginalStadiumTarget("banner-right")) drawCountryBanner(width * 0.86, compact ? 28 : 52, ["#1e8e5a", "#f6d260", "#cf4635"], "BO");
+      if (!upperCollapsed) {
+        ctx.save();
+        drawBoard(width * 0.5, scoreTopY, scoreW, scoreH, "#f0c25e", "SCOREBOARD", `RUNS ${score}`);
+        if (shouldDrawOriginalStadiumTarget("billboard-left")) drawBoard(width * 0.25, billboardTopY, compact ? 74 : 114, billboardH, "#7cd0ff", "Frank's Food", "", { logoText: "FF" });
+        if (shouldDrawOriginalStadiumTarget("billboard-right")) drawBoard(width * 0.75, billboardTopY, compact ? 70 : 108, billboardH, "#ff8a6b", "Gus's Grub", "", { logoText: "GG" });
+        if (shouldDrawOriginalStadiumTarget("speaker-left")) drawSpeakerPole(width * 0.4, speakerBoxTopY, standTop, compact ? 0.95 : 1);
+        if (shouldDrawOriginalStadiumTarget("speaker-right")) drawSpeakerPole(width * 0.6, speakerBoxTopY, standTop, compact ? 0.95 : 1);
+        if (shouldDrawOriginalStadiumTarget("floodlight-left")) drawFloodlightPole(width * 0.08, compact ? 78 : 84, standTop, compact ? 0.95 : 1);
+        if (shouldDrawOriginalStadiumTarget("floodlight-right")) drawFloodlightPole(width * 0.92, compact ? 78 : 84, standTop, compact ? 0.95 : 1);
+        if (shouldDrawOriginalStadiumTarget("banner-left")) drawCountryBanner(width * 0.14, compact ? 44 : 52, ["#2b74b9", "#f5efe2", "#d64e45"], "AL");
+        if (shouldDrawOriginalStadiumTarget("banner-right")) drawCountryBanner(width * 0.86, compact ? 44 : 52, ["#1e8e5a", "#f6d260", "#cf4635"], "BO");
+        ctx.restore();
+      }
 
       drawCollapseDomePieces();
       drawCollapseDust();
@@ -4884,10 +4909,10 @@ function lerpValue(start, end, amount) {
       }
       ctx.globalAlpha = 1;
 
-      if (shouldDrawOriginalStadiumTarget("cart-left")) drawConcessionCart(aisleCenters[0], aisleStartY + (standBottom - aisleStartY) * 0.12, "SODA", "#7cd0ff");
-      if (shouldDrawOriginalStadiumTarget("cart-right")) drawConcessionCart(aisleCenters[1], aisleStartY + (standBottom - aisleStartY) * 0.12, "POPCORN", "#ff8a6b");
-      drawFlagBundle(width * 0.18, standTop + (standBottom - standTop) * 0.5, ["#f4b942", "#7cd0ff", "#f7f0d6"]);
-      drawFlagBundle(width * 0.82, standTop + (standBottom - standTop) * 0.5, ["#ff8a6b", "#a7e08f", "#f7f0d6"]);
+      if (!upperCollapsed && shouldDrawOriginalStadiumTarget("cart-left")) drawConcessionCart(aisleCenters[0], aisleStartY + (standBottom - aisleStartY) * 0.1, "SODA", "#7cd0ff");
+      if (!upperCollapsed && shouldDrawOriginalStadiumTarget("cart-right")) drawConcessionCart(aisleCenters[1], aisleStartY + (standBottom - aisleStartY) * 0.1, "POPCORN", "#ff8a6b");
+      drawFlagBundle(width * 0.18, standTop + (standBottom - standTop) * 0.18, ["#f4b942", "#7cd0ff", "#f7f0d6"]);
+      drawFlagBundle(width * 0.82, standTop + (standBottom - standTop) * 0.18, ["#ff8a6b", "#a7e08f", "#f7f0d6"]);
 
       const wallY = standBottom;
       const wallGradient = ctx.createLinearGradient(0, wallY, 0, wallY + height * 0.14);
@@ -4939,29 +4964,30 @@ function lerpValue(start, end, amount) {
     }
 
     function drawLightTower(x, y, scale = 1) {
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.strokeStyle = "#31485e";
-      ctx.lineWidth = 3 * scale;
-      ctx.beginPath();
-      ctx.moveTo(0, 8 * scale);
-      ctx.lineTo(-10 * scale, 80 * scale);
-      ctx.moveTo(0, 8 * scale);
-      ctx.lineTo(10 * scale, 80 * scale);
-      ctx.stroke();
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = "#31485e";
+    ctx.lineWidth = 3 * scale;
+    ctx.beginPath();
+    ctx.moveTo(0, 8 * scale);
+    ctx.lineTo(-10 * scale, 80 * scale);
+    ctx.moveTo(0, 8 * scale);
+    ctx.lineTo(10 * scale, 80 * scale);
+    ctx.stroke();
 
-      ctx.fillStyle = "#17283a";
-      roundedRectPath(-30 * scale, -12 * scale, 60 * scale, 28 * scale, 5 * scale);
-      ctx.fill();
-      for (let row = 0; row < 2; row++) {
-        for (let col = 0; col < 4; col++) {
-          ctx.fillStyle = "#fff1a8";
-          roundedRectPath((-24 + col * 13) * scale, (-7 + row * 12) * scale, 9 * scale, 8 * scale, 2 * scale);
-          ctx.fill();
-        }
+    ctx.fillStyle = "#17283a";
+    roundedRectPath(-30 * scale, -12 * scale, 60 * scale, 28 * scale, 5 * scale);
+    ctx.fill();
+    for (let row = 0; row < 2; row++) {
+      for (let col = 0; col < 4; col++) {
+        ctx.fillStyle = "#fff1a8";
+        roundedRectPath((-24 + col * 13) * scale, (-7 + row * 12) * scale, 9 * scale, 8 * scale, 2 * scale);
+        ctx.fill();
       }
-      ctx.restore();
     }
+    ctx.restore();
+  }
+
   function drawPitcher() {
   const s = STAFF_GAP / 36;
   const pose = getPitcherPose();
@@ -5200,139 +5226,131 @@ function lerpValue(start, end, amount) {
 
 
   function drawStaffGlassPanel() {
-      const compact = GAME_CANVAS_LOGICAL_WIDTH <= 400;
-      const x = compact ? 5 : 18;
-      const y = TREBLE_STAFF_TOP - STAFF_GAP * (compact ? 2.0 : 1.8);
-      const right = GAME_CANVAS_LOGICAL_WIDTH - x;
-      const bottom = BASS_STAFF_TOP + STAFF_GAP * (compact ? 6.0 : 5.35);
-      const width = right - x;
-      const height = bottom - y;
+    const compact = GAME_CANVAS_LOGICAL_WIDTH <= 400;
+    const x = compact ? 5 : 18;
+    const y = TREBLE_STAFF_TOP - STAFF_GAP * (compact ? 1.55 : 1.8);
+    const right = GAME_CANVAS_LOGICAL_WIDTH - x;
+    const bottom = BASS_STAFF_TOP + STAFF_GAP * (compact ? 5.2 : 5.35);
+    const width = right - x;
+    const height = bottom - y;
 
-      ctx.save();
-      ctx.shadowColor = "rgba(0, 0, 0, 0.28)";
-      ctx.shadowBlur = compact ? 5 : 14;
-      ctx.shadowOffsetY = compact ? 2 : 6;
-      roundedRectPath(x, y, width, height, compact ? 8 : 18);
-      ctx.fillStyle = compact ? "rgba(247,251,255,0.78)" : "rgba(247,251,255,0.82)";
-      ctx.fill();
-      ctx.shadowColor = "transparent";
-      ctx.strokeStyle = "rgba(255, 241, 174, 0.94)";
-      ctx.lineWidth = compact ? 1.5 : 3;
-      ctx.stroke();
+    ctx.save();
+    ctx.shadowColor = "rgba(0, 0, 0, 0.28)";
+    ctx.shadowBlur = compact ? 5 : 14;
+    ctx.shadowOffsetY = compact ? 2 : 6;
+    roundedRectPath(x, y, width, height, compact ? 8 : 18);
+    ctx.fillStyle = compact ? "rgba(247,251,255,0.78)" : "rgba(247,251,255,0.82)";
+    ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.strokeStyle = "rgba(255, 241, 174, 0.94)";
+    ctx.lineWidth = compact ? 1.5 : 3;
+    ctx.stroke();
 
-      const glass = ctx.createLinearGradient(0, y, 0, bottom);
-      glass.addColorStop(0, "rgba(255,255,255,0.18)");
-      glass.addColorStop(0.45, "rgba(255,255,255,0)");
-      glass.addColorStop(1, "rgba(15,52,66,0.05)");
-      roundedRectPath(x, y, width, height, compact ? 8 : 18);
-      ctx.fillStyle = glass;
-      ctx.fill();
-
-      ctx.strokeStyle = "rgba(255,255,255,0.46)";
-      ctx.lineWidth = compact ? 0.7 : 1.2;
-      ctx.beginPath();
-      ctx.moveTo(x + width * 0.08, y + (compact ? 3 : 6));
-      ctx.quadraticCurveTo(x + width * 0.50, y - (compact ? 1 : 2), x + width * 0.90, y + (compact ? 4 : 8));
-      ctx.stroke();
-
-      ctx.strokeStyle = "rgba(23, 72, 91, 0.18)";
-      ctx.lineWidth = compact ? 0.8 : 1.4;
-      ctx.beginPath();
-      ctx.moveTo(x + (compact ? 7 : 14), bottom - (compact ? 3 : 6));
-      ctx.lineTo(right - (compact ? 7 : 14), bottom - (compact ? 3 : 6));
-      ctx.stroke();
-      ctx.restore();
-    }
+    const glass = ctx.createLinearGradient(0, y, 0, bottom);
+    glass.addColorStop(0, "rgba(255,255,255,0.18)");
+    glass.addColorStop(0.45, "rgba(255,255,255,0)");
+    glass.addColorStop(1, "rgba(15,52,66,0.05)");
+    roundedRectPath(x, y, width, height, compact ? 8 : 18);
+    ctx.fillStyle = glass;
+    ctx.fill();
+    ctx.restore();
+  }
   function drawCatcherThreshold() {
     /* The catcher now marks and tracks the miss point; no dashed line is needed. */
   }
 
 
     function drawBaseballDamageMarker(x, y, radius, isDamaged) {
-      const compact = GAME_CANVAS_LOGICAL_WIDTH <= 400;
-      drawBaseball(x, y, radius, isDamaged ? -0.35 : 0.15, {
-        muted: !isDamaged,
-        damaged: isDamaged
-      });
+    drawBaseball(x, y, radius, isDamaged ? -0.35 : 0.15, {
+      muted: !isDamaged,
+      damaged: isDamaged
+    });
 
-      ctx.save();
-      ctx.strokeStyle = isDamaged ? "#fff0a8" : "rgba(230,241,250,0.96)";
-      ctx.lineWidth = compact ? 1.1 : 1.6;
-      ctx.beginPath();
-      ctx.arc(x, y, radius + 1.8, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = isDamaged ? "#fff0a8" : "rgba(230,241,250,0.92)";
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(x, y, radius + 2.4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function updateActionTextDisplay() {
+    const visibleFeedback = feedbackText && performance.now() <= feedbackUntil;
+    const feedback = visibleFeedback ? feedbackText : "SWING";
+    if (typeof setMessage === "function") setMessage(feedback);
+  }
+
+  function drawStadiumDamageHud() {
+    const markerRadius = 9;
+    const markerGap = 9;
+    const step = markerRadius * 2 + markerGap;
+    const markerY = 18 + markerRadius;
+    const leftStartX = 22 + markerRadius;
+    const rightStartX = GAME_CANVAS_LOGICAL_WIDTH - 22 - markerRadius;
+
+    for (let i = 0; i < 5; i++) {
+      drawBaseballDamageMarker(leftStartX + i * step, markerY, markerRadius, i < stadiumDamage);
     }
 
-    function drawStadiumDamageHud() {
-      const markerRadius = 5.0;
-      const markerGap = 7.0;
-      const step = markerRadius * 2 + markerGap;
-      const markerY = 18;
-      const leftStartX = 8 + markerRadius;
-      const rightStartX = GAME_CANVAS_LOGICAL_WIDTH - 8 - markerRadius;
-
-      for (let i = 0; i < 5; i++) {
-        drawBaseballDamageMarker(leftStartX + i * step, markerY, markerRadius, i < stadiumDamage);
-      }
-
-      for (let i = 0; i < 5; i++) {
-        const damageIndex = 5 + i;
-        drawBaseballDamageMarker(rightStartX - (4 - i) * step, markerY, markerRadius, damageIndex < stadiumDamage);
-      }
+    for (let i = 0; i < 5; i++) {
+      const damageIndex = 5 + i;
+      drawBaseballDamageMarker(rightStartX - (4 - i) * step, markerY, markerRadius, damageIndex < stadiumDamage);
     }
+  }
 
 
-    function drawAnimationDivider() {
-      ctx.save();
-      ctx.strokeStyle = "#b8c6d6";
-      ctx.lineWidth = 2;
-      ctx.setLineDash([7, 6]);
-      ctx.beginPath();
-      ctx.moveTo(16, ANIMATION_AREA_BOTTOM);
-      ctx.lineTo(GAME_CANVAS_LOGICAL_WIDTH - 16, ANIMATION_AREA_BOTTOM);
-      ctx.stroke();
-      ctx.restore();
+
+  function drawAnimationDivider() {
+    ctx.save();
+    ctx.strokeStyle = "#b8c6d6";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([12, 10]);
+    ctx.beginPath();
+    ctx.moveTo(28, ANIMATION_AREA_BOTTOM);
+    ctx.lineTo(GAME_CANVAS_LOGICAL_WIDTH - 28, ANIMATION_AREA_BOTTOM);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function setGameFeedback(text, kind = "neutral", durationMs = 720) {
+    feedbackText = text;
+    feedbackKind = kind;
+    feedbackUntil = performance.now() + durationMs;
+    if (typeof setMessage === "function") setMessage(text);
+  }
+
+
+  function applyStadiumDamage(result, resultAnimation) {
+    if (!running || stadiumDamage >= MAX_STADIUM_DAMAGE) return;
+
+    stadiumDamage = Math.min(MAX_STADIUM_DAMAGE, stadiumDamage + 1);
+    setGameFeedback(
+      result === "wrong" ? "WHOOPS!" : "MISS!",
+      "damage",
+      850
+    );
+
+    if (stadiumDamage >= MAX_STADIUM_DAMAGE && resultAnimation) {
+      resultAnimation.pendingGameOver = true;
     }
+  }
 
-    function setGameFeedback(text, kind = "neutral", durationMs = 720) {
-      feedbackText = text;
-      feedbackKind = kind;
-      feedbackUntil = performance.now() + durationMs;
-      setMessage(text);
+  function drawFiveLineStaff(topY, gap, leftX, rightX) {
+    ctx.save();
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    for (let line = 0; line < 5; line++) {
+      const y = topY + line * gap;
+      ctx.moveTo(leftX, y);
+      ctx.lineTo(rightX, y);
     }
-    function applyStadiumDamage(result, resultAnimation) {
-      if (!running || stadiumDamage >= MAX_STADIUM_DAMAGE) return;
+    ctx.stroke();
+    ctx.restore();
+  }
 
-      stadiumDamage = Math.min(MAX_STADIUM_DAMAGE, stadiumDamage + 1);
-      setGameFeedback(
-        result === "wrong" ? "WHOOPS!" : "MISS!",
-        "damage",
-        850
-      );
-
-      if (stadiumDamage >= MAX_STADIUM_DAMAGE && resultAnimation) {
-        resultAnimation.pendingGameOver = true;
-      }
-    }
-
-    function drawFiveLineStaff(topY, gap, leftX, rightX) {
-      const compact = GAME_CANVAS_LOGICAL_WIDTH <= 400;
-      ctx.save();
-      ctx.strokeStyle = "#111827";
-      ctx.lineWidth = compact ? 1.1 : 1.6;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      for (let line = 0; line < 5; line++) {
-        const y = topY + line * gap;
-        ctx.moveTo(leftX, y);
-        ctx.lineTo(rightX, y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function drawGrandStaffConnector() {
+  function drawGrandStaffConnector() {
       const topY = TREBLE_STAFF_TOP;
       const bottomY = BASS_STAFF_TOP + STAFF_GAP * 4;
       const systemHeight = bottomY - topY;
@@ -5378,72 +5396,72 @@ function lerpValue(start, end, amount) {
       ctx.restore();
     }
     function drawTargetBarline() {
-      /* Replaced by the catcher and gold catch-zone boundary in Step 2. */
+    /* Replaced by the catcher and gold catch-zone boundary in Step 2. */
+  }
+
+  function drawClef(type, x, topY, gap) {
+    const isTreble = type === "treble";
+    const fontSize = gap * 4;
+    const referenceLineY = isTreble ? topY + gap * 3 : topY + gap;
+    const smuflGlyph = isTreble ? SMUFL_G_CLEF : SMUFL_F_CLEF;
+    const unicodeGlyph = isTreble ? UNICODE_G_CLEF : UNICODE_F_CLEF;
+    ctx.save();
+    ctx.fillStyle = "#111827";
+    ctx.textAlign = "left";
+
+    if (bravuraReady) {
+      ctx.font = `${fontSize}px "Bravura"`;
+      ctx.textBaseline = "alphabetic";
+      ctx.fillText(smuflGlyph, x, referenceLineY);
+    } else {
+      ctx.font = `${fontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`;
+      ctx.textBaseline = "middle";
+      ctx.fillText(unicodeGlyph, x, topY + gap * 2);
     }
 
-    function drawClef(type, x, topY, gap) {
-      const isTreble = type === "treble";
-      const fontSize = gap * 4;
-      const referenceLineY = isTreble ? topY + gap * 3 : topY + gap;
-      const smuflGlyph = isTreble ? SMUFL_G_CLEF : SMUFL_F_CLEF;
-      const unicodeGlyph = isTreble ? UNICODE_G_CLEF : UNICODE_F_CLEF;
-      ctx.save();
-      ctx.fillStyle = "#111827";
-      ctx.textAlign = "left";
+    ctx.restore();
+  }
 
-      if (bravuraReady) {
-        ctx.font = `${fontSize}px "Bravura"`;
-        ctx.textBaseline = "alphabetic";
-        ctx.fillText(smuflGlyph, x, referenceLineY);
-      } else {
-        ctx.font = `${fontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`;
-        ctx.textBaseline = "middle";
-        ctx.fillText(unicodeGlyph, x, topY + gap * 2);
-      }
-
-      ctx.restore();
+  function yForGrandPitch(pitch) {
+    if (pitch.staff === "middle") {
+      const trebleBottom = TREBLE_STAFF_TOP + STAFF_GAP * 4;
+      return (trebleBottom + BASS_STAFF_TOP) / 2;
     }
+    const topY = pitch.staff === "treble" ? TREBLE_STAFF_TOP : BASS_STAFF_TOP;
+    const bottomLineY = topY + STAFF_GAP * 4;
+    return bottomLineY - pitch.step * (STAFF_GAP / 2);
+  }
 
-    function yForGrandPitch(pitch) {
-      if (pitch.staff === "middle") {
-        const trebleBottom = TREBLE_STAFF_TOP + STAFF_GAP * 4;
-        return (trebleBottom + BASS_STAFF_TOP) / 2;
-      }
-      const topY = pitch.staff === "treble" ? TREBLE_STAFF_TOP : BASS_STAFF_TOP;
-      const bottomLineY = topY + STAFF_GAP * 4;
-      return bottomLineY - pitch.step * (STAFF_GAP / 2);
+  function staffCenterForPitch(pitch) {
+    if (pitch.staff === "middle") return NOTE_VANISH_Y;
+    const topY = pitch.staff === "treble" ? TREBLE_STAFF_TOP : BASS_STAFF_TOP;
+    return topY + STAFF_GAP * 2;
+  }
+
+  function geometryForPitch(pitch) {
+    const y = yForGrandPitch(pitch);
+    return {
+      y,
+      ledgerYs: pitch.ledger ? [y] : [],
+      staffCenterY: staffCenterForPitch(pitch)
+    };
+  }
+
+  function choosePitchIndex() {
+    let index = Math.floor(Math.random() * NOTE_CHOICES.length);
+    if (NOTE_CHOICES.length > 1 && index === lastPitchIndex) {
+      index = (index + 1 + Math.floor(Math.random() * (NOTE_CHOICES.length - 1))) % NOTE_CHOICES.length;
     }
+    return index;
+  }
 
-    function staffCenterForPitch(pitch) {
-      if (pitch.staff === "middle") return NOTE_VANISH_Y;
-      const topY = pitch.staff === "treble" ? TREBLE_STAFF_TOP : BASS_STAFF_TOP;
-      return topY + STAFF_GAP * 2;
-    }
-
-    function geometryForPitch(pitch) {
-      const y = yForGrandPitch(pitch);
-      return {
-        y,
-        ledgerYs: pitch.ledger ? [y] : [],
-        staffCenterY: staffCenterForPitch(pitch)
-      };
-    }
-
-    function choosePitchIndex() {
-      let index = Math.floor(Math.random() * NOTE_CHOICES.length);
-      if (NOTE_CHOICES.length > 1 && index === lastPitchIndex) {
-        index = (index + 1 + Math.floor(Math.random() * (NOTE_CHOICES.length - 1))) % NOTE_CHOICES.length;
-      }
-      return index;
-    }
-
-    function spawnNoteAt(x) {
-    const pitchIndex = choosePitchIndex();
-    const pitch = NOTE_CHOICES[pitchIndex];
-    lastPitchIndex = pitchIndex;
-    const noteGeometry = geometryForPitch(pitch);
-    const noteId = nextNoteId++;
-    const note = {
+  function spawnNoteAt(x) {
+  const pitchIndex = choosePitchIndex();
+  const pitch = NOTE_CHOICES[pitchIndex];
+  lastPitchIndex = pitchIndex;
+  const noteGeometry = geometryForPitch(pitch);
+  const noteId = nextNoteId++;
+  const note = {
       id: noteId,
       letter: pitch.letter,
       staff: pitch.staff,
@@ -5459,24 +5477,24 @@ function lerpValue(start, end, amount) {
     if (!animationState.pitcher.active) startPitcherAnimation(note, currentNoteSpeed());
 }
 
-    function maintainNoteStream() {
-      if (activeNotes.length === 0) spawnNoteAt(NOTE_SPAWN_X);
-      let rightmost = activeNotes[activeNotes.length - 1];
-      while (rightmost.x <= NOTE_SPAWN_X - NOTE_SPACING_X) {
-        spawnNoteAt(rightmost.x + NOTE_SPACING_X);
-        rightmost = activeNotes[activeNotes.length - 1];
-      }
+  function maintainNoteStream() {
+    if (activeNotes.length === 0) spawnNoteAt(NOTE_SPAWN_X);
+    let rightmost = activeNotes[activeNotes.length - 1];
+    while (rightmost.x <= NOTE_SPAWN_X - NOTE_SPACING_X) {
+      spawnNoteAt(rightmost.x + NOTE_SPACING_X);
+      rightmost = activeNotes[activeNotes.length - 1];
     }
+  }
 
-    function currentNoteSpeed() {
-      const n = correctNotes;
-      const baseSpeedSquared = BASE_NOTE_SPEED * BASE_NOTE_SPEED;
-      // Correct answers arrive faster as the stream speeds up. Growing speed by sqrt(n)
-      // offsets that feedback, so difficulty rises approximately linearly over play time.
-      return Math.sqrt(baseSpeedSquared + n * NOTE_SPEED_SQUARED_RAMP);
-    }
+  function currentNoteSpeed() {
+    const n = correctNotes;
+    const baseSpeedSquared = BASE_NOTE_SPEED * BASE_NOTE_SPEED;
+    // Correct answers arrive faster as the stream speeds up. Growing speed by sqrt(n)
+    // offsets that feedback, so difficulty rises approximately linearly over play time.
+    return Math.sqrt(baseSpeedSquared + n * NOTE_SPEED_SQUARED_RAMP);
+  }
 
-    function resolveFrontNote(result) {
+  function resolveFrontNote(result) {
     if (!running || activeNotes.length === 0) return;
 
     const resolvedNote = activeNotes.shift();
@@ -5499,13 +5517,13 @@ function lerpValue(start, end, amount) {
     }
   }
 
-    function approachProgressForX(x) {
-      const approachDistance = Math.max(1, NOTE_ZOOM_START_X - NOTE_LANDING_X);
-      const rawProgress = Math.max(0, Math.min(1, (NOTE_ZOOM_START_X - x) / approachDistance));
-      return rawProgress * rawProgress * (3 - 2 * rawProgress);
-    }
-    function drawStreamingNote(note) {
-    const radius = STAFF_GAP * 0.54;
+  function approachProgressForX(x) {
+    const approachDistance = Math.max(1, NOTE_ZOOM_START_X - NOTE_LANDING_X);
+    const rawProgress = Math.max(0, Math.min(1, (NOTE_ZOOM_START_X - x) / approachDistance));
+    return rawProgress * rawProgress * (3 - 2 * rawProgress);
+  }
+  function drawStreamingNote(note) {
+    const radius = STAFF_GAP * 0.63;
 
     if (note.heldByPitcher) {
       if (!note.pitchTriggered) return;
@@ -5535,7 +5553,7 @@ function lerpValue(start, end, amount) {
     ctx.scale(scale, scale);
 
     ctx.strokeStyle = "#111827";
-    ctx.lineWidth = Math.max(1.0, STAFF_GAP * 0.13);
+    ctx.lineWidth = Math.max(1.25, STAFF_GAP * 0.14);
     ctx.lineCap = "round";
     for (const ledgerY of note.ledgerYs) {
       const relativeLedgerY = ledgerY - note.y;
@@ -5978,24 +5996,23 @@ function drawMiniBatAtHandle(handleX, handleY, length, angle, alpha = 1) {
   }
 
   function gameInit() {
-    activeNotes = [];
-    correctNotes = 0;
-    stadiumDamage = 0;
-    stadiumTargets = createStadiumTargets();
-    collapseState = { active: false, ruined: false, elapsed: 0, duration: 2.45, debris: [], fallingObjects: [], domePieces: [], dustClouds: [] };
-    starField = createStarField();
+  activeNotes = [];
+  correctNotes = 0;
+  stadiumDamage = 0;
+  stadiumTargets = createStadiumTargets();
+  collapseState = { active: false, ruined: false, elapsed: 0, duration: 2.45, debris: [], fallingObjects: [], domePieces: [], dustClouds: [] };
+  starField = createStarField();
   aftermathMeteorOffset = Math.random() * 10000;
-    feedbackText = "";
-    feedbackKind = "neutral";
-    feedbackUntil = 0;
-    lastPitchIndex = -1;
-    nextNoteId = 1;
-    lastUpdateTime = performance.now();
-    resetAnimationState();
-    resetVisualAnimationState();
-    setMessage("READ THE FRONT BASEBALL");
-    requestBravuraFont();
-    spawnNoteAt(NOTE_SPAWN_X);
+  feedbackText = "";
+  feedbackKind = "neutral";
+  feedbackUntil = 0;
+  lastPitchIndex = -1;
+  nextNoteId = 1;
+  lastUpdateTime = performance.now();
+  resetAnimationState();
+  resetVisualAnimationState();
+  requestBravuraFont();
+  spawnNoteAt(NOTE_SPAWN_X);
 }
   function gameUpdate() {
     const now = performance.now();
@@ -6035,7 +6052,8 @@ function drawMiniBatAtHandle(handleX, handleY, length, angle, alpha = 1) {
     }
   }
 
-    function gameDraw() {
+  function gameDraw() {
+    updateActionTextDisplay();
     ctx.clearRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, GAME_CANVAS_LOGICAL_HEIGHT);
 
     const shake = collapseShakeOffset();
@@ -6062,14 +6080,18 @@ function drawMiniBatAtHandle(handleX, handleY, length, angle, alpha = 1) {
     drawCollapseOverlay();
   }
 
-    function gameInput(action) {
+  function gameInput(action) {
     if (!running || collapseState.active || stadiumDamage >= MAX_STADIUM_DAMAGE || activeNotes.length === 0 || activeNotes[0].heldByPitcher) return;
     const letter = String(action || "").toUpperCase();
     if (!/^[A-G]$/.test(letter)) return;
     resolveFrontNote(letter === activeNotes[0].letter ? "correct" : "wrong");
   }
 
-    function gameStop() {
+  function gamePointer() {
+    /* Pointer input remains intentionally unused in Step 2. */
+  }
+
+  function gameStop() {
     stopRuinAftermathLoop();
     activeNotes = [];
     stadiumTargets = [];
@@ -6080,7 +6102,7 @@ function drawMiniBatAtHandle(handleX, handleY, length, angle, alpha = 1) {
     resetVisualAnimationState();
     resetJoystick(sticks.left);
     resetJoystick(sticks.right);
-}
+  }
 
     const resizeObserver = new ResizeObserver(() => {
       scaleAppToFrame();
