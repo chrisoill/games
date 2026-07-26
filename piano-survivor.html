@@ -344,7 +344,7 @@
       font-family: "Courier New", monospace;
       text-shadow: 0 0 7px rgba(183,255,158,0.35);
       display: grid;
-      grid-template-columns: auto auto 1fr auto;
+      grid-template-columns: minmax(0, 1fr) auto auto;
       grid-template-rows: 1fr 1fr;
       column-gap: 8px;
       align-items: center;
@@ -353,7 +353,7 @@
     }
 
     #lcdMessage {
-      grid-column: 1 / 5;
+      grid-column: 1 / 4;
       font-size: 14px;
       font-weight: bold;
       white-space: nowrap;
@@ -362,11 +362,16 @@
     }
 
     #lcdPlayer,
-    #lcdLives,
     #lcdScore,
     #lcdBest {
       font-size: 11px;
       white-space: nowrap;
+    }
+
+    #lcdPlayer {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     #lcdScore {
@@ -835,8 +840,7 @@
 
         <div id="lcd">
           <div id="lcdMessage">READY</div>
-          <div id="lcdPlayer">HEALTH: <span id="healthValue">6/6</span></div>
-          <div id="lcdLives">LIVES: <span id="livesValue">0</span></div>
+          <div id="lcdPlayer">PLAYER: <span id="playerValue">GUEST</span></div>
           <div id="lcdScore"><span id="scoreLabel">SCORE</span>: <span id="score">0</span></div>
           <div id="lcdBest">BEST: <span id="bestScore">0</span></div>
         </div>
@@ -991,9 +995,7 @@
     }
 
     const lcdMessage = document.getElementById("lcdMessage");
-    const playerNameEl = { textContent: "" };
-    const healthValueEl = document.getElementById("healthValue");
-    const livesValueEl = document.getElementById("livesValue");
+    const playerNameEl = document.getElementById("playerValue") || { textContent: "" };
     const scoreLabelEl = document.getElementById("scoreLabel");
     const scoreEl = document.getElementById("score");
     const bestScoreEl = document.getElementById("bestScore");
@@ -2238,15 +2240,81 @@
     return `${d} | ${t} | ${r} | ${h} | ${art}${special}`;
   }
 
-  function psCompactStatsLine() {
-    const art = ps.articulation ? ps.articulation.symbol : "-";
-    return `HP ${ps.hp}/${ps.maxHp} | :|| ${ps.repeats} | ${PS_DYNAMICS[ps.dyn].label} | ${PS_TEMPOS[ps.tempo].short} | ${PS_RHYTHMS[ps.rhythm].short} | ${PS_HARMONIES[ps.harmony].short} | ${art}`;
+  function psDrawPlayerHud() {
+    const hudWidth = GAME_CANVAS_LOGICAL_WIDTH;
+    const hpRatio = psClamp(ps.hp / ps.maxHp, 0, 1);
+    const hudHeight = 32;
+    const groupX = 95;
+    const centerY = hudHeight / 2;
+    const barX = 155;
+    const barY = 8;
+    const barW = 280;
+    const barH = 16;
+    const repeatBoxX = 547;
+    const repeatBoxY = 6;
+    const repeatBoxW = 78;
+    const repeatBoxH = 20;
+
+    ctx.save();
+
+    // Keep the in-game HUD focused only on survival information. Musical stats
+    // already appear above the desktop play area and in the mobile LCD.
+    ctx.fillStyle = "rgba(3,7,18,0.9)";
+    ctx.fillRect(0, 0, hudWidth, hudHeight);
+    ctx.strokeStyle = "rgba(143,233,220,0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, hudHeight - 0.5);
+    ctx.lineTo(hudWidth, hudHeight - 0.5);
+    ctx.stroke();
+
+    ctx.font = "bold 12px Courier New, monospace";
+    ctx.textBaseline = "middle";
+    ctx.textAlign = "left";
+    ctx.fillStyle = "#b7ff9e";
+    ctx.fillText("HEALTH", groupX, centerY);
+
+    // One continuous bar, divided into the six individual hits the player can take.
+    ctx.fillStyle = "#101827";
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.fillStyle = hpRatio > 0.5 ? "#53e07d" : hpRatio > 0.25 ? "#f7cf45" : "#ef476f";
+    ctx.fillRect(barX + 2, barY + 2, (barW - 4) * hpRatio, barH - 4);
+    ctx.strokeStyle = "#8fe9dc";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(barX, barY, barW, barH);
+
+    ctx.strokeStyle = "rgba(3,7,18,0.55)";
+    ctx.lineWidth = 1;
+    for (let i = 1; i < ps.maxHp; i++) {
+      const dividerX = barX + (barW * i / ps.maxHp);
+      ctx.beginPath();
+      ctx.moveTo(dividerX, barY + 2);
+      ctx.lineTo(dividerX, barY + barH - 2);
+      ctx.stroke();
+    }
+
+    // The repeat sign is the pickup that grants an extra life.
+    ctx.font = "bold 12px Courier New, monospace";
+    ctx.fillStyle = "#b7ff9e";
+    ctx.fillText("EXTRA LIVES", 457, centerY);
+
+    ctx.fillStyle = "#30250c";
+    ctx.fillRect(repeatBoxX, repeatBoxY, repeatBoxW, repeatBoxH);
+    ctx.strokeStyle = "#f7cf45";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(repeatBoxX, repeatBoxY, repeatBoxW, repeatBoxH);
+
+    ctx.fillStyle = "#ffe681";
+    ctx.font = "bold 15px Courier New, monospace";
+    ctx.fillText(":||", repeatBoxX + 8, centerY);
+    ctx.font = "bold 14px Courier New, monospace";
+    ctx.fillText(`× ${ps.repeats}`, repeatBoxX + 42, centerY);
+
+    ctx.restore();
   }
 
   function psUpdateHud() {
     if (!ps) return;
-    if (healthValueEl) healthValueEl.textContent = `${ps.hp}/${ps.maxHp}`;
-    if (livesValueEl) livesValueEl.textContent = String(ps.repeats);
     if (ps.messageTimer > 0) {
       questionBox.textContent = ps.message;
     } else {
@@ -2734,7 +2802,6 @@
 
   function psKillEnemy(enemy) {
     addScore(enemy.score);
-    ps.kills++;
     psSoundEnemyDie(enemy);
     ps.particles.push({ x: enemy.x, y: enemy.y, text: "✦", life: 28, vy: -0.35 });
   }
@@ -3269,7 +3336,6 @@
       nextFireSound: 0,
       heading: { x: 1, y: 0 },
       time: 0,
-      kills: 0,
       message: "Explore the map. Collect symbols. Avoid the instruments.",
       messageTimer: 280,
       fermataTimer: 0,
@@ -3586,16 +3652,6 @@
     const playerPos = psWorldToScreen(ps.player.x, ps.player.y);
     if (ps.invuln % 12 < 6) psDrawPixelPiano(playerPos.x, playerPos.y);
 
-    ctx.fillStyle = "rgba(3,7,18,0.85)";
-    ctx.fillRect(0, 0, GAME_CANVAS_LOGICAL_WIDTH, 20);
-    ctx.fillStyle = "#b7ff9e";
-    ctx.font = "bold 11px Courier New, monospace";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "middle";
-    ctx.fillText(psCompactStatsLine(), 6, 10);
-    ctx.textAlign = "right";
-    ctx.fillText(`K ${ps.kills}`, GAME_CANVAS_LOGICAL_WIDTH - 8, 10);
-
     ps.particles.forEach(p => {
       if (!psPointOnScreen(p, 26)) return;
       const sp = psWorldToScreen(p.x, p.y);
@@ -3607,6 +3663,8 @@
       ctx.fillText(p.text, sp.x, sp.y);
       ctx.globalAlpha = 1;
     });
+
+    psDrawPlayerHud();
   }
 
   function gameInput(action) {
