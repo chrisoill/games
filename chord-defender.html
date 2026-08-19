@@ -860,7 +860,10 @@
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      touch-action: pan-x;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     #pianoScroller {
@@ -870,9 +873,11 @@
       overflow-y: hidden;
       border-radius: 10px;
       background: #111827;
-      touch-action: pan-x;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       overscroll-behavior-x: contain;
-      -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
     }
 
@@ -883,7 +888,10 @@
       width: max-content;
       height: 146px;
       align-items: flex-start;
-      touch-action: pan-x;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .pianoOctave {
@@ -891,7 +899,10 @@
       flex: 0 0 280px;
       width: 280px;
       height: 146px;
-      touch-action: pan-x;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
     }
 
     .pianoOctave .whiteKeys {
@@ -906,7 +917,7 @@
       height: 146px;
       border-radius: 0 0 11px 11px;
       padding: 0;
-      touch-action: pan-x;
+      touch-action: none;
     }
 
     .pianoOctave .blackKey {
@@ -914,7 +925,7 @@
       width: 30px;
       height: 90px;
       border-radius: 0 0 9px 9px;
-      touch-action: pan-x;
+      touch-action: none;
     }
 
     .whiteKey.selected {
@@ -1252,7 +1263,7 @@
           <h3>How to Play</h3>
           <p>Incoming missiles show chord symbols. Build a chord on the two-octave piano, then press FIRE to submit it in one shot.</p>
           <ul>
-            <li>Every 5 successful defenses advances one curriculum step. Chord vocabulary develops through Steps 1–12, with a gentle speed increase beginning in Step 4. The full ongoing speed ramp begins in Step 13.</li>
+            <li>A new curriculum step begins every 15 seconds. Steps 1–16 expand the chord vocabulary at a steady pace; the ongoing speed ramp begins in Step 17.</li>
             <li>Black-key roots may be written as sharps or flats, such as <code>F#</code> or <code>Gb</code>.</li>
             <li>Tap a highlighted key again to remove it. Pressing FIRE also clears the selection.</li>
             <li>Only keys that are at least partly visible in the keyboard window can count; fully scrolled-off selected keys are cleared automatically.</li>
@@ -1282,13 +1293,9 @@
     appStage.addEventListener("selectstart", suppressArcadeSelectionGesture);
     appStage.addEventListener("dragstart", suppressArcadeSelectionGesture);
 
-    function isScrollablePianoTarget(target) {
-      return target instanceof Element && !!target.closest('#pianoScroller, .pianoKey');
-    }
-
     function isLiveArcadeControlTarget(target) {
       return target instanceof Element && !!target.closest(
-        '#controls button, #controls .joystickPad, [data-arcade-touch-control="true"]'
+        '#controls button, #controls .joystickPad, #pianoScroller, #pianoTrack, .pianoOctave, .pianoKey, [data-arcade-touch-control="true"]'
       );
     }
 
@@ -1301,7 +1308,6 @@
     gameScreen.addEventListener("touchstart", event => {
       if (!running) return;
       if (isEditableArcadeTarget(event.target)) return;
-      if (isScrollablePianoTarget(event.target)) return;
       if (!isLiveArcadeControlTarget(event.target)) return;
       event.preventDefault();
     }, { passive: false, capture: true });
@@ -2153,6 +2159,7 @@
 
     const activePianoVoices = new Map();
     const selectedPianoKeys = new Set();
+    const pianoPointerGestures = new Map();
     let pianoScrollFrame = 0;
 
     function createPianoKey(note, className, octaveIndex, position = null) {
@@ -2189,23 +2196,33 @@
     function wirePianoKey(key) {
       key.addEventListener("pointerdown", event => {
         if (event.pointerType === "mouse" && event.button !== 0) return;
+        event.preventDefault();
         if (!running || shellMenu.classList.contains("open")) return;
+        try { key.setPointerCapture(event.pointerId); } catch (err) {}
         startPianoKeyVoice(key);
       });
 
-      const releaseVoice = () => stopPianoKeyVoice(key);
-      key.addEventListener("pointerup", releaseVoice);
-      key.addEventListener("pointercancel", releaseVoice);
-      key.addEventListener("pointerleave", releaseVoice);
-
-      key.addEventListener("click", event => {
+      key.addEventListener("pointerup", event => {
         event.preventDefault();
-        if (event.detail === 0) return;
+        stopPianoKeyVoice(key);
         if (!running || shellMenu.classList.contains("open")) return;
-        togglePianoKey(key);
+        const gesture = pianoPointerGestures.get(event.pointerId);
+        if (!(gesture && gesture.moved)) togglePianoKey(key);
       });
+
+      ["pointercancel", "lostpointercapture"].forEach(type => {
+        key.addEventListener(type, event => {
+          event.preventDefault();
+          stopPianoKeyVoice(key);
+        });
+      });
+
+      // Selection is handled on pointerup; suppress compatibility clicks so
+      // cancelling touchstart for iOS never causes a second activation path.
+      key.addEventListener("click", event => event.preventDefault());
       key.addEventListener("keydown", event => event.preventDefault());
       key.addEventListener("contextmenu", event => event.preventDefault());
+      key.addEventListener("dragstart", event => event.preventDefault());
     }
 
     function refreshPianoKeys() {
@@ -2272,6 +2289,44 @@
     }
 
     if (pianoScroller) {
+      // Native touch scrolling has to be disabled to stop iOS Safari's
+      // long-press loupe. Re-create the horizontal drag ourselves so a swipe
+      // that begins directly on a piano key still scrolls the keyboard.
+      pianoScroller.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse") return;
+        event.preventDefault();
+        pianoPointerGestures.set(event.pointerId, {
+          startX: event.clientX,
+          startY: event.clientY,
+          startScrollLeft: pianoScroller.scrollLeft,
+          moved: false
+        });
+
+        if (!(event.target instanceof Element && event.target.closest(".pianoKey"))) {
+          try { pianoScroller.setPointerCapture(event.pointerId); } catch (err) {}
+        }
+      });
+
+      pianoScroller.addEventListener("pointermove", event => {
+        const gesture = pianoPointerGestures.get(event.pointerId);
+        if (!gesture) return;
+        const dx = event.clientX - gesture.startX;
+        const dy = event.clientY - gesture.startY;
+        if (!gesture.moved && Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+        gesture.moved = true;
+        event.preventDefault();
+        pianoScroller.scrollLeft = gesture.startScrollLeft - dx;
+        pruneHiddenSelectedKeys();
+      });
+
+      const finishPianoGesture = event => {
+        pianoPointerGestures.delete(event.pointerId);
+        pruneHiddenSelectedKeys();
+      };
+      pianoScroller.addEventListener("pointerup", finishPianoGesture);
+      pianoScroller.addEventListener("pointercancel", finishPianoGesture);
+      pianoScroller.addEventListener("lostpointercapture", finishPianoGesture);
+
       pianoScroller.addEventListener("scroll", () => {
         if (pianoScrollFrame) return;
         pianoScrollFrame = requestAnimationFrame(() => {
@@ -2457,7 +2512,7 @@
       /* =========================
          GAME MODULE
          Chord Defender: build each incoming chord symbol on the piano.
-         Chord vocabulary advances through 12 curriculum steps; speed pressure begins at Step 13.
+         Chord vocabulary advances through 17 timed curriculum steps; the speed ramp begins at Step 17.
          ========================= */
 
       const PIANO_PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -2481,9 +2536,8 @@
         { id: "diminished", label: "Diminished", suffix: "dim", intervals: [0, 3, 6] },
         { id: "augmented", label: "Augmented", suffix: "aug", intervals: [0, 4, 8] }
       ];
-      const CHORD_MISSILE_SPEED_RATIO = 0.38;
-      const CHORDS_PER_PEDAGOGY_STEP = 5;
-      const SPEED_RAMP_START_HITS = CHORDS_PER_PEDAGOGY_STEP * 12;
+      const CHORD_MISSILE_SPEED_RATIO = 0.50;
+      const PEDAGOGY_STEP_FRAMES = 15 * 60;
 
       const NATURAL_ROOT_KEYS = ["A", "B", "C", "D", "E", "F", "G"];
       const ACCIDENTAL_ROOT_KEYS = ["C#", "D#", "F#", "G#", "A#"];
@@ -2524,18 +2578,29 @@
       }
 
       const PEDAGOGY_STEPS = [
+        // 1–3: establish major triads on natural roots.
         { roots: naturalRoots(["C", "F", "G"]), qualities: ["major"] },
         { roots: naturalRoots(["D", "E", "A"]), qualities: ["major"] },
         { roots: naturalRoots(), qualities: ["major"] },
-        { roots: accidentalRoots("flat"), qualities: ["major"] },
-        { roots: accidentalRoots("sharp"), qualities: ["major"] },
-        { roots: allRoots(), qualities: ["major"] },
+
+        // 4–9: learn chord quality before introducing accidental roots.
         { roots: naturalRoots(), qualities: ["minor"] },
+        { roots: naturalRoots(), qualities: ["major", "minor"] },
+        { roots: naturalRoots(), qualities: ["diminished"] },
+        { roots: naturalRoots(), qualities: ["major", "minor", "diminished"] },
+        { roots: naturalRoots(), qualities: ["augmented"] },
+        { roots: naturalRoots(), qualities: ["major", "minor", "diminished", "augmented"] },
+
+        // 10–16: add the five black-key roots one quality at a time.
+        { roots: accidentalRoots("both"), qualities: ["major"] },
+        { roots: allRoots(), qualities: ["major"] },
         { roots: accidentalRoots("both"), qualities: ["minor"] },
-        { roots: allRoots(), qualities: ["minor"] },
         { roots: allRoots(), qualities: ["major", "minor"] },
-        { roots: allRoots(), qualities: ["diminished", "augmented"] },
-        { roots: allRoots(), qualities: ["major", "minor", "diminished", "augmented"] },
+        { roots: accidentalRoots("both"), qualities: ["diminished"] },
+        { roots: allRoots(), qualities: ["major", "minor", "diminished"] },
+        { roots: accidentalRoots("both"), qualities: ["augmented"] },
+
+        // 17: full vocabulary; speed/difficulty ramp begins here.
         { roots: allRoots(), qualities: ["major", "minor", "diminished", "augmented"] }
       ];
 
@@ -2545,7 +2610,9 @@
       let lasers = [];
       let frameCount = 0;
       let speedRampFrames = 0;
+      let speedRampClears = 0;
       let spawnTimer = 0;
+      let firstMissileHasSpawned = false;
       let shield = 5;
       let streak = 0;
       let hitsCleared = 0;
@@ -2562,7 +2629,9 @@
         lasers = [];
         frameCount = 0;
         speedRampFrames = 0;
-        spawnTimer = 125;
+        speedRampClears = 0;
+        spawnTimer = 45;
+        firstMissileHasSpawned = false;
         shield = 5;
         streak = 0;
         hitsCleared = 0;
@@ -2618,7 +2687,7 @@
 
 
       function getPedagogyStep() {
-        return Math.min(13, 1 + Math.floor(hitsCleared / CHORDS_PER_PEDAGOGY_STEP));
+        return Math.min(17, 1 + Math.floor(frameCount / PEDAGOGY_STEP_FRAMES));
       }
 
       function getCurrentCurriculum() {
@@ -2653,26 +2722,19 @@
       function getDifficultyLevel() {
         const step = getPedagogyStep();
 
-        // Keep the first three curriculum steps at a steady, readable pace.
-        // From Step 4 onward, add only a gentle pre-ramp so the game does not feel static.
-        const curriculumPressure = Math.max(0, Math.min(9, step - 3)) * 0.10;
-        if (step < 13) return curriculumPressure;
+        // Steps 1–16 stay at a deliberately calmer fixed travel speed while the
+        // vocabulary changes every 15 seconds.
+        if (step < 17) return 0;
 
-        // Step 13 begins the true continuing speed ramp, starting from the
-        // modest pressure already accumulated through the curriculum.
-        const speedRampClears = Math.max(0, hitsCleared - SPEED_RAMP_START_HITS);
-        const clearPressure = speedRampClears / 18;
-        const timePressure = speedRampFrames / (60 * 24);
-        return 1.0 + clearPressure + timePressure;
+        // Step 17 begins the endless ramp. Only time and correct defenses earned
+        // after Step 17 begins contribute, so there is no stored difficulty spike.
+        const clearPressure = speedRampClears / 45;
+        const timePressure = speedRampFrames / (60 * 60);
+        return clearPressure + timePressure;
       }
 
       function getWaveMultiplier() {
         return 1;
-      }
-
-      function getCurrentMaxMissiles() {
-        const difficulty = getDifficultyLevel();
-        return Math.min(4, 1 + Math.floor(difficulty / 2.1));
       }
 
       function getMissileTravelFrames(distance) {
@@ -2681,7 +2743,7 @@
         const distanceNudge = 0.96 + Math.min(0.12, distance / 5200);
         const keyDefenderTravel = Math.max(68, (baseTravel * distanceNudge) / (1 + difficulty * 0.105));
 
-        // Chord Defender starts at 38% of Key Defender speed, then gently accelerates through the curriculum.
+        // Chord Defender uses a brisker 50% base speed while the three-missile pipeline builds by distance.
         return Math.max(225, keyDefenderTravel / CHORD_MISSILE_SPEED_RATIO);
       }
       function spawnMissile() {
@@ -2725,19 +2787,12 @@
         });
       }
 
-      function nextSpawnDelay() {
-        const difficulty = getDifficultyLevel();
-        const delay = 212 / (1 + difficulty * 0.055);
-        return Math.max(70, Math.floor(delay * getWaveMultiplier() + Math.random() * 18));
-      }
-
       function damageShield() {
         shield -= 1;
         streak = 0;
         feedbackText = "Shield hit!";
         feedbackTimer = 55;
         shakeFrames = 18;
-        spawnTimer = Math.max(spawnTimer, 28);
         soundShieldHit();
 
         if (shield <= 0) {
@@ -2745,14 +2800,35 @@
         }
       }
 
+      function getMissileProgress(missile) {
+        return Math.min(1, (missile?.travelAge || 0) / Math.max(1, missile?.travelFrames || 1));
+      }
+
+      function fillDistanceSpawnPipeline() {
+        if (!firstMissileHasSpawned || missiles.length === 0) return;
+
+        const furthestProgress = missiles.reduce((maxProgress, missile) => {
+          return Math.max(maxProgress, getMissileProgress(missile));
+        }, 0);
+
+        // The opening target begins alone. A second target appears once the most
+        // advanced missile is 1/3 of the way in, and a third appears at 2/3.
+        if (furthestProgress >= 1 / 3 && missiles.length < 2) spawnMissile();
+        if (furthestProgress >= 2 / 3 && missiles.length < 3) spawnMissile();
+      }
+
       function gameUpdate() {
         frameCount += 1;
-        if (getPedagogyStep() >= 13) speedRampFrames += 1;
-        spawnTimer -= 1;
+        if (getPedagogyStep() >= 17) speedRampFrames += 1;
 
-        if (spawnTimer <= 0 && missiles.length < getCurrentMaxMissiles()) {
-          spawnMissile();
-          spawnTimer = nextSpawnDelay();
+        // Only the very first missile uses a timer. After that, distance thresholds,
+        // shield impacts, distance thresholds, and a fully cleared screen determine when replacements enter.
+        if (!firstMissileHasSpawned) {
+          spawnTimer -= 1;
+          if (spawnTimer <= 0) {
+            spawnMissile();
+            firstMissileHasSpawned = true;
+          }
         }
 
         for (let i = missiles.length - 1; i >= 0; i--) {
@@ -2762,7 +2838,7 @@
           missile.trail.push({ x: missile.x, y: missile.y });
           if (missile.trail.length > 11) missile.trail.shift();
 
-          const progress = Math.min(1, missile.travelAge / Math.max(1, missile.travelFrames));
+          const progress = getMissileProgress(missile);
           missile.x = missile.startX + (missile.targetX - missile.startX) * progress;
           missile.y = missile.startY + (missile.targetY - missile.startY) * progress;
 
@@ -2770,8 +2846,13 @@
             createBurst(missile.x, missile.y, "#fb7185", 12);
             missiles.splice(i, 1);
             damageShield();
+            // Reaching the shield is the 3/3 distance threshold: immediately send
+            // the next target, unless the run just ended.
+            if (shield > 0 && missiles.length < 3) spawnMissile();
           }
         }
+
+        fillDistanceSpawnPipeline();
 
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
@@ -3072,6 +3153,10 @@
         missiles = missiles.filter(item => item !== missile);
         streak += 1;
         hitsCleared += 1;
+        if (getPedagogyStep() >= 17) speedRampClears += 1;
+        // A correct defense only forces a fresh target when the screen has been
+        // completely cleared. Otherwise the player keeps the breathing room they earned.
+        if (missiles.length === 0) spawnMissile();
         const points = BASE_HIT_POINTS;
         addScore(points);
         feedbackText = `+${points}`;
