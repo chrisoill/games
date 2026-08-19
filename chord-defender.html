@@ -359,7 +359,7 @@
       width: 390px;
       height: 292px;
       padding: 0 14px;
-      touch-action: none;
+      touch-action: pan-y;
       z-index: 4;
     }
 
@@ -378,7 +378,7 @@
       position: relative;
       height: 112px;
       margin: 0 auto 18px;
-      touch-action: none;
+      touch-action: pan-y;
     }
 
     .pianoGroupTop {
@@ -1199,15 +1199,47 @@
 
     let activeShellMenuTab = "pause";
 
-    function preventBrowserHoldGesture(event) {
-      const tagName = event.target?.tagName;
-      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+    /* iOS Safari: suppress selection/callout behavior without blocking normal
+       vertical scrolling on non-control parts of the iframe. */
+    function isEditableArcadeTarget(target) {
+      return target instanceof Element && !!target.closest(
+        'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
+      );
+    }
+
+    function suppressArcadeSelectionGesture(event) {
+      if (isEditableArcadeTarget(event.target)) return;
       event.preventDefault();
     }
 
-    appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
-    appStage.addEventListener("selectstart", preventBrowserHoldGesture);
-    appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+    appStage.addEventListener("contextmenu", suppressArcadeSelectionGesture);
+    appStage.addEventListener("selectstart", suppressArcadeSelectionGesture);
+    appStage.addEventListener("dragstart", suppressArcadeSelectionGesture);
+
+    function isLiveArcadeControlTarget(target) {
+      return target instanceof Element && !!target.closest(
+        '#controls button, #controls .joystickPad, [data-arcade-touch-control="true"]'
+      );
+    }
+
+    /*
+      iOS/WebKit workaround for tap -> second-tap-and-hold loupe.
+      A non-passive touchstart cancellation is required on the actual gameplay
+      controls. Non-control surfaces are deliberately left alone so the parent
+      page can still scroll vertically when a drag starts there.
+    */
+    gameScreen.addEventListener("touchstart", event => {
+      if (!running) return;
+      if (isEditableArcadeTarget(event.target)) return;
+      if (!isLiveArcadeControlTarget(event.target)) return;
+      event.preventDefault();
+    }, { passive: false, capture: true });
+
+    gameScreen.addEventListener("dblclick", event => {
+      if (!running) return;
+      if (!isLiveArcadeControlTarget(event.target)) return;
+      event.preventDefault();
+    }, { passive: false });
 
     function renderShellMenuTabs(activeId = activeShellMenuTab) {
       const fallbackTab = shellMenuTabs[0]?.id || "";
