@@ -57,6 +57,7 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+      -webkit-user-drag: none;
     }
 
     button {
@@ -1033,15 +1034,46 @@
 
     let activeShellMenuTab = "pause";
 
+    function isEditableArcadeTarget(target) {
+      return target instanceof Element && !!target.closest(
+        'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
+      );
+    }
+
     function preventBrowserHoldGesture(event) {
-      const tagName = event.target?.tagName;
-      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      if (isEditableArcadeTarget(event.target)) return;
       event.preventDefault();
     }
 
     appStage.addEventListener("contextmenu", preventBrowserHoldGesture);
     appStage.addEventListener("selectstart", preventBrowserHoldGesture);
     appStage.addEventListener("dragstart", preventBrowserHoldGesture);
+
+    function isLiveArcadeControlTarget(target) {
+      return target instanceof Element && !!target.closest(
+        '#controls button[data-action], #controls .joystickPad, [data-arcade-touch-control="true"]'
+      );
+    }
+
+    /*
+      iOS/WebKit workaround for the tap -> second-tap-and-hold loupe.
+      The non-passive touchstart cancellation is deliberately limited to actual
+      live game controls. Safari therefore cannot steal rapid A-G / MENU presses,
+      while a vertical drag beginning on the canvas, LCD, controller background,
+      or other non-control space remains available for normal page scrolling.
+    */
+    gameScreen.addEventListener("touchstart", event => {
+      if (!running) return;
+      if (isEditableArcadeTarget(event.target)) return;
+      if (!isLiveArcadeControlTarget(event.target)) return;
+      event.preventDefault();
+    }, { passive: false, capture: true });
+
+    gameScreen.addEventListener("dblclick", event => {
+      if (!running) return;
+      if (!isLiveArcadeControlTarget(event.target)) return;
+      event.preventDefault();
+    }, { passive: false });
 
     function renderShellMenuTabs(activeId = activeShellMenuTab) {
       const fallbackTab = shellMenuTabs[0]?.id || "";
