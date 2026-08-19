@@ -806,29 +806,6 @@
       padding: 0 14px;
     }
 
-    #cancelChordBtn {
-      position: absolute;
-      right: 4px;
-      top: 35px;
-      width: 72px;
-      height: 24px;
-      margin: 0;
-      padding: 0;
-      border: 2px solid #111;
-      border-radius: 999px;
-      background: #fff3bf;
-      color: #111827;
-      font-size: 11px;
-      font-weight: 900;
-      z-index: 8;
-      touch-action: none;
-    }
-
-    #cancelChordBtn:active,
-    #cancelChordBtn.pressed {
-      transform: scale(0.96);
-      filter: brightness(1.12);
-    }
 
     .pianoGroup {
       height: 94px;
@@ -872,6 +849,107 @@
 
     #startButton {
       width: 92px;
+    }
+
+
+    /* Chord Defender repeating piano + FIRE control */
+    #pianoControls {
+      top: 16px;
+      height: 226px;
+      padding: 0 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      touch-action: pan-x;
+    }
+
+    #pianoScroller {
+      width: 100%;
+      height: 154px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-radius: 10px;
+      background: #111827;
+      touch-action: pan-x;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    #pianoScroller::-webkit-scrollbar { display: none; }
+
+    #pianoTrack {
+      display: flex;
+      width: max-content;
+      height: 146px;
+      align-items: flex-start;
+      touch-action: pan-x;
+    }
+
+    .pianoOctave {
+      position: relative;
+      flex: 0 0 280px;
+      width: 280px;
+      height: 146px;
+      touch-action: pan-x;
+    }
+
+    .pianoOctave .whiteKeys {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      position: relative;
+      z-index: 1;
+      height: 146px;
+    }
+
+    .pianoOctave .whiteKey {
+      height: 146px;
+      border-radius: 0 0 11px 11px;
+      padding: 0;
+      touch-action: pan-x;
+    }
+
+    .pianoOctave .blackKey {
+      left: calc((var(--pos) * 100% / 7) - 15px);
+      width: 30px;
+      height: 90px;
+      border-radius: 0 0 9px 9px;
+      touch-action: pan-x;
+    }
+
+    .whiteKey.selected {
+      background: linear-gradient(180deg, #fff3bf, #ffd45c);
+      filter: brightness(1.08);
+    }
+
+    .blackKey.selected {
+      background: linear-gradient(180deg, #8b95aa, #313746);
+      box-shadow: 0 0 0 3px #ffe08a inset, 0 8px 14px rgba(0,0,0,0.45);
+    }
+
+    #fireChordBtn {
+      align-self: center;
+      width: 154px;
+      height: 44px;
+      margin: 9px 0 0;
+      padding: 0;
+      border: 2px solid #111;
+      border-radius: 999px;
+      background: #ffd45c;
+      color: #111827;
+      font-size: 16px;
+      font-weight: 900;
+      letter-spacing: 1.1px;
+      touch-action: none;
+    }
+
+    #fireChordBtn:active {
+      transform: scale(0.97);
+      filter: brightness(1.08);
+    }
+
+    #systemButtons {
+      top: 264px;
     }
 
   </style>
@@ -926,29 +1004,11 @@
         </div>
 
         <div id="controls">
-          <div id="pianoControls" aria-label="Split piano keyboard controls">
-            <button id="cancelChordBtn" type="button">CANCEL</button>
-            <div class="pianoGroup pianoGroupTop" style="--white-count: 3;" aria-label="C through E piano keys">
-              <div class="whiteKeys">
-                <button class="pianoKey whiteKey" type="button" data-note="C" aria-label="C"></button>
-                <button class="pianoKey whiteKey" type="button" data-note="D" aria-label="D"></button>
-                <button class="pianoKey whiteKey" type="button" data-note="E" aria-label="E"></button>
-              </div>
-              <button class="pianoKey blackKey" type="button" data-note="C#" aria-label="C sharp or D flat" style="--pos: 1;"></button>
-              <button class="pianoKey blackKey" type="button" data-note="D#" aria-label="D sharp or E flat" style="--pos: 2;"></button>
+          <div id="pianoControls" aria-label="Scrollable repeating piano keyboard controls">
+            <div id="pianoScroller" aria-label="Scrollable repeating piano keyboard">
+              <div id="pianoTrack"></div>
             </div>
-
-            <div class="pianoGroup pianoGroupBottom" style="--white-count: 4;" aria-label="F through B piano keys">
-              <div class="whiteKeys">
-                <button class="pianoKey whiteKey" type="button" data-note="F" aria-label="F"></button>
-                <button class="pianoKey whiteKey" type="button" data-note="G" aria-label="G"></button>
-                <button class="pianoKey whiteKey" type="button" data-note="A" aria-label="A"></button>
-                <button class="pianoKey whiteKey" type="button" data-note="B" aria-label="B"></button>
-              </div>
-              <button class="pianoKey blackKey" type="button" data-note="F#" aria-label="F sharp or G flat" style="--pos: 1;"></button>
-              <button class="pianoKey blackKey" type="button" data-note="G#" aria-label="G sharp or A flat" style="--pos: 2;"></button>
-              <button class="pianoKey blackKey" type="button" data-note="A#" aria-label="A sharp or B flat" style="--pos: 3;"></button>
-            </div>
+            <button id="fireChordBtn" type="button" tabindex="-1">FIRE</button>
           </div>
 
           <div id="dpad">
@@ -1105,7 +1165,10 @@
     const dpad = document.getElementById("dpad");
     const faceButtons = document.getElementById("faceButtons");
     const systemButtons = document.getElementById("systemButtons");
-    const pianoKeys = Array.from(document.querySelectorAll(".pianoKey"));
+    const pianoScroller = document.getElementById("pianoScroller");
+    const pianoTrack = document.getElementById("pianoTrack");
+    const fireChordBtn = document.getElementById("fireChordBtn");
+    let pianoKeys = [];
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
@@ -1173,10 +1236,11 @@
         html: `
           <h3>Controls</h3>
           <ul>
-            <li><strong>Piano keys:</strong> Tap or hold the split piano keyboard.</li>
-            <li><strong>CANCEL / Space:</strong> Clear the chord currently being built.</li>
+            <li><strong>Piano keys:</strong> Tap keys to toggle them on or off.</li>
+            <li><strong>Scroll:</strong> Swipe sideways through the repeating piano to choose a comfortable keyboard window.</li>
+            <li><strong>FIRE:</strong> Submit all currently highlighted, visible keys as one chord.</li>
             <li><strong>MENU:</strong> Pause, resume, or return to the player screen.</li>
-            <li><strong>Goal:</strong> Build the chord shown on each incoming missile before it reaches your shield.</li>
+            <li><strong>Goal:</strong> Match an incoming chord symbol before it reaches your shield.</li>
           </ul>
         `
       },
@@ -1185,12 +1249,13 @@
         label: "How to Play",
         html: `
           <h3>How to Play</h3>
-          <p>Incoming missiles show chord symbols. Play all three chord tones in any order before the missile reaches the shield.</p>
+          <p>Incoming missiles show chord symbols. Build a chord by tapping keys, then press FIRE to submit it in one shot.</p>
           <ul>
             <li>Major chords appear first. Minor chords unlock next, then diminished chords.</li>
             <li>Black-key roots may be written as sharps or flats, such as <code>F#</code> or <code>Gb</code>.</li>
-            <li>Wrong keys subtract 1 point, so button-mashing will drag your score down.</li>
-            <li>Use CANCEL or press <code>Space</code> to abandon the active chord and choose another missile.</li>
+            <li>Tap a highlighted key again to remove it. Pressing FIRE also clears the selection.</li>
+            <li>Only keys that are at least partly visible in the keyboard window can count; fully scrolled-off selected keys are cleared automatically.</li>
+            <li>An incorrect FIRE costs 1 point. Selecting or deselecting notes never costs points.</li>
             <li>Missiles that reach your shield cause damage.</li>
           </ul>
         `
@@ -1216,6 +1281,10 @@
     appStage.addEventListener("selectstart", suppressArcadeSelectionGesture);
     appStage.addEventListener("dragstart", suppressArcadeSelectionGesture);
 
+    function isScrollablePianoTarget(target) {
+      return target instanceof Element && !!target.closest('#pianoScroller, .pianoKey');
+    }
+
     function isLiveArcadeControlTarget(target) {
       return target instanceof Element && !!target.closest(
         '#controls button, #controls .joystickPad, [data-arcade-touch-control="true"]'
@@ -1231,6 +1300,7 @@
     gameScreen.addEventListener("touchstart", event => {
       if (!running) return;
       if (isEditableArcadeTarget(event.target)) return;
+      if (isScrollablePianoTarget(event.target)) return;
       if (!isLiveArcadeControlTarget(event.target)) return;
       event.preventDefault();
     }, { passive: false, capture: true });
@@ -2078,147 +2148,174 @@
       gameInput(action);
     }
 
-    const PIANO_KEYBOARD_MAP = {
-      z: "C",
-      s: "C#",
-      x: "D",
-      d: "D#",
-      c: "E",
-      v: "F",
-      g: "F#",
-      b: "G",
-      h: "G#",
-      n: "A",
-      j: "A#",
-      m: "B"
-    };
-
-    const activePianoInputs = new Map();
     const activePianoVoices = new Map();
+    const selectedPianoKeys = new Set();
+    let pianoOctaveMin = -3;
+    let pianoOctaveMax = 3;
+    let pianoScrollFrame = 0;
 
-    function setPianoKeyVisual(note, pressed) {
-      const cleanNote = String(note || "").trim();
-      if (!cleanNote) return;
+    function createPianoKey(note, className, octaveIndex, position = null) {
+      const key = document.createElement("button");
+      key.type = "button";
+      key.tabIndex = -1;
+      key.className = `pianoKey ${className}`;
+      key.dataset.note = note;
+      key.dataset.octave = String(octaveIndex);
+      key.setAttribute("aria-label", note.replace("#", " sharp"));
+      if (position !== null) key.style.setProperty("--pos", position);
+      return key;
+    }
 
-      pianoKeys.forEach(key => {
-        if (key.dataset.note === cleanNote) {
-          key.classList.toggle("pressed", pressed);
-        }
+    function createPianoOctave(octaveIndex) {
+      const octave = document.createElement("div");
+      octave.className = "pianoOctave";
+      octave.dataset.octave = String(octaveIndex);
+
+      const whites = document.createElement("div");
+      whites.className = "whiteKeys";
+      ["C", "D", "E", "F", "G", "A", "B"].forEach(note => {
+        whites.appendChild(createPianoKey(note, "whiteKey", octaveIndex));
       });
+      octave.appendChild(whites);
+
+      [["C#", 1], ["D#", 2], ["F#", 4], ["G#", 5], ["A#", 6]].forEach(([note, pos]) => {
+        octave.appendChild(createPianoKey(note, "blackKey", octaveIndex, pos));
+      });
+      return octave;
     }
 
-    function startPianoKeyPress(inputId, note) {
-      const cleanNote = String(note || "").trim();
-      if (!cleanNote || activePianoInputs.has(inputId)) return;
-
-      activePianoInputs.set(inputId, cleanNote);
-      setPianoKeyVisual(cleanNote, true);
-      startPianoNote(cleanNote);
-
-      if (shellMenu.classList.contains("open")) return;
-      if (!running) return;
-      gamePianoInput(cleanNote);
-    }
-
-    function stopPianoKeyPress(inputId) {
-      if (!activePianoInputs.has(inputId)) return;
-
-      const note = activePianoInputs.get(inputId);
-      activePianoInputs.delete(inputId);
-
-      const stillHeld = Array.from(activePianoInputs.values()).includes(note);
-      if (!stillHeld) {
-        setPianoKeyVisual(note, false);
-        stopPianoNote(note);
-      }
-    }
-
-    function stopAllPianoKeyPresses() {
-      Array.from(activePianoInputs.keys()).forEach(stopPianoKeyPress);
-      pianoKeys.forEach(key => key.classList.remove("pressed"));
-      activePianoVoices.forEach(voice => stopPianoVoice(voice));
-      activePianoVoices.clear();
-    }
-
-    function handlePianoKey(note) {
-      startPianoKeyPress(`manual:${note}`, note);
-      window.setTimeout(() => stopPianoKeyPress(`manual:${note}`), 180);
-    }
-
-    pianoKeys.forEach(key => {
-      key.addEventListener("pointerdown", event => {
+    function wirePianoKey(key) {
+      key.addEventListener("click", event => {
         event.preventDefault();
-        try { key.setPointerCapture(event.pointerId); } catch (err) {}
-        startPianoKeyPress(`pointer:${event.pointerId}`, key.dataset.note);
+        if (event.detail === 0) return;
+        if (!running || shellMenu.classList.contains("open")) return;
+        togglePianoKey(key);
       });
-
-      ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
-        key.addEventListener(type, event => {
-          event.preventDefault();
-          stopPianoKeyPress(`pointer:${event.pointerId}`);
-        });
-      });
-
-      key.addEventListener("keydown", event => {
-        if (event.repeat) return;
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          startPianoKeyPress(`button:${key.dataset.note}`, key.dataset.note);
-        }
-      });
-
-      key.addEventListener("keyup", event => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          stopPianoKeyPress(`button:${key.dataset.note}`);
-        }
-      });
-
+      key.addEventListener("keydown", event => event.preventDefault());
       key.addEventListener("contextmenu", event => event.preventDefault());
-    });
-
-    document.addEventListener("keydown", event => {
-      if (event.repeat) return;
-      if (shellMenu.classList.contains("open")) return;
-      if (gameScreen.style.display !== "block") return;
-
-      if ((event.key === " " || event.code === "Space") &&
-          !(event.target && event.target.classList && event.target.classList.contains("pianoKey"))) {
-        event.preventDefault();
-        if (running) cancelActiveTarget();
-        return;
-      }
-
-      const key = event.key.toLowerCase();
-      const mappedNote = PIANO_KEYBOARD_MAP[key];
-      if (mappedNote) {
-        event.preventDefault();
-        startPianoKeyPress(`keyboard:${key}`, mappedNote);
-      }
-    });
-
-    document.addEventListener("keyup", event => {
-      const key = event.key.toLowerCase();
-      if (PIANO_KEYBOARD_MAP[key]) {
-        event.preventDefault();
-        stopPianoKeyPress(`keyboard:${key}`);
-      }
-    });
-
-    window.addEventListener("blur", stopAllPianoKeyPresses);
-
-    const cancelChordBtn = document.getElementById("cancelChordBtn");
-    if (cancelChordBtn) {
-      cancelChordBtn.addEventListener("pointerdown", event => {
-        event.preventDefault();
-        cancelChordBtn.classList.add("pressed");
-        if (running && !shellMenu.classList.contains("open")) cancelActiveTarget();
-      });
-      ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
-        cancelChordBtn.addEventListener(type, () => cancelChordBtn.classList.remove("pressed"));
-      });
-      cancelChordBtn.addEventListener("click", event => event.preventDefault());
     }
+
+    function refreshPianoKeys() {
+      pianoKeys = Array.from(document.querySelectorAll(".pianoKey"));
+      pianoKeys.forEach(key => {
+        if (key.dataset.wired === "yes") return;
+        key.dataset.wired = "yes";
+        wirePianoKey(key);
+      });
+    }
+
+    function buildInitialPiano() {
+      if (!pianoTrack) return;
+      pianoTrack.innerHTML = "";
+      for (let octave = pianoOctaveMin; octave <= pianoOctaveMax; octave++) {
+        pianoTrack.appendChild(createPianoOctave(octave));
+      }
+      refreshPianoKeys();
+    }
+
+    function prependPianoOctaves(count = 4) {
+      if (!pianoTrack || !pianoScroller) return;
+      const beforeWidth = pianoTrack.scrollWidth;
+      for (let i = 0; i < count; i++) {
+        pianoOctaveMin -= 1;
+        pianoTrack.insertBefore(createPianoOctave(pianoOctaveMin), pianoTrack.firstChild);
+      }
+      refreshPianoKeys();
+      pianoScroller.scrollLeft += pianoTrack.scrollWidth - beforeWidth;
+    }
+
+    function appendPianoOctaves(count = 4) {
+      if (!pianoTrack) return;
+      for (let i = 0; i < count; i++) {
+        pianoOctaveMax += 1;
+        pianoTrack.appendChild(createPianoOctave(pianoOctaveMax));
+      }
+      refreshPianoKeys();
+    }
+
+    function isPianoKeyVisible(key) {
+      if (!pianoScroller || !key || !key.isConnected) return false;
+      const view = pianoScroller.getBoundingClientRect();
+      const rect = key.getBoundingClientRect();
+      return rect.right > view.left + 0.5 && rect.left < view.right - 0.5 &&
+             rect.bottom > view.top + 0.5 && rect.top < view.bottom - 0.5;
+    }
+
+    function pruneHiddenSelectedKeys() {
+      selectedPianoKeys.forEach(key => {
+        if (!isPianoKeyVisible(key)) {
+          selectedPianoKeys.delete(key);
+          key.classList.remove("selected");
+        }
+      });
+    }
+
+    function clearSelectedPianoKeys() {
+      selectedPianoKeys.forEach(key => key.classList.remove("selected"));
+      selectedPianoKeys.clear();
+    }
+
+    function togglePianoKey(key) {
+      if (selectedPianoKeys.has(key)) {
+        selectedPianoKeys.delete(key);
+        key.classList.remove("selected");
+      } else {
+        selectedPianoKeys.add(key);
+        key.classList.add("selected");
+      }
+      soundPianoNote(key.dataset.note);
+    }
+
+    function getSelectedPitchClasses() {
+      pruneHiddenSelectedKeys();
+      return uniqueKeys(Array.from(selectedPianoKeys).map(key => key.dataset.note));
+    }
+
+    function maintainInfinitePiano() {
+      if (!pianoScroller || !pianoTrack || !pianoTrack.firstElementChild) return;
+      const octaveWidth = pianoTrack.firstElementChild.getBoundingClientRect().width || 280;
+      if (pianoScroller.scrollLeft < octaveWidth * 1.5) {
+        prependPianoOctaves(4);
+      }
+      const remaining = pianoTrack.scrollWidth - (pianoScroller.scrollLeft + pianoScroller.clientWidth);
+      if (remaining < octaveWidth * 1.5) {
+        appendPianoOctaves(4);
+      }
+    }
+
+    function centerPianoKeyboard() {
+      if (!pianoScroller || !pianoTrack) return;
+      const centerOctave = pianoTrack.querySelector('[data-octave="0"]');
+      if (!centerOctave || pianoScroller.clientWidth <= 0) return;
+      pianoScroller.scrollLeft = Math.max(
+        0,
+        centerOctave.offsetLeft - (pianoScroller.clientWidth - centerOctave.offsetWidth) / 2
+      );
+      pruneHiddenSelectedKeys();
+    }
+
+    if (pianoScroller) {
+      pianoScroller.addEventListener("scroll", () => {
+        if (pianoScrollFrame) return;
+        pianoScrollFrame = requestAnimationFrame(() => {
+          pianoScrollFrame = 0;
+          maintainInfinitePiano();
+          pruneHiddenSelectedKeys();
+        });
+      }, { passive: true });
+    }
+
+    if (fireChordBtn) {
+      fireChordBtn.addEventListener("click", event => {
+        event.preventDefault();
+        if (event.detail === 0) return;
+        if (!running || shellMenu.classList.contains("open")) return;
+        fireSelectedChord();
+      });
+      fireChordBtn.addEventListener("keydown", event => event.preventDefault());
+    }
+
+    buildInitialPiano();
 
     function getAudio() {
       if (!audioCtx) {
@@ -2391,10 +2488,9 @@
       let hitsCleared = 0;
       let feedbackText = "";
       let feedbackTimer = 0;
-      let activeMissileId = null;
       let shakeFrames = 0;
       const BASE_HIT_POINTS = 1;
-      const WRONG_KEY_PENALTY = BASE_HIT_POINTS;
+      const WRONG_FIRE_PENALTY = BASE_HIT_POINTS;
 
       function gameInit() {
         missiles = [];
@@ -2408,7 +2504,6 @@
         hitsCleared = 0;
         feedbackText = "";
         feedbackTimer = 0;
-        activeMissileId = null;
         shakeFrames = 0;
         setMessage("BUILD THE CHORD");
         gameDraw();
@@ -2434,16 +2529,14 @@
         if (targetData && typeof targetData === "object" && !Array.isArray(targetData)) {
           return {
             label: String(targetData.label || "Chord"),
-            requiredKeys: uniqueKeys(targetData.requiredKeys),
-            hitKeys: []
+            requiredKeys: uniqueKeys(targetData.requiredKeys)
           };
         }
 
         const requiredKeys = uniqueKeys(targetData);
         return {
           label: requiredKeys.join("-"),
-          requiredKeys,
-          hitKeys: []
+          requiredKeys
         };
       }
 
@@ -2494,22 +2587,6 @@
           label: `${rootLabel}${quality.suffix}`,
           requiredKeys
         };
-      }
-
-      function cancelActiveTarget() {
-        const active = getActiveMissile();
-        if (!active) {
-          feedbackText = "No chord selected";
-          feedbackTimer = 26;
-          return;
-        }
-
-        active.hitKeys = [];
-        activeMissileId = null;
-        feedbackText = "Cancelled";
-        feedbackTimer = 28;
-        createBurst(active.x, active.y, "#93c5fd", 8);
-        soundWrong();
       }
 
       function getDifficultyLevel() {
@@ -2566,7 +2643,6 @@
           id: Date.now() + Math.random(),
           label: target.label,
           requiredKeys: target.requiredKeys,
-          hitKeys: target.hitKeys,
           startX: x,
           startY: y,
           targetX: ship.x,
@@ -2590,7 +2666,6 @@
       function damageShield() {
         shield -= 1;
         streak = 0;
-        activeMissileId = null;
         feedbackText = "Shield hit!";
         feedbackTimer = 55;
         shakeFrames = 18;
@@ -2623,7 +2698,6 @@
           missile.y = missile.startY + (missile.targetY - missile.startY) * progress;
 
           if (progress >= 1) {
-            if (activeMissileId === missile.id) activeMissileId = null;
             createBurst(missile.x, missile.y, "#fb7185", 12);
             missiles.splice(i, 1);
             damageShield();
@@ -2778,27 +2852,11 @@
       }
 
       function getMissileBoxMetrics(missile) {
-        const keyCount = missile.requiredKeys.length;
         return {
           width: Math.max(86, Math.min(170, missile.label.length * 20 + 34)),
-          height: keyCount > 1 ? 58 : 46,
+          height: 48,
           font: missile.label.length >= 5 ? "bold 21px Arial, sans-serif" : "bold 25px Arial, sans-serif"
         };
-      }
-
-      function drawMissileProgress(missile, x, y, boxHeight) {
-        if (missile.requiredKeys.length <= 1) return;
-
-        const total = missile.requiredKeys.length;
-        const startX = x - ((total - 1) * 14) / 2;
-        const dotY = y + boxHeight / 2 - 10;
-
-        for (let i = 0; i < total; i++) {
-          ctx.fillStyle = i < missile.hitKeys.length ? "#ffe08a" : "rgba(255,255,255,0.38)";
-          ctx.beginPath();
-          ctx.arc(startX + i * 14, dotY, 4, 0, Math.PI * 2);
-          ctx.fill();
-        }
       }
 
       function drawMissiles() {
@@ -2820,23 +2878,21 @@
           const metrics = getMissileBoxMetrics(missile);
           const wobble = Math.sin((frameCount + missile.age) * 0.08) * 2;
           const drawY = missile.y + wobble;
-          const isActive = activeMissileId === missile.id;
           const remainingFrames = (missile.travelFrames || 0) - (missile.travelAge || 0);
           const isDanger = remainingFrames < 85;
 
-          ctx.fillStyle = isActive ? "#f97316" : (isDanger ? "#ef4444" : "#fb7185");
+          ctx.fillStyle = isDanger ? "#ef4444" : "#fb7185";
           ctx.beginPath();
           ctx.roundRect(missile.x - metrics.width / 2, drawY - metrics.height / 2, metrics.width, metrics.height, 14);
           ctx.fill();
 
-          ctx.strokeStyle = isActive ? "#ffe08a" : (isDanger ? "#fecaca" : "rgba(255,255,255,0.65)");
-          ctx.lineWidth = isActive ? 4 : 2;
+          ctx.strokeStyle = isDanger ? "#fecaca" : "rgba(255,255,255,0.65)";
+          ctx.lineWidth = 2;
           ctx.stroke();
 
           ctx.fillStyle = "white";
           ctx.font = metrics.font;
-          ctx.fillText(missile.label, missile.x, drawY - (missile.requiredKeys.length > 1 ? 6 : 0));
-          drawMissileProgress(missile, missile.x, drawY, metrics.height);
+          ctx.fillText(missile.label, missile.x, drawY);
         });
       }
 
@@ -2885,7 +2941,7 @@
         if (feedbackTimer <= 0 || !feedbackText) return;
         ctx.save();
         ctx.globalAlpha = Math.min(1, feedbackTimer / 15);
-        ctx.fillStyle = feedbackText === "Miss!" || feedbackText === "Wrong key!" ? "#fecaca" : "#ffe08a";
+        ctx.fillStyle = feedbackText.startsWith("-") || feedbackText === "Miss!" ? "#fecaca" : "#ffe08a";
         ctx.font = "bold 28px Arial, sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
@@ -2911,85 +2967,57 @@
         drawFeedback();
       }
 
-      function getActiveMissile() {
-        if (!activeMissileId) return null;
-        return missiles.find(missile => missile.id === activeMissileId) || null;
+      function samePitchClassSet(a, b) {
+        const left = uniqueKeys(a).sort();
+        const right = uniqueKeys(b).sort();
+        return left.length === right.length && left.every((note, index) => note === right[index]);
       }
 
-      function findMatchingMissile(note) {
-        const active = getActiveMissile();
-
-        if (active) {
-          if (active.requiredKeys.includes(note) && !active.hitKeys.includes(note)) {
-            return active;
-          }
-          return null;
-        }
-
-        const candidates = missiles.filter(missile =>
-          missile.requiredKeys.includes(note) && !missile.hitKeys.includes(note)
-        );
-
+      function getMatchingMissileForSelection(selectedNotes) {
+        const candidates = missiles.filter(missile => samePitchClassSet(selectedNotes, missile.requiredKeys));
         candidates.sort((a, b) => {
           const ta = (a.travelFrames || 0) - (a.travelAge || 0);
           const tb = (b.travelFrames || 0) - (b.travelAge || 0);
           return ta - tb;
         });
-
         return candidates[0] || null;
       }
 
-      function soundPartialHit() {
-        beep(520, 0.045, "triangle", 0.035);
-      }
-
-      function gamePianoInput(note) {
-        const active = getActiveMissile();
-        const missile = findMatchingMissile(note);
+      function fireSelectedChord() {
+        const selectedNotes = getSelectedPitchClasses();
+        const missile = getMatchingMissileForSelection(selectedNotes);
+        clearSelectedPianoKeys();
 
         if (!missile) {
           streak = 0;
-          addScore(-WRONG_KEY_PENALTY);
-          feedbackText = `-${WRONG_KEY_PENALTY}`;
+          addScore(-WRONG_FIRE_PENALTY);
+          feedbackText = `-${WRONG_FIRE_PENALTY}`;
           feedbackTimer = 28;
           const ship = getShipPosition();
-          addScorePop(`-${WRONG_KEY_PENALTY}`, ship.x, ship.y - 54, "#fecaca");
+          addScorePop(`-${WRONG_FIRE_PENALTY}`, ship.x, ship.y - 54, "#fecaca");
           createBurst(ship.x, ship.y - 34, "#fecaca", 7);
           soundWrong();
           return;
         }
 
-        if (!activeMissileId) activeMissileId = missile.id;
-        missile.hitKeys.push(note);
-        const complete = missile.requiredKeys.every(key => missile.hitKeys.includes(key));
-
-        if (complete) {
-          missiles = missiles.filter(item => item !== missile);
-          if (activeMissileId === missile.id) activeMissileId = null;
-          streak += 1;
-          hitsCleared += 1;
-          const points = BASE_HIT_POINTS;
-          addScore(points);
-          feedbackText = `+${points}`;
-          feedbackTimer = 30;
-          createLaser(missile.x, missile.y);
-          addScorePop(`+${points}`, missile.x, missile.y - 26, "#ffe08a");
-          if (streak > 0 && streak % 10 === 0) {
-            addScorePop(`${streak} STREAK`, GAME_CANVAS_LOGICAL_WIDTH / 2, 72, "#b7ff9e");
-          }
-          createBurst(missile.x, missile.y, "#ffe08a", 24);
-          soundCorrect();
-        } else {
-          activeMissileId = missile.id;
-          feedbackText = `${missile.hitKeys.length}/${missile.requiredKeys.length}`;
-          feedbackTimer = 18;
-          createBurst(missile.x, missile.y, "#93c5fd", 5);
-          soundPartialHit();
+        missiles = missiles.filter(item => item !== missile);
+        streak += 1;
+        hitsCleared += 1;
+        const points = BASE_HIT_POINTS;
+        addScore(points);
+        feedbackText = `+${points}`;
+        feedbackTimer = 30;
+        createLaser(missile.x, missile.y);
+        addScorePop(`+${points}`, missile.x, missile.y - 26, "#ffe08a");
+        if (streak > 0 && streak % 10 === 0) {
+          addScorePop(`${streak} STREAK`, GAME_CANVAS_LOGICAL_WIDTH / 2, 72, "#b7ff9e");
         }
+        createBurst(missile.x, missile.y, "#ffe08a", 24);
+        soundCorrect();
       }
 
       function gameInput(action) {
-        // Emulator-style actions are not used in this game. Piano input uses gamePianoInput().
+        // Emulator-style actions are not used in this game. Use the scrollable piano and FIRE button.
       }
 
       function gamePointer(point) {
@@ -2997,14 +3025,15 @@
       }
 
       function gameStop() {
-        stopAllPianoKeyPresses();
+        clearSelectedPianoKeys();
+        activePianoVoices.forEach(voice => stopPianoVoice(voice));
+        activePianoVoices.clear();
         resetJoystick(sticks.left);
         resetJoystick(sticks.right);
         missiles = [];
         particles = [];
         scorePops = [];
         lasers = [];
-        activeMissileId = null;
       }
 
 
@@ -3059,8 +3088,7 @@
       soundPianoNote,
       startPianoNote,
       stopPianoNote,
-      handlePianoKey,
-      getAudio,
+        getAudio,
       getGameCanvasSize,
       savePlayers,
       loadPlayers,
