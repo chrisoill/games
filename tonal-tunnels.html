@@ -24,7 +24,8 @@
       padding: 0;
       width: 100%;
       min-height: 100%;
-      overscroll-behavior: none;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       background: #111;
       font-family: Arial, sans-serif;
     }
@@ -50,7 +51,8 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       color: white;
     }
 
@@ -58,6 +60,7 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+      -webkit-user-drag: none;
     }
 
     button {
@@ -242,7 +245,8 @@
       display: none;
       background: linear-gradient(180deg, #2f2f2f, #191919);
       z-index: 10;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #screen {
@@ -257,6 +261,8 @@
       box-shadow:
         inset 0 0 0 1px rgba(255,255,255,0.05),
         0 1px 3px rgba(0,0,0,0.45);
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #gameCanvas {
@@ -265,6 +271,8 @@
       display: block;
       background: #0c1820;
       image-rendering: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
     }
 
     #gameOverBox {
@@ -354,7 +362,8 @@
       width: 390px;
       height: 340.333px;
       background: #242424;
-      touch-action: auto;
+      touch-action: pan-y;
+      overscroll-behavior-y: auto;
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
@@ -413,7 +422,20 @@
     /* FACE BUTTONS */
 
     #controls,
-    #controls * {
+    #dpad,
+    #faceButtons,
+    #systemButtons {
+      touch-action: pan-y !important;
+      overscroll-behavior-y: auto;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-user-drag: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+
+    #controls button[data-action],
+    #controls .joystickPad {
       touch-action: none !important;
       user-select: none !important;
       -webkit-user-select: none !important;
@@ -428,7 +450,7 @@
       top: 0;
       width: 170px;
       height: 260px;
-      touch-action: none;
+      touch-action: pan-y;
     }
 
     .faceBtn {
@@ -498,7 +520,7 @@
 
     #controls .faceBtn,
     #controls .systemBtn {
-      touch-action: manipulation !important;
+      touch-action: none !important;
     }
 
     #controls .joystickPad,
@@ -570,7 +592,7 @@
       justify-content: center;
       gap: 12px;
       flex-direction: row-reverse;
-      touch-action: none;
+      touch-action: pan-y;
     }
 
     .systemBtn {
@@ -975,6 +997,8 @@
       left: {
         active: false,
         pointerId: null,
+        touchIdentifier: null,
+        inputSource: null,
         x: 0,
         y: 0,
         maxDistance: 34,
@@ -984,6 +1008,8 @@
       right: {
         active: false,
         pointerId: null,
+        touchIdentifier: null,
+        inputSource: null,
         x: 0,
         y: 0,
         maxDistance: 34,
@@ -1045,9 +1071,14 @@
 
     let activeShellMenuTab = "pause";
 
+    function isEditableArcadeTarget(target) {
+      return target instanceof Element && !!target.closest(
+        'input, textarea, select, [contenteditable=""], [contenteditable="true"]'
+      );
+    }
+
     function preventBrowserHoldGesture(event) {
-      const tagName = event.target?.tagName;
-      if (tagName === "INPUT" || tagName === "TEXTAREA") return;
+      if (isEditableArcadeTarget(event.target)) return;
       event.preventDefault();
     }
 
@@ -1734,63 +1765,138 @@
     function resetJoystick(stick) {
       stick.active = false;
       stick.pointerId = null;
-      stick.touchId = null;
+      stick.touchIdentifier = null;
+      stick.inputSource = null;
       stick.x = 0;
       stick.y = 0;
       stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
       stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
     }
 
-    const ttActiveControlPointers = new Set();
+    function findTrackedTouch(touchList, identifier) {
+      if (identifier == null) return null;
+      for (const touch of Array.from(touchList || [])) {
+        if (touch.identifier === identifier) return touch;
+      }
+      return null;
+    }
 
     function hardResetMobileHeldInputs() {
-      ttActiveControlPointers.clear();
       resetJoystick(sticks.left);
       resetJoystick(sticks.right);
+
       document.querySelectorAll("button[data-action]").forEach(button => {
         button.dataset.pointerId = "";
         button.dataset.touchId = "";
+        button.dataset.inputSource = "";
         button.classList.remove("pressed");
       });
+
       if (typeof gameInputRelease === "function") {
         ["left", "right", "up", "down", "a", "b", "x", "y", "select", "start"].forEach(gameInputRelease);
       }
     }
 
     function bindJoystick(stick) {
+      /*
+        iPhone/Safari: Touch Events are authoritative for a held joystick.
+        pointercancel/lostpointercapture can fire while the physical finger is
+        still down, so a touch-owned stick only recenters when that SAME touch
+        actually ends.
+      */
+      stick.pad.addEventListener("touchstart", event => {
+        if (stick.active && stick.inputSource === "touch") {
+          const oldTouchStillExists = findTrackedTouch(event.touches, stick.touchIdentifier);
+          if (oldTouchStillExists) return;
+          resetJoystick(stick);
+        }
+
+        const touch = event.changedTouches?.[0];
+        if (!touch) return;
+
+        event.preventDefault();
+        stick.active = true;
+        stick.inputSource = "touch";
+        stick.touchIdentifier = touch.identifier;
+        stick.pointerId = null;
+        setJoystickFromClient(touch.clientX, touch.clientY, stick);
+      }, { passive: false });
+
+      stick.pad.addEventListener("touchmove", event => {
+        if (!stick.active || stick.inputSource !== "touch") return;
+
+        const touch =
+          findTrackedTouch(event.touches, stick.touchIdentifier) ||
+          findTrackedTouch(event.changedTouches, stick.touchIdentifier);
+
+        if (!touch) return;
+
+        event.preventDefault();
+        setJoystickFromClient(touch.clientX, touch.clientY, stick);
+      }, { passive: false });
+
+      stick.pad.addEventListener("touchend", event => {
+        if (!stick.active || stick.inputSource !== "touch") return;
+        const endedTouch = findTrackedTouch(event.changedTouches, stick.touchIdentifier);
+        if (!endedTouch) return;
+
+        event.preventDefault();
+        resetJoystick(stick);
+      }, { passive: false });
+
+      stick.pad.addEventListener("touchcancel", event => {
+        if (!stick.active || stick.inputSource !== "touch") return;
+        event.preventDefault();
+        // Deliberately preserve the held direction until a real touchend.
+      }, { passive: false });
+
+      // Mouse/pen fallback.
       stick.pad.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
         if (event.pointerType === "mouse" && event.button !== 0) return;
+
         event.preventDefault();
         if (stick.active) return;
+
         stick.active = true;
+        stick.inputSource = "pointer";
         stick.pointerId = event.pointerId;
-        ttActiveControlPointers.add(event.pointerId);
-        if (stick.pad.setPointerCapture) {
-          try { stick.pad.setPointerCapture(event.pointerId); } catch (error) {}
-        }
+        stick.touchIdentifier = null;
+
+        try { stick.pad.setPointerCapture(event.pointerId); } catch (error) {}
         setJoystickFromClient(event.clientX, event.clientY, stick);
       });
 
       stick.pad.addEventListener("pointermove", event => {
-        if (!stick.active || event.pointerId !== stick.pointerId) return;
+        if (event.pointerType === "touch") return;
+        if (
+          !stick.active ||
+          stick.inputSource !== "pointer" ||
+          event.pointerId !== stick.pointerId
+        ) return;
+
         event.preventDefault();
         setJoystickFromClient(event.clientX, event.clientY, stick);
       });
 
-      const finishStickPointer = event => {
-        if (!stick.active || event.pointerId !== stick.pointerId) return;
+      const finishPointerStick = event => {
+        if (event.pointerType === "touch") return;
+        if (stick.inputSource !== "pointer" || event.pointerId !== stick.pointerId) return;
+
         event.preventDefault();
-        ttActiveControlPointers.delete(event.pointerId);
-        if (stick.pad.hasPointerCapture && stick.pad.hasPointerCapture(event.pointerId)) {
-          try { stick.pad.releasePointerCapture(event.pointerId); } catch (error) {}
-        }
+
+        try {
+          if (stick.pad.hasPointerCapture(event.pointerId)) {
+            stick.pad.releasePointerCapture(event.pointerId);
+          }
+        } catch (error) {}
+
         resetJoystick(stick);
       };
 
-      ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
-        stick.pad.addEventListener(type, finishStickPointer);
-        window.addEventListener(type, finishStickPointer, true);
-      });
+      stick.pad.addEventListener("pointerup", finishPointerStick);
+      stick.pad.addEventListener("pointercancel", finishPointerStick);
+      stick.pad.addEventListener("lostpointercapture", finishPointerStick);
     }
 
     bindJoystick(sticks.left);
@@ -1800,99 +1906,141 @@
       button.classList.add("pressed");
     }
 
+    function releaseButton(button, action) {
+      button.dataset.pointerId = "";
+      button.dataset.touchId = "";
+      button.dataset.inputSource = "";
+      button.classList.remove("pressed");
+      handleInputRelease(action);
+    }
+
     function bindButton(button) {
       const action = button.dataset.action;
       if (!action) return;
 
-      button.addEventListener("pointerdown", event => {
-        if (event.pointerType === "mouse" && event.button !== 0) return;
-        event.preventDefault();
-        if (button.dataset.pointerId) return;
-        button.dataset.pointerId = String(event.pointerId);
-        ttActiveControlPointers.add(event.pointerId);
-        pressButton(button);
-        if (button.setPointerCapture) {
-          try { button.setPointerCapture(event.pointerId); } catch (error) {}
+      /*
+        Buttons use the same physical-touch ownership rule as the joystick.
+        This matters for held JUMP and directional controls: WebKit cancellation
+        must not manufacture an early release while the finger is still down.
+      */
+      button.addEventListener("touchstart", event => {
+        const existingId = button.dataset.touchId;
+        if (existingId) {
+          const stillPhysical = findTrackedTouch(event.touches, Number(existingId));
+          if (stillPhysical) return;
+          releaseButton(button, action);
         }
+
+        const touch = event.changedTouches?.[0];
+        if (!touch) return;
+
+        event.preventDefault();
+        button.dataset.inputSource = "touch";
+        button.dataset.touchId = String(touch.identifier);
+        button.dataset.pointerId = "";
+        pressButton(button);
+        handleInput(action);
+      }, { passive: false });
+
+      button.addEventListener("touchend", event => {
+        if (button.dataset.inputSource !== "touch" || !button.dataset.touchId) return;
+
+        const touchId = Number(button.dataset.touchId);
+        if (!findTrackedTouch(event.changedTouches, touchId)) return;
+
+        event.preventDefault();
+        releaseButton(button, action);
+      }, { passive: false });
+
+      button.addEventListener("touchcancel", event => {
+        if (button.dataset.inputSource !== "touch") return;
+        event.preventDefault();
+        // Do not release. Safari may cancel while the physical finger remains down.
+      }, { passive: false });
+
+      // Mouse/pen fallback.
+      button.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+
+        event.preventDefault();
+        if (button.dataset.pointerId || button.dataset.touchId) return;
+
+        button.dataset.inputSource = "pointer";
+        button.dataset.pointerId = String(event.pointerId);
+        pressButton(button);
+
+        try { button.setPointerCapture(event.pointerId); } catch (error) {}
         handleInput(action);
       });
 
       const finishButtonPointer = event => {
-        if (button.dataset.pointerId !== String(event.pointerId)) return;
+        if (event.pointerType === "touch") return;
+        if (
+          button.dataset.inputSource !== "pointer" ||
+          button.dataset.pointerId !== String(event.pointerId)
+        ) return;
+
         event.preventDefault();
-        ttActiveControlPointers.delete(event.pointerId);
-        if (button.hasPointerCapture && button.hasPointerCapture(event.pointerId)) {
-          try { button.releasePointerCapture(event.pointerId); } catch (error) {}
-        }
-        button.dataset.pointerId = "";
-        button.classList.remove("pressed");
-        handleInputRelease(action);
+
+        try {
+          if (button.hasPointerCapture(event.pointerId)) {
+            button.releasePointerCapture(event.pointerId);
+          }
+        } catch (error) {}
+
+        releaseButton(button, action);
       };
 
-      ["pointerup", "pointercancel", "lostpointercapture"].forEach(type => {
-        button.addEventListener(type, finishButtonPointer);
-        window.addEventListener(type, finishButtonPointer, true);
-      });
-
+      button.addEventListener("pointerup", finishButtonPointer);
+      button.addEventListener("pointercancel", finishButtonPointer);
+      button.addEventListener("lostpointercapture", finishButtonPointer);
       button.addEventListener("contextmenu", event => event.preventDefault());
     }
 
     document.querySelectorAll("button[data-action]").forEach(bindButton);
 
     const controlsElement = document.getElementById("controls");
-    ["contextmenu", "selectstart", "dragstart", "dblclick"].forEach(type => {
+
+    function isLiveArcadeControlTarget(target) {
+      return target instanceof Element && !!target.closest(
+        '#controls button[data-action], #controls .joystickPad'
+      );
+    }
+
+    ["contextmenu", "selectstart", "dragstart"].forEach(type => {
       controlsElement.addEventListener(type, event => event.preventDefault(), true);
     });
 
-    // Safari may emit gesture events as soon as a second finger touches the page.
-    // Prevent the browser gesture without clearing either game input.
+    controlsElement.addEventListener("dblclick", event => {
+      if (!isLiveArcadeControlTarget(event.target)) return;
+      event.preventDefault();
+    }, { passive: false, capture: true });
+
+    /*
+      Proven iPhone loupe workaround: cancel touchstart ONLY when the touch began
+      on a real game control. Do not blanket-cancel the controller background,
+      canvas, LCD, or other blank iframe space; those areas must still scroll.
+    */
+    gameScreen.addEventListener("touchstart", event => {
+      if (!running) return;
+      if (isEditableArcadeTarget(event.target)) return;
+      if (!isLiveArcadeControlTarget(event.target)) return;
+      event.preventDefault();
+    }, { passive: false, capture: true });
+
+    // Keep Safari's multi-touch gesture handling scoped to the actual controller
+    // instead of blocking gestures over the whole document.
     ["gesturestart", "gesturechange", "gestureend"].forEach(type => {
-      document.addEventListener(type, event => {
+      controlsElement.addEventListener(type, event => {
+        if (!isLiveArcadeControlTarget(event.target)) return;
         event.preventDefault();
       }, { passive: false, capture: true });
     });
 
-    // Target only rapid double taps. This cancels Safari's smart-zoom/magnifier
-    // while leaving simultaneous pointers independent.
-    let ttLastControlTapTime = 0;
-    let ttLastControlTapX = 0;
-    let ttLastControlTapY = 0;
-    controlsElement.addEventListener("touchend", event => {
-      const touch = event.changedTouches && event.changedTouches[0];
-      const now = performance.now();
-      if (touch) {
-        const distance = Math.hypot(touch.clientX - ttLastControlTapX, touch.clientY - ttLastControlTapY);
-        if (now - ttLastControlTapTime < 330 && distance < 36) {
-          event.preventDefault();
-        }
-        ttLastControlTapTime = now;
-        ttLastControlTapX = touch.clientX;
-        ttLastControlTapY = touch.clientY;
-      }
-
-      // Fallback for the exact failure mode that caused sticking: if WebKit ate
-      // pointerup/cancel during a zoom gesture, clear stale controls only after the
-      // final finger has actually left the screen.
-      if (event.touches.length === 0) {
-        setTimeout(() => {
-          if (ttActiveControlPointers.size > 0) {
-            ttActiveControlPointers.clear();
-            hardResetMobileHeldInputs();
-          }
-        }, 40);
-      }
-    }, { passive: false, capture: true });
-
-    controlsElement.addEventListener("touchcancel", event => {
-      if (event.touches.length === 0) {
-        ttActiveControlPointers.clear();
-        hardResetMobileHeldInputs();
-      }
-    }, { passive: false, capture: true });
-
+    // Hard reset only for genuine lifecycle loss, not orientation/resize noise.
     window.addEventListener("blur", hardResetMobileHeldInputs);
     window.addEventListener("pagehide", hardResetMobileHeldInputs);
-    window.addEventListener("orientationchange", hardResetMobileHeldInputs);
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) hardResetMobileHeldInputs();
     });
@@ -7754,8 +7902,8 @@
 
     const resizeObserver = new ResizeObserver(() => {
       scaleAppToFrame();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
+      if (!sticks.left.active) resetJoystick(sticks.left);
+      if (!sticks.right.active) resetJoystick(sticks.right);
       if (!running) gameDraw();
     });
 
@@ -7764,8 +7912,8 @@
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         scaleAppToFrame();
-        resetJoystick(sticks.left);
-        resetJoystick(sticks.right);
+        if (!sticks.left.active) resetJoystick(sticks.left);
+        if (!sticks.right.active) resetJoystick(sticks.right);
         if (!running) gameDraw();
       }, 250);
     });
