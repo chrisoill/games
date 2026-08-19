@@ -1571,6 +1571,62 @@
     appStage.addEventListener("selectstart", preventBrowserHoldGesture);
     appStage.addEventListener("dragstart", preventBrowserHoldGesture);
 
+    /* iOS Safari tap -> tap-and-hold loupe suppression.
+       Ordinary buttons keep normal click semantics via a tiny delegated touch shim.
+       Fast game buttons with data-action are handled separately in bindButton(). */
+    const iosButtonTouches = new Map();
+
+    document.addEventListener("touchstart", event => {
+      const button = event.target?.closest?.("button");
+      if (!button || button.dataset.action) return;
+      const touch = event.changedTouches?.[0];
+      if (!touch) return;
+
+      event.preventDefault();
+      iosButtonTouches.set(touch.identifier, {
+        button,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        moved: false
+      });
+    }, { passive: false, capture: true });
+
+    document.addEventListener("touchmove", event => {
+      for (const touch of Array.from(event.changedTouches || [])) {
+        const state = iosButtonTouches.get(touch.identifier);
+        if (!state) continue;
+        event.preventDefault();
+        if (Math.hypot(touch.clientX - state.startX, touch.clientY - state.startY) > 10) {
+          state.moved = true;
+        }
+      }
+    }, { passive: false, capture: true });
+
+    document.addEventListener("touchend", event => {
+      for (const touch of Array.from(event.changedTouches || [])) {
+        const state = iosButtonTouches.get(touch.identifier);
+        if (!state) continue;
+        event.preventDefault();
+        iosButtonTouches.delete(touch.identifier);
+
+        const button = state.button;
+        const rect = button.getBoundingClientRect();
+        const endedOnButton =
+          touch.clientX >= rect.left && touch.clientX <= rect.right &&
+          touch.clientY >= rect.top && touch.clientY <= rect.bottom;
+
+        if (!state.moved && endedOnButton && button.isConnected && !button.disabled) {
+          button.click();
+        }
+      }
+    }, { passive: false, capture: true });
+
+    document.addEventListener("touchcancel", event => {
+      for (const touch of Array.from(event.changedTouches || [])) {
+        iosButtonTouches.delete(touch.identifier);
+      }
+    }, { passive: true, capture: true });
+
     function renderShellMenuTabs(activeId = activeShellMenuTab) {
       const fallbackTab = shellMenuTabs[0]?.id || "";
       activeShellMenuTab = shellMenuTabs.some(tab => tab.id === activeId) ? activeId : fallbackTab;
@@ -2048,29 +2104,89 @@
       stick.knob.style.top = `${centerY + dy}px`;
     }
 
+    function refreshJoystickVisual(stick) {
+      const centerX = stick.pad.offsetWidth / 2;
+      const centerY = stick.pad.offsetHeight / 2;
+      stick.knob.style.left = `${centerX + stick.x * stick.maxDistance}px`;
+      stick.knob.style.top = `${centerY + stick.y * stick.maxDistance}px`;
+    }
+
     function resetJoystick(stick) {
       stick.active = false;
       stick.pointerId = null;
+      stick.touchId = null;
       stick.x = 0;
       stick.y = 0;
+      refreshJoystickVisual(stick);
+    }
 
-      stick.knob.style.left = `${stick.pad.offsetWidth / 2}px`;
-      stick.knob.style.top = `${stick.pad.offsetHeight / 2}px`;
+    function findTouch(list, identifier) {
+      for (const touch of Array.from(list || [])) {
+        if (touch.identifier === identifier) return touch;
+      }
+      return null;
     }
 
     function bindJoystick(stick) {
-      stick.pad.addEventListener("pointerdown", event => {
+      stick.touchId = null;
+
+      // Touch owns the joystick until that same physical finger actually ends.
+      // Safari pointer-cancel/lost-capture events are intentionally not treated as release.
+      stick.pad.addEventListener("touchstart", event => {
+        const touch = event.changedTouches?.[0];
+        if (!touch) return;
         event.preventDefault();
 
         stick.active = true;
+        stick.pointerId = null;
+        stick.touchId = touch.identifier;
+        setJoystickFromEvent(touch, stick);
+        if (stick === sticks.left) maybeSendLeftJoystickInput(stick, true);
+      }, { passive: false });
+
+      document.addEventListener("touchmove", event => {
+        if (!stick.active || stick.touchId == null) return;
+        const touch = findTouch(event.touches, stick.touchId);
+        if (!touch) return;
+        event.preventDefault();
+        setJoystickFromEvent(touch, stick);
+        if (stick === sticks.left) maybeSendLeftJoystickInput(stick);
+      }, { passive: false });
+
+      document.addEventListener("touchend", event => {
+        if (!stick.active || stick.touchId == null) return;
+        const touch = findTouch(event.changedTouches, stick.touchId);
+        if (!touch) return;
+        event.preventDefault();
+        resetJoystick(stick);
+      }, { passive: false });
+
+      // Do not reset on touchcancel: iOS can emit it when ownership/capture changes
+      // even though the finger is still physically down. The next real touchstart
+      // can safely reclaim the stick if Safari never supplies the matching touchend.
+      document.addEventListener("touchcancel", event => {
+        if (!stick.active || stick.touchId == null) return;
+        const touch = findTouch(event.changedTouches, stick.touchId);
+        if (touch) event.preventDefault();
+      }, { passive: false });
+
+      // Mouse/pen keep ordinary Pointer Events. Touch pointers are ignored here
+      // because the Touch Events path above owns iPhone/iPad input.
+      stick.pad.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
+        event.preventDefault();
+
+        stick.active = true;
+        stick.touchId = null;
         stick.pointerId = event.pointerId;
 
-        stick.pad.setPointerCapture(event.pointerId);
+        if (stick.pad.setPointerCapture) stick.pad.setPointerCapture(event.pointerId);
         setJoystickFromEvent(event, stick);
         if (stick === sticks.left) maybeSendLeftJoystickInput(stick, true);
       });
 
       stick.pad.addEventListener("pointermove", event => {
+        if (event.pointerType === "touch") return;
         if (!stick.active || event.pointerId !== stick.pointerId) return;
 
         event.preventDefault();
@@ -2079,18 +2195,20 @@
       });
 
       stick.pad.addEventListener("pointerup", event => {
+        if (event.pointerType === "touch") return;
         if (event.pointerId !== stick.pointerId) return;
 
         event.preventDefault();
-
-        if (stick.pad.hasPointerCapture(event.pointerId)) {
+        if (stick.pad.hasPointerCapture?.(event.pointerId)) {
           stick.pad.releasePointerCapture(event.pointerId);
         }
-
         resetJoystick(stick);
       });
 
-      stick.pad.addEventListener("pointercancel", () => resetJoystick(stick));
+      stick.pad.addEventListener("pointercancel", event => {
+        if (event.pointerType === "touch") return;
+        if (event.pointerId === stick.pointerId) resetJoystick(stick);
+      });
     }
 
     bindJoystick(sticks.left);
@@ -2105,7 +2223,15 @@
       const action = button.dataset.action;
       if (!action) return;
 
+      // This non-passive touchstart is the iOS Safari loupe workaround.
+      button.addEventListener("touchstart", event => {
+        event.preventDefault();
+        pressButton(button);
+        handleInput(action);
+      }, { passive: false });
+
       button.addEventListener("pointerdown", event => {
+        if (event.pointerType === "touch") return;
         event.preventDefault();
         pressButton(button);
         handleInput(action);
@@ -5920,8 +6046,10 @@ function gameInput(action) {
 
     const resizeObserver = new ResizeObserver(() => {
       scaleAppToFrame();
-      resetJoystick(sticks.left);
-      resetJoystick(sticks.right);
+      if (sticks.left.active) refreshJoystickVisual(sticks.left);
+      else resetJoystick(sticks.left);
+      if (sticks.right.active) refreshJoystickVisual(sticks.right);
+      else resetJoystick(sticks.right);
       if (!running) {
         gameDraw();
         presentGameFrame();
@@ -5933,13 +6061,27 @@ function gameInput(action) {
     window.addEventListener("orientationchange", () => {
       setTimeout(() => {
         scaleAppToFrame();
-        resetJoystick(sticks.left);
-        resetJoystick(sticks.right);
+        if (sticks.left.active) refreshJoystickVisual(sticks.left);
+        else resetJoystick(sticks.left);
+        if (sticks.right.active) refreshJoystickVisual(sticks.right);
+        else resetJoystick(sticks.right);
         if (!running) {
           gameDraw();
           presentGameFrame();
         }
       }, 250);
+    });
+
+    window.addEventListener("pagehide", () => {
+      resetJoystick(sticks.left);
+      resetJoystick(sticks.right);
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        resetJoystick(sticks.left);
+        resetJoystick(sticks.right);
+      }
     });
 
 
