@@ -1252,7 +1252,7 @@
           <h3>How to Play</h3>
           <p>Incoming missiles show chord symbols. Build a chord on the two-octave piano, then press FIRE to submit it in one shot.</p>
           <ul>
-            <li>Major chords appear first. Minor chords unlock next, then diminished chords.</li>
+            <li>Every 5 successful defenses advances one curriculum step. Chord vocabulary develops through Steps 1–12, with a gentle speed increase beginning in Step 4. The full ongoing speed ramp begins in Step 13.</li>
             <li>Black-key roots may be written as sharps or flats, such as <code>F#</code> or <code>Gb</code>.</li>
             <li>Tap a highlighted key again to remove it. Pressing FIRE also clears the selection.</li>
             <li>Only keys that are at least partly visible in the keyboard window can count; fully scrolled-off selected keys are cleared automatically.</li>
@@ -2457,7 +2457,7 @@
       /* =========================
          GAME MODULE
          Chord Defender: build each incoming chord symbol on the piano.
-         Major chords unlock first, then minor, then diminished.
+         Chord vocabulary advances through 12 curriculum steps; speed pressure begins at Step 13.
          ========================= */
 
       const PIANO_PITCH_CLASSES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -2478,15 +2478,73 @@
       const CHORD_QUALITIES = [
         { id: "major", label: "Major", suffix: "", intervals: [0, 4, 7] },
         { id: "minor", label: "Minor", suffix: "m", intervals: [0, 3, 7] },
-        { id: "diminished", label: "Diminished", suffix: "dim", intervals: [0, 3, 6] }
+        { id: "diminished", label: "Diminished", suffix: "dim", intervals: [0, 3, 6] },
+        { id: "augmented", label: "Augmented", suffix: "aug", intervals: [0, 4, 8] }
       ];
-      const CHORD_MISSILE_SPEED_RATIO = 0.30;
+      const CHORD_MISSILE_SPEED_RATIO = 0.38;
+      const CHORDS_PER_PEDAGOGY_STEP = 5;
+      const SPEED_RAMP_START_HITS = CHORDS_PER_PEDAGOGY_STEP * 12;
+
+      const NATURAL_ROOT_KEYS = ["A", "B", "C", "D", "E", "F", "G"];
+      const ACCIDENTAL_ROOT_KEYS = ["C#", "D#", "F#", "G#", "A#"];
+      const FLAT_ROOT_LABELS = { "C#": "Db", "D#": "Eb", "F#": "Gb", "G#": "Ab", "A#": "Bb" };
+      const SHARP_ROOT_LABELS = { "C#": "C#", "D#": "D#", "F#": "F#", "G#": "G#", "A#": "A#" };
+
+      function rootSpec(key, label = key) {
+        return { key, labels: [label] };
+      }
+
+      function naturalRoots(keys = NATURAL_ROOT_KEYS) {
+        return keys.map(key => rootSpec(key));
+      }
+
+      function accidentalRoots(spelling = "both") {
+        return ACCIDENTAL_ROOT_KEYS.map(key => {
+          if (spelling === "flat") return rootSpec(key, FLAT_ROOT_LABELS[key]);
+          if (spelling === "sharp") return rootSpec(key, SHARP_ROOT_LABELS[key]);
+          return { key, labels: [SHARP_ROOT_LABELS[key], FLAT_ROOT_LABELS[key]] };
+        });
+      }
+
+      function allRoots() {
+        return [
+          rootSpec("C"),
+          { key: "C#", labels: ["C#", "Db"] },
+          rootSpec("D"),
+          { key: "D#", labels: ["D#", "Eb"] },
+          rootSpec("E"),
+          rootSpec("F"),
+          { key: "F#", labels: ["F#", "Gb"] },
+          rootSpec("G"),
+          { key: "G#", labels: ["G#", "Ab"] },
+          rootSpec("A"),
+          { key: "A#", labels: ["A#", "Bb"] },
+          rootSpec("B")
+        ];
+      }
+
+      const PEDAGOGY_STEPS = [
+        { roots: naturalRoots(["C", "F", "G"]), qualities: ["major"] },
+        { roots: naturalRoots(["D", "E", "A"]), qualities: ["major"] },
+        { roots: naturalRoots(), qualities: ["major"] },
+        { roots: accidentalRoots("flat"), qualities: ["major"] },
+        { roots: accidentalRoots("sharp"), qualities: ["major"] },
+        { roots: allRoots(), qualities: ["major"] },
+        { roots: naturalRoots(), qualities: ["minor"] },
+        { roots: accidentalRoots("both"), qualities: ["minor"] },
+        { roots: allRoots(), qualities: ["minor"] },
+        { roots: allRoots(), qualities: ["major", "minor"] },
+        { roots: allRoots(), qualities: ["diminished", "augmented"] },
+        { roots: allRoots(), qualities: ["major", "minor", "diminished", "augmented"] },
+        { roots: allRoots(), qualities: ["major", "minor", "diminished", "augmented"] }
+      ];
 
       let missiles = [];
       let particles = [];
       let scorePops = [];
       let lasers = [];
       let frameCount = 0;
+      let speedRampFrames = 0;
       let spawnTimer = 0;
       let shield = 5;
       let streak = 0;
@@ -2503,6 +2561,7 @@
         scorePops = [];
         lasers = [];
         frameCount = 0;
+        speedRampFrames = 0;
         spawnTimer = 125;
         shield = 5;
         streak = 0;
@@ -2558,21 +2617,17 @@
       }
 
 
-      function getUnlockedChordQualities() {
-        const difficulty = getDifficultyLevel();
-        const qualities = [CHORD_QUALITIES[0]];
+      function getPedagogyStep() {
+        return Math.min(13, 1 + Math.floor(hitsCleared / CHORDS_PER_PEDAGOGY_STEP));
+      }
 
-        // Quality ramp: major first, then minor, then diminished.
-        // It responds to both survival time and successful clears.
-        if (difficulty >= 1.65 || hitsCleared >= 10 || frameCount > 60 * 32) {
-          qualities.push(CHORD_QUALITIES[1]);
-        }
+      function getCurrentCurriculum() {
+        return PEDAGOGY_STEPS[getPedagogyStep() - 1] || PEDAGOGY_STEPS[PEDAGOGY_STEPS.length - 1];
+      }
 
-        if (difficulty >= 3.35 || hitsCleared >= 26 || frameCount > 60 * 78) {
-          qualities.push(CHORD_QUALITIES[2]);
-        }
-
-        return qualities;
+      function getCurriculumQualities() {
+        const allowed = new Set(getCurrentCurriculum().qualities);
+        return CHORD_QUALITIES.filter(quality => allowed.has(quality.id));
       }
 
       function transposePitchClass(rootKey, semitones) {
@@ -2582,8 +2637,9 @@
       }
 
       function buildChordTarget() {
-        const root = randomFrom(CHORD_ROOTS);
-        const quality = randomFrom(getUnlockedChordQualities());
+        const curriculum = getCurrentCurriculum();
+        const root = randomFrom(curriculum.roots);
+        const quality = randomFrom(getCurriculumQualities());
         const requiredKeys = quality.intervals.map(interval => transposePitchClass(root.key, interval));
         const rootLabels = Array.isArray(root.labels) && root.labels.length ? root.labels : [root.label || root.key];
         const rootLabel = randomFrom(rootLabels);
@@ -2595,11 +2651,19 @@
       }
 
       function getDifficultyLevel() {
-        const secondsAlive = frameCount / 60;
-        const timePressure = secondsAlive / 24;
-        const clearPressure = hitsCleared / 18;
-        const streakPressure = Math.min(1.8, streak / 26);
-        return timePressure + clearPressure + streakPressure;
+        const step = getPedagogyStep();
+
+        // Keep the first three curriculum steps at a steady, readable pace.
+        // From Step 4 onward, add only a gentle pre-ramp so the game does not feel static.
+        const curriculumPressure = Math.max(0, Math.min(9, step - 3)) * 0.10;
+        if (step < 13) return curriculumPressure;
+
+        // Step 13 begins the true continuing speed ramp, starting from the
+        // modest pressure already accumulated through the curriculum.
+        const speedRampClears = Math.max(0, hitsCleared - SPEED_RAMP_START_HITS);
+        const clearPressure = speedRampClears / 18;
+        const timePressure = speedRampFrames / (60 * 24);
+        return 1.0 + clearPressure + timePressure;
       }
 
       function getWaveMultiplier() {
@@ -2617,8 +2681,7 @@
         const distanceNudge = 0.96 + Math.min(0.12, distance / 5200);
         const keyDefenderTravel = Math.max(68, (baseTravel * distanceNudge) / (1 + difficulty * 0.105));
 
-        // Chord Defender missiles move at 30% of Key Defender speed.
-        // That means the travel time is roughly 3.33x longer.
+        // Chord Defender starts at 38% of Key Defender speed, then gently accelerates through the curriculum.
         return Math.max(225, keyDefenderTravel / CHORD_MISSILE_SPEED_RATIO);
       }
       function spawnMissile() {
@@ -2684,6 +2747,7 @@
 
       function gameUpdate() {
         frameCount += 1;
+        if (getPedagogyStep() >= 13) speedRampFrames += 1;
         spawnTimer -= 1;
 
         if (spawnTimer <= 0 && missiles.length < getCurrentMaxMissiles()) {
@@ -2931,7 +2995,7 @@
         ctx.textBaseline = "top";
         ctx.font = "bold 15px Arial, sans-serif";
         ctx.fillStyle = streak >= 10 ? "#ffe08a" : "rgba(255,255,255,0.84)";
-        ctx.fillText(`STREAK ${streak}`, 14, 12);
+        ctx.fillText(`STEP ${getPedagogyStep()}  ·  STREAK ${streak}`, 14, 12);
 
         const urgent = missiles.some(missile => ((missile.travelFrames || 0) - (missile.travelAge || 0)) < 75);
         if (urgent) {
