@@ -852,7 +852,7 @@
     }
 
 
-    /* Chord Defender repeating piano + FIRE control */
+    /* Chord Defender two-octave piano + FIRE control */
     #pianoControls {
       top: 16px;
       height: 226px;
@@ -943,6 +943,7 @@
       touch-action: none;
     }
 
+    #fireChordBtn.pressed,
     #fireChordBtn:active {
       transform: scale(0.97);
       filter: brightness(1.08);
@@ -1004,8 +1005,8 @@
         </div>
 
         <div id="controls">
-          <div id="pianoControls" aria-label="Scrollable repeating piano keyboard controls">
-            <div id="pianoScroller" aria-label="Scrollable repeating piano keyboard">
+          <div id="pianoControls" aria-label="Scrollable two-octave piano keyboard controls">
+            <div id="pianoScroller" aria-label="Scrollable two-octave piano keyboard">
               <div id="pianoTrack"></div>
             </div>
             <button id="fireChordBtn" type="button" tabindex="-1">FIRE</button>
@@ -1237,7 +1238,7 @@
           <h3>Controls</h3>
           <ul>
             <li><strong>Piano keys:</strong> Tap keys to toggle them on or off.</li>
-            <li><strong>Scroll:</strong> Swipe sideways through the repeating piano to choose a comfortable keyboard window.</li>
+            <li><strong>Scroll:</strong> Swipe sideways through the two-octave piano to choose a comfortable keyboard window.</li>
             <li><strong>FIRE:</strong> Submit all currently highlighted, visible keys as one chord.</li>
             <li><strong>MENU:</strong> Pause, resume, or return to the player screen.</li>
             <li><strong>Goal:</strong> Match an incoming chord symbol before it reaches your shield.</li>
@@ -1249,7 +1250,7 @@
         label: "How to Play",
         html: `
           <h3>How to Play</h3>
-          <p>Incoming missiles show chord symbols. Build a chord by tapping keys, then press FIRE to submit it in one shot.</p>
+          <p>Incoming missiles show chord symbols. Build a chord on the two-octave piano, then press FIRE to submit it in one shot.</p>
           <ul>
             <li>Major chords appear first. Minor chords unlock next, then diminished chords.</li>
             <li>Black-key roots may be written as sharps or flats, such as <code>F#</code> or <code>Gb</code>.</li>
@@ -2072,6 +2073,7 @@
       scaleGameCanvasBackingStore();
       resetGameCanvasTransform();
       gameInit();
+      requestAnimationFrame(centerPianoKeyboard);
       scheduleGameLoop();
     }
 
@@ -2148,10 +2150,9 @@
       gameInput(action);
     }
 
+
     const activePianoVoices = new Map();
     const selectedPianoKeys = new Set();
-    let pianoOctaveMin = -3;
-    let pianoOctaveMax = 3;
     let pianoScrollFrame = 0;
 
     function createPianoKey(note, className, octaveIndex, position = null) {
@@ -2161,7 +2162,8 @@
       key.className = `pianoKey ${className}`;
       key.dataset.note = note;
       key.dataset.octave = String(octaveIndex);
-      key.setAttribute("aria-label", note.replace("#", " sharp"));
+      key.dataset.voiceId = `${note}@${octaveIndex}`;
+      key.setAttribute("aria-label", `${note.replace("#", " sharp")} ${4 + octaveIndex}`);
       if (position !== null) key.style.setProperty("--pos", position);
       return key;
     }
@@ -2185,6 +2187,17 @@
     }
 
     function wirePianoKey(key) {
+      key.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
+        if (!running || shellMenu.classList.contains("open")) return;
+        startPianoKeyVoice(key);
+      });
+
+      const releaseVoice = () => stopPianoKeyVoice(key);
+      key.addEventListener("pointerup", releaseVoice);
+      key.addEventListener("pointercancel", releaseVoice);
+      key.addEventListener("pointerleave", releaseVoice);
+
       key.addEventListener("click", event => {
         event.preventDefault();
         if (event.detail === 0) return;
@@ -2207,29 +2220,8 @@
     function buildInitialPiano() {
       if (!pianoTrack) return;
       pianoTrack.innerHTML = "";
-      for (let octave = pianoOctaveMin; octave <= pianoOctaveMax; octave++) {
-        pianoTrack.appendChild(createPianoOctave(octave));
-      }
-      refreshPianoKeys();
-    }
-
-    function prependPianoOctaves(count = 4) {
-      if (!pianoTrack || !pianoScroller) return;
-      const beforeWidth = pianoTrack.scrollWidth;
-      for (let i = 0; i < count; i++) {
-        pianoOctaveMin -= 1;
-        pianoTrack.insertBefore(createPianoOctave(pianoOctaveMin), pianoTrack.firstChild);
-      }
-      refreshPianoKeys();
-      pianoScroller.scrollLeft += pianoTrack.scrollWidth - beforeWidth;
-    }
-
-    function appendPianoOctaves(count = 4) {
-      if (!pianoTrack) return;
-      for (let i = 0; i < count; i++) {
-        pianoOctaveMax += 1;
-        pianoTrack.appendChild(createPianoOctave(pianoOctaveMax));
-      }
+      pianoTrack.appendChild(createPianoOctave(0));
+      pianoTrack.appendChild(createPianoOctave(1));
       refreshPianoKeys();
     }
 
@@ -2263,7 +2255,6 @@
         selectedPianoKeys.add(key);
         key.classList.add("selected");
       }
-      soundPianoNote(key.dataset.note);
     }
 
     function getSelectedPitchClasses() {
@@ -2271,25 +2262,11 @@
       return uniqueKeys(Array.from(selectedPianoKeys).map(key => key.dataset.note));
     }
 
-    function maintainInfinitePiano() {
-      if (!pianoScroller || !pianoTrack || !pianoTrack.firstElementChild) return;
-      const octaveWidth = pianoTrack.firstElementChild.getBoundingClientRect().width || 280;
-      if (pianoScroller.scrollLeft < octaveWidth * 1.5) {
-        prependPianoOctaves(4);
-      }
-      const remaining = pianoTrack.scrollWidth - (pianoScroller.scrollLeft + pianoScroller.clientWidth);
-      if (remaining < octaveWidth * 1.5) {
-        appendPianoOctaves(4);
-      }
-    }
-
     function centerPianoKeyboard() {
-      if (!pianoScroller || !pianoTrack) return;
-      const centerOctave = pianoTrack.querySelector('[data-octave="0"]');
-      if (!centerOctave || pianoScroller.clientWidth <= 0) return;
+      if (!pianoScroller || !pianoTrack || pianoScroller.clientWidth <= 0) return;
       pianoScroller.scrollLeft = Math.max(
         0,
-        centerOctave.offsetLeft - (pianoScroller.clientWidth - centerOctave.offsetWidth) / 2
+        (pianoTrack.scrollWidth - pianoScroller.clientWidth) / 2
       );
       pruneHiddenSelectedKeys();
     }
@@ -2299,19 +2276,24 @@
         if (pianoScrollFrame) return;
         pianoScrollFrame = requestAnimationFrame(() => {
           pianoScrollFrame = 0;
-          maintainInfinitePiano();
           pruneHiddenSelectedKeys();
         });
       }, { passive: true });
     }
 
     if (fireChordBtn) {
-      fireChordBtn.addEventListener("click", event => {
+      const releaseFireVisual = () => fireChordBtn.classList.remove("pressed");
+
+      fireChordBtn.addEventListener("pointerdown", event => {
+        if (event.pointerType === "mouse" && event.button !== 0) return;
         event.preventDefault();
-        if (event.detail === 0) return;
         if (!running || shellMenu.classList.contains("open")) return;
+        fireChordBtn.classList.add("pressed");
         fireSelectedChord();
       });
+      fireChordBtn.addEventListener("pointerup", releaseFireVisual);
+      fireChordBtn.addEventListener("pointercancel", releaseFireVisual);
+      fireChordBtn.addEventListener("pointerleave", releaseFireVisual);
       fireChordBtn.addEventListener("keydown", event => event.preventDefault());
     }
 
@@ -2385,15 +2367,21 @@
       } catch (err) {}
     }
 
-    function startPianoNote(note) {
-      const cleanNote = String(note || "").trim();
-      const freq = PIANO_NOTE_FREQUENCIES[cleanNote] || 330;
-      const existing = activePianoVoices.get(cleanNote);
 
-      if (existing) {
-        existing.count += 1;
-        return;
-      }
+    function pianoVoiceId(note, octaveIndex = 0) {
+      return `${String(note || "").trim()}@${Number(octaveIndex) || 0}`;
+    }
+
+    function pianoFrequency(note, octaveIndex = 0) {
+      const cleanNote = String(note || "").trim();
+      const base = PIANO_NOTE_FREQUENCIES[cleanNote] || 330;
+      return base * Math.pow(2, Number(octaveIndex) || 0);
+    }
+
+    function startPianoNote(note, octaveIndex = 0, voiceId = null) {
+      const cleanNote = String(note || "").trim();
+      const id = voiceId || pianoVoiceId(cleanNote, octaveIndex);
+      if (activePianoVoices.has(id)) return;
 
       const ac = getAudio();
       if (!ac) return;
@@ -2401,30 +2389,47 @@
       const osc = ac.createOscillator();
       const gain = ac.createGain();
       osc.type = "triangle";
-      osc.frequency.value = freq;
+      osc.frequency.value = pianoFrequency(cleanNote, octaveIndex);
       gain.gain.setValueAtTime(0.001, ac.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.085, ac.currentTime + 0.025);
       osc.connect(gain);
       gain.connect(ac.destination);
       osc.start();
-      activePianoVoices.set(cleanNote, { osc, gain });
+      activePianoVoices.set(id, { osc, gain });
     }
 
-    function stopPianoNote(note) {
+    function stopPianoNote(note, octaveIndex = 0, voiceId = null) {
       const cleanNote = String(note || "").trim();
-      const existing = activePianoVoices.get(cleanNote);
+      const id = voiceId || pianoVoiceId(cleanNote, octaveIndex);
+      const existing = activePianoVoices.get(id);
       if (!existing) return;
 
-      existing.count -= 1;
-      if (existing.count > 0) return;
-
-      activePianoVoices.delete(cleanNote);
+      activePianoVoices.delete(id);
       stopPianoVoice(existing);
     }
 
-    function soundPianoNote(note) {
-      startPianoNote(note);
-      window.setTimeout(() => stopPianoNote(note), 180);
+    function startPianoKeyVoice(key) {
+      if (!key) return;
+      startPianoNote(
+        key.dataset.note,
+        Number(key.dataset.octave || 0),
+        key.dataset.voiceId
+      );
+    }
+
+    function stopPianoKeyVoice(key) {
+      if (!key) return;
+      stopPianoNote(
+        key.dataset.note,
+        Number(key.dataset.octave || 0),
+        key.dataset.voiceId
+      );
+    }
+
+    function soundPianoNote(note, octaveIndex = 0) {
+      const voiceId = `preview:${pianoVoiceId(note, octaveIndex)}:${Date.now()}:${Math.random()}`;
+      startPianoNote(note, octaveIndex, voiceId);
+      window.setTimeout(() => stopPianoNote(note, octaveIndex, voiceId), 180);
     }
 
     function soundWin() {
