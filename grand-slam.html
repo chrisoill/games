@@ -5461,7 +5461,6 @@ function lerpValue(start, end, amount) {
       const topY = TREBLE_STAFF_TOP;
       const bottomY = BASS_STAFF_TOP + STAFF_GAP * 4;
       const systemHeight = bottomY - topY;
-      const compact = GAME_CANVAS_LOGICAL_WIDTH <= 400;
 
       ctx.save();
       ctx.strokeStyle = "#111827";
@@ -5471,35 +5470,34 @@ function lerpValue(start, end, amount) {
       ctx.lineTo(STAFF_LEFT, bottomY);
       ctx.stroke();
 
-      const braceGlyph = bravuraReady ? SMUFL_BRACE : UNICODE_BRACE;
-      const braceFontFamily = bravuraReady
-        ? '"Bravura"'
-        : '"Noto Music", "Segoe UI Symbol", "Apple Symbols", serif';
-
-      let braceFontSize = systemHeight;
-      ctx.font = `${braceFontSize}px ${braceFontFamily}`;
-      let metrics = ctx.measureText(braceGlyph);
-      let ascent = metrics.actualBoundingBoxAscent || braceFontSize * 0.8;
-      let descent = metrics.actualBoundingBoxDescent || braceFontSize * 0.2;
-      const measuredHeight = Math.max(1, ascent + descent);
-
-      // Keep the top aligned, but scale the brace a bit more so the visible bottom
-      // reaches the bottom line of the bass staff instead of ending too high.
-      const braceStretch = compact ? 1.23 : 1.205;
-      braceFontSize *= (systemHeight / measuredHeight) * braceStretch;
-      ctx.font = `${braceFontSize}px ${braceFontFamily}`;
-      metrics = ctx.measureText(braceGlyph);
-      ascent = metrics.actualBoundingBoxAscent || braceFontSize * 0.8;
-      descent = metrics.actualBoundingBoxDescent || braceFontSize * 0.2;
-
-      const braceBaselineY = topY + ascent;
-      const braceGap = compact ? STAFF_GAP * 0.28 : STAFF_GAP * 0.22;
-      const braceRightX = STAFF_LEFT - braceGap;
-
       ctx.fillStyle = "#111827";
-      ctx.textAlign = "right";
       ctx.textBaseline = "alphabetic";
-      ctx.fillText(braceGlyph, braceRightX, braceBaselineY);
+
+      if (bravuraReady) {
+        // Brace calibration exported from grand-slam-brace-calibrator v1.
+        // Visible bounds on the 720x520 logical canvas:
+        // x=26.2649, y=250, width=18.029, height=212.8596.
+        // Use the literal calibrated transform rather than measureText(), whose
+        // SMuFL glyph metrics caused the brace to be stretched too tall.
+        ctx.save();
+        ctx.translate(26.2649, 462.2248);
+        ctx.scale(1.2696, 1.058);
+        ctx.font = '200px "Bravura"';
+        ctx.textAlign = "left";
+        ctx.fillText(SMUFL_BRACE, 0, 0);
+        ctx.restore();
+      } else {
+        // Fallback only while/if Bravura is unavailable. Do not apply the old
+        // braceStretch multiplier; it was the source of the oversized brace.
+        const braceFontSize = systemHeight;
+        ctx.font = `${braceFontSize}px "Noto Music", "Segoe UI Symbol", "Apple Symbols", serif`;
+        const metrics = ctx.measureText(UNICODE_BRACE);
+        const ascent = metrics.actualBoundingBoxAscent || braceFontSize * 0.8;
+        const braceGap = STAFF_GAP * 0.22;
+        ctx.textAlign = "right";
+        ctx.fillText(UNICODE_BRACE, STAFF_LEFT - braceGap, topY + ascent);
+      }
+
       ctx.restore();
     }
     function drawTargetBarline() {
