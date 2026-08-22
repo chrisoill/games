@@ -757,11 +757,55 @@
       padding: 0;
     }
 
+    /* The generic movement/action hardware is not used by Melo Memo. */
     #primaryControlsRow,
-    #stickControlsRow,
-    #systemControlsRow {
+    #stickControlsRow {
       display: none !important;
       pointer-events: none;
+    }
+
+    /* Keep the standard Piano Arcade system-button row for MENU. */
+    #systemControlsRow {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: auto;
+      bottom: 44px;
+      width: 390px;
+      height: 34px;
+      min-height: 34px;
+      display: block !important;
+      pointer-events: none;
+    }
+
+    #systemButtons,
+    #systemButtons.singleSystem {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 92px;
+      height: 34px;
+      min-height: 34px;
+      transform: translateX(-50%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0;
+      pointer-events: auto;
+    }
+
+    #systemButtons.singleSystem .systemBtn {
+      width: 92px;
+      height: 32px;
+      margin: 0;
+      border-radius: 999px;
+      border: none;
+      background: #101010;
+      color: rgba(255,255,255,0.78);
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1px;
+      box-shadow: inset 0 0 0 2px rgba(255,255,255,0.12);
     }
 
     #memodyMobileKeyboardWrap {
@@ -769,34 +813,22 @@
       left: 14px;
       right: 14px;
       top: 16px;
-      height: 234px;
+      height: 220px;
       border-radius: 18px;
       background: linear-gradient(180deg, #161d28, #0f141d);
       box-shadow:
         inset 0 0 0 2px rgba(255,255,255,0.06),
         0 10px 22px rgba(0,0,0,0.34);
-      padding: 14px 10px 12px;
+      padding: 10px;
       overflow: hidden;
-    }
-
-    #memodyMobileKeyboardLabel {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 10px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: bold;
-      color: rgba(255,255,255,0.86);
-      letter-spacing: 0.06em;
     }
 
     #memodyMobileKeyboard {
       position: absolute;
       left: 10px;
       right: 10px;
-      bottom: 12px;
-      top: 34px;
+      top: 10px;
+      bottom: 10px;
       user-select: none;
       -webkit-user-select: none;
       touch-action: none;
@@ -804,51 +836,28 @@
 
     .memodyTouchWhiteKey {
       position: absolute;
-      bottom: 0;
-      height: 172px;
+      top: 0;
+      bottom: auto;
+      height: 198px;
       border-radius: 0 0 12px 12px;
       border: 2px solid #1f2937;
       background: linear-gradient(180deg, #ffffff, #e9eef7 54%, #d7dfec);
       box-shadow: inset 0 -8px 12px rgba(0,0,0,0.08);
       color: #334155;
-      font-size: 11px;
-      font-weight: bold;
       padding: 0;
     }
 
     .memodyTouchBlackKey {
       position: absolute;
       top: 0;
-      height: 112px;
+      height: 122px;
       border-radius: 0 0 10px 10px;
       border: 2px solid #020617;
       background: linear-gradient(180deg, #2f3542, #05070d 70%);
       box-shadow: 0 8px 14px rgba(0,0,0,0.35);
       color: #e5e7eb;
-      font-size: 10px;
-      font-weight: bold;
       padding: 0;
       z-index: 2;
-    }
-
-    .memodyTouchWhiteKey .memodyTouchKeyLabel,
-    .memodyTouchBlackKey .memodyTouchKeyLabel {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      font-family: Arial, sans-serif;
-      letter-spacing: 0.04em;
-      opacity: 0.88;
-      pointer-events: none;
-    }
-
-    .memodyTouchWhiteKey .memodyTouchKeyLabel {
-      bottom: 10px;
-    }
-
-    .memodyTouchBlackKey .memodyTouchKeyLabel {
-      bottom: 9px;
-      font-size: 9px;
     }
 
     .memodyTouchWhiteKey.pressed,
@@ -862,35 +871,6 @@
       background: linear-gradient(180deg, #475569, #0f172a 68%);
       box-shadow: 0 5px 10px rgba(0,0,0,0.28);
       transform: translateY(2px);
-    }
-
-    #memodyMobileMenuRow {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 22px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #memodyMenuBtn {
-      width: 126px;
-      height: 40px;
-      border-radius: 999px;
-      border: 2px solid #111;
-      background: linear-gradient(180deg, #ffffff, #e5e7eb);
-      color: #111827;
-      font-size: 14px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.28);
-    }
-
-    #memodyMenuBtn:active,
-    #memodyMenuBtn.pressed {
-      transform: scale(0.96);
-      filter: brightness(1.06);
     }
 
   </style>
@@ -984,12 +964,7 @@
           </div>
 
           <div id="memodyMobileKeyboardWrap">
-            <div id="memodyMobileKeyboardLabel">TOUCH KEYBOARD</div>
-            <div id="memodyMobileKeyboard" aria-label="Touch keyboard"></div>
-          </div>
-
-          <div id="memodyMobileMenuRow">
-            <button id="memodyMenuBtn" type="button">MENU</button>
+            <div id="memodyMobileKeyboard" aria-label="Piano keyboard"></div>
           </div>
         </div>
       </div>
@@ -1131,7 +1106,6 @@
     const faceButtons = document.getElementById("faceButtons");
     const systemButtons = document.getElementById("systemButtons");
     const memodyMobileKeyboard = document.getElementById("memodyMobileKeyboard");
-    const memodyMenuBtn = document.getElementById("memodyMenuBtn");
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
@@ -2401,7 +2375,8 @@
       showLeftJoystick: false,
       showRightJoystick: false,
       faceButtons: [],
-      systemButtons: []
+      systemButtons: ["start"],
+      labels: { start: "MENU" }
     });
 
   /* =========================
@@ -2434,7 +2409,9 @@
   const Memody_TRANSITION_MS = 1360;
   const Memody_CHEST_OPEN_MS = 520;
   const Memody_REVEAL_MS = 980;
+  const Memody_MONSTER_HOLD_MS = 1000;
   const Memody_WALK_MS = Memody_TRANSITION_MS + Memody_CHEST_OPEN_MS + Memody_REVEAL_MS;
+  const Memody_MONSTER_WALK_MS = Memody_WALK_MS + Memody_MONSTER_HOLD_MS;
 
   let MemodySequence = [];
   let MemodyPhase = "idle";
@@ -2466,9 +2443,8 @@
   updateShellMenuTab("controls", `
     <h3>Controls</h3>
     <ul>
-      <li><strong>Touch keyboard:</strong> Tap or slide across the large piano below the screen.</li>
+      <li><strong>Piano:</strong> Tap or slide across the piano below the screen.</li>
       <li><strong>Game screen:</strong> You can still tap the smaller piano on the playfield if you want.</li>
-      <li><strong>Computer keyboard:</strong> Use <code>1 2 3 4 5 6 7 8 9 0 - =</code> for the full octave.</li>
       <li><strong>Menu:</strong> Tap <strong>MENU</strong> or press <code>M</code>.</li>
     </ul>
     <p>Repeat each melody in order. Treasure means success; the note monster means the run is over.</p>
@@ -2680,7 +2656,6 @@
       key.dataset.noteIndex = String(note.index);
       key.style.left = `${i * whiteWidth}%`;
       key.style.width = `${whiteWidth}%`;
-      key.innerHTML = `<span class="memodyTouchKeyLabel">${note.key}</span>`;
       memodyMobileKeyboard.appendChild(key);
     });
 
@@ -2702,7 +2677,6 @@
       key.dataset.noteIndex = String(spec.index);
       key.style.left = `${spec.left}%`;
       key.style.width = `${blackWidth}%`;
-      key.innerHTML = `<span class="memodyTouchKeyLabel">${note.key}</span>`;
       memodyMobileKeyboard.appendChild(key);
     });
   }
@@ -2774,32 +2748,7 @@
       MemodyActiveNote = null;
     });
 
-    if (memodyMenuBtn && !memodyMenuBtn.dataset.bound) {
-      memodyMenuBtn.dataset.bound = "yes";
-      let pointerId = null;
-      memodyMenuBtn.addEventListener("pointerdown", event => {
-        event.preventDefault();
-        pointerId = event.pointerId;
-        memodyMenuBtn.classList.add("pressed");
-        try { memodyMenuBtn.setPointerCapture(event.pointerId); } catch (err) {}
-      });
-      const releaseMenu = event => {
-        if (pointerId == null || event.pointerId !== pointerId) return;
-        event.preventDefault();
-        pointerId = null;
-        memodyMenuBtn.classList.remove("pressed");
-        try {
-          if (memodyMenuBtn.hasPointerCapture(event.pointerId)) memodyMenuBtn.releasePointerCapture(event.pointerId);
-        } catch (err) {}
-        openShellMenu("pause");
-      };
-      memodyMenuBtn.addEventListener("pointerup", releaseMenu);
-      memodyMenuBtn.addEventListener("pointercancel", event => {
-        if (pointerId == null || event.pointerId !== pointerId) return;
-        pointerId = null;
-        memodyMenuBtn.classList.remove("pressed");
-      });
-    }
+
   }
 
   function MemodyHandleNote(index) {
@@ -2951,7 +2900,7 @@
     ctx.stroke();
     ctx.restore();
   }
-  function MemodyDrawChest(x, y, scale, openAmount) {
+  function MemodyDrawChest(now, x, y, scale, openAmount) {
     const t = MemodyEaseOut(openAmount);
     const chestW = 126 * scale;
     const chestH = 84 * scale;
@@ -3018,8 +2967,9 @@
     ctx.fill();
 
     ctx.save();
-    ctx.translate(x, top + chestH * 0.17);
-    ctx.rotate(-1.08 * t);
+    const lidLift = 30 * scale * t;
+    const lidHover = t > 0.02 ? Math.sin(now / 170) * 1.8 * scale * t : 0;
+    ctx.translate(x, top + chestH * 0.17 - lidLift + lidHover);
     const lidGrad = ctx.createLinearGradient(0, -chestH * 0.46, 0, chestH * 0.12);
     lidGrad.addColorStop(0, "#b17238");
     lidGrad.addColorStop(0.6, "#855026");
@@ -3124,11 +3074,13 @@
   function MemodyDrawMonsterFigure(now, x, y, reveal, scale) {
     const t = MemodyEaseOut(reveal);
     const bob = Math.sin(now / 140) * 4 * scale;
-    const bodyLift = t * 46 * scale;
+    const emergeOffset = (1 - t) * 42 * scale;
+    const jumpBurst = Math.sin(Math.min(1, t) * Math.PI) * 18 * scale;
+    const bodyLift = t * 54 * scale + jumpBurst;
     const lunge = t * 26 * scale;
 
     ctx.save();
-    ctx.translate(x, y - bodyLift + bob);
+    ctx.translate(x, y + emergeOffset - bodyLift + bob);
 
     ctx.fillStyle = "rgba(0,0,0,0.33)";
     ctx.beginPath();
@@ -3432,7 +3384,7 @@
     const chestX = w / 2;
     const chestY = h * 0.70;
     const chestScale = Math.max(0.72, Math.min(1.04, w / 760));
-    MemodyDrawChest(chestX, chestY, chestScale, chestOpen);
+    MemodyDrawChest(now, chestX, chestY, chestScale, chestOpen);
     if (reveal > 0) {
       if (outcome === "treasure") MemodyDrawTreasureBurst(now, chestX, chestY - 24 * chestScale, reveal, chestScale);
       else MemodyDrawMonsterFigure(now, chestX, chestY - 10 * chestScale, reveal, chestScale);
@@ -3691,7 +3643,8 @@ function MemodyDrawKeyboard() {
         }
       }
 
-      if (elapsed > Memody_WALK_MS) {
+      const outcomeDuration = MemodyOutcome === "treasure" ? Memody_WALK_MS : Memody_MONSTER_WALK_MS;
+      if (elapsed > outcomeDuration) {
         if (MemodyOutcome === "treasure") {
           MemodyAddRandomNote();
           MemodyBeginShowing();
