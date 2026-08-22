@@ -751,8 +751,7 @@
       touch-action: none;
     }
 
-    /* Preserve the established Melo Memo controls and their sizes:
-       LEFT / RIGHT on the left, PLAY on the right, MENU beneath. */
+    /* Melo Memo uses a large touch keyboard below the playfield. */
     #controls {
       display: block;
       padding: 0;
@@ -761,87 +760,137 @@
     #primaryControlsRow,
     #stickControlsRow,
     #systemControlsRow {
-      position: absolute;
-      inset: 0;
-      width: 390px;
-      min-height: 0;
-      display: block;
+      display: none !important;
       pointer-events: none;
     }
 
-    #dpad,
-    #faceButtons,
-    #systemButtons {
-      pointer-events: auto;
-    }
-
-    #leftJoystickPad,
-    #rightJoystickPad {
-      display: none !important;
-    }
-
-    #dpad {
+    #memodyMobileKeyboardWrap {
       position: absolute;
-      left: 32px;
-      top: 93px;
-      width: 132px;
-      height: 56px;
-      flex: none;
+      left: 14px;
+      right: 14px;
+      top: 16px;
+      height: 234px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #161d28, #0f141d);
+      box-shadow:
+        inset 0 0 0 2px rgba(255,255,255,0.06),
+        0 10px 22px rgba(0,0,0,0.34);
+      padding: 14px 10px 12px;
+      overflow: hidden;
     }
 
-    #dpadUp,
-    #dpadDown,
-    #dpadCenter {
-      display: none !important;
-    }
-
-    #dpadLeft,
-    #dpadRight {
-      top: 3px;
-      width: 58px;
-      height: 50px;
-      line-height: 50px;
-      font-size: 22px;
-      border-radius: 14px;
-    }
-
-    #dpadLeft { left: 0; }
-    #dpadRight { left: 74px; }
-
-    #faceButtons,
-    #faceButtons.singleFace {
+    #memodyMobileKeyboardLabel {
       position: absolute;
-      right: 25px;
-      top: 79px;
-      width: 140px;
-      height: 86px;
-      flex: none;
+      left: 0;
+      right: 0;
+      top: 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: rgba(255,255,255,0.86);
+      letter-spacing: 0.06em;
     }
 
-    #faceButtons.singleFace .faceBtn.singleAction {
-      left: 19px !important;
-      top: 9px !important;
-      width: 102px;
-      height: 62px;
-      border-radius: 999px;
-      padding: 0 8px;
-      font-size: 13px;
-      line-height: 1;
-      letter-spacing: 0.5px;
+    #memodyMobileKeyboard {
+      position: absolute;
+      left: 10px;
+      right: 10px;
+      bottom: 12px;
+      top: 34px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
     }
 
-    #systemControlsRow {
-      top: auto;
-      bottom: 44px;
-      height: 34px;
+    .memodyTouchWhiteKey {
+      position: absolute;
+      bottom: 0;
+      height: 172px;
+      border-radius: 0 0 12px 12px;
+      border: 2px solid #1f2937;
+      background: linear-gradient(180deg, #ffffff, #e9eef7 54%, #d7dfec);
+      box-shadow: inset 0 -8px 12px rgba(0,0,0,0.08);
+      color: #334155;
+      font-size: 11px;
+      font-weight: bold;
+      padding: 0;
     }
 
-    #systemButtons {
+    .memodyTouchBlackKey {
+      position: absolute;
+      top: 0;
+      height: 112px;
+      border-radius: 0 0 10px 10px;
+      border: 2px solid #020617;
+      background: linear-gradient(180deg, #2f3542, #05070d 70%);
+      box-shadow: 0 8px 14px rgba(0,0,0,0.35);
+      color: #e5e7eb;
+      font-size: 10px;
+      font-weight: bold;
+      padding: 0;
+      z-index: 2;
+    }
+
+    .memodyTouchWhiteKey .memodyTouchKeyLabel,
+    .memodyTouchBlackKey .memodyTouchKeyLabel {
       position: absolute;
       left: 50%;
-      top: 0;
       transform: translateX(-50%);
-      min-height: 34px;
+      font-family: Arial, sans-serif;
+      letter-spacing: 0.04em;
+      opacity: 0.88;
+      pointer-events: none;
+    }
+
+    .memodyTouchWhiteKey .memodyTouchKeyLabel {
+      bottom: 10px;
+    }
+
+    .memodyTouchBlackKey .memodyTouchKeyLabel {
+      bottom: 9px;
+      font-size: 9px;
+    }
+
+    .memodyTouchWhiteKey.pressed,
+    .memodyTouchWhiteKey:active {
+      background: linear-gradient(180deg, #fff1b0, #ffe18a 54%, #f5c95a);
+      transform: translateY(2px);
+    }
+
+    .memodyTouchBlackKey.pressed,
+    .memodyTouchBlackKey:active {
+      background: linear-gradient(180deg, #475569, #0f172a 68%);
+      box-shadow: 0 5px 10px rgba(0,0,0,0.28);
+      transform: translateY(2px);
+    }
+
+    #memodyMobileMenuRow {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 22px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #memodyMenuBtn {
+      width: 126px;
+      height: 40px;
+      border-radius: 999px;
+      border: 2px solid #111;
+      background: linear-gradient(180deg, #ffffff, #e5e7eb);
+      color: #111827;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.28);
+    }
+
+    #memodyMenuBtn:active,
+    #memodyMenuBtn.pressed {
+      transform: scale(0.96);
+      filter: brightness(1.06);
     }
 
   </style>
@@ -932,6 +981,15 @@
               <button id="selectButton" class="systemBtn" data-action="select">SELECT</button>
               <button id="startButton" class="systemBtn" data-action="start">START</button>
             </div>
+          </div>
+
+          <div id="memodyMobileKeyboardWrap">
+            <div id="memodyMobileKeyboardLabel">TOUCH KEYBOARD</div>
+            <div id="memodyMobileKeyboard" aria-label="Touch keyboard"></div>
+          </div>
+
+          <div id="memodyMobileMenuRow">
+            <button id="memodyMenuBtn" type="button">MENU</button>
           </div>
         </div>
       </div>
@@ -1072,6 +1130,8 @@
     const dpad = document.getElementById("dpad");
     const faceButtons = document.getElementById("faceButtons");
     const systemButtons = document.getElementById("systemButtons");
+    const memodyMobileKeyboard = document.getElementById("memodyMobileKeyboard");
+    const memodyMenuBtn = document.getElementById("memodyMenuBtn");
 
     const shellMenu = document.getElementById("shellMenu");
     const shellMenuTabsEl = document.getElementById("shellMenuTabs");
@@ -2337,15 +2397,11 @@
     MobileArcadeShell.setFirstTimeHelpVersion("memodyMobileHowToPlay_v1");
 
     MobileArcadeShell.configureControls({
-      showDpad: true,
+      showDpad: false,
       showLeftJoystick: false,
       showRightJoystick: false,
-      faceButtons: ["a"],
-      systemButtons: ["start"],
-      labels: {
-        a: "PLAY",
-        start: "MENU"
-      }
+      faceButtons: [],
+      systemButtons: []
     });
 
   /* =========================
@@ -2404,15 +2460,18 @@
   let MemodyBoundPointerEvents = false;
   let MemodyBoundKeyboardEvents = false;
   let MemodyKeysHeld = new Set();
+  let MemodyTouchKeyboardPointerId = null;
+  let MemodyTouchKeyboardActiveIndex = null;
 
   updateShellMenuTab("controls", `
     <h3>Controls</h3>
     <ul>
-      <li><strong>Play notes:</strong> Click, tap, or hold the piano keys on the game screen.</li>
+      <li><strong>Touch keyboard:</strong> Tap or slide across the large piano below the screen.</li>
+      <li><strong>Game screen:</strong> You can still tap the smaller piano on the playfield if you want.</li>
       <li><strong>Computer keyboard:</strong> Use <code>1 2 3 4 5 6 7 8 9 0 - =</code> for the full octave.</li>
-      <li><strong>Selector:</strong> Left/Right moves the glowing key. Space or Enter plays it.</li>
-      <li><strong>Help:</strong> Click Help or press M.</li>
+      <li><strong>Menu:</strong> Tap <strong>MENU</strong> or press <code>M</code>.</li>
     </ul>
+    <p>Repeat each melody in order. Treasure means success; the note monster means the run is over.</p>
   `);
 
   updateShellMenuTab("instructions", `
@@ -2425,15 +2484,6 @@
       <li>A wrong note opens a monster door and ends the run.</li>
     </ul>
     <p>Your score is the number of doors you safely pass through.</p>
-  `);
-
-  registerShellMenuTab("tips", "Memory Tips", `
-    <h3>Memory Tips</h3>
-    <ul>
-      <li>Hum the melody before you answer.</li>
-      <li>Notice the shape: same note, step up, step down, or jump.</li>
-      <li>Break longer patterns into tiny groups.</li>
-    </ul>
   `);
 
   function MemodyClamp(value, min, max) {
@@ -2584,15 +2634,19 @@
   }
 
   function MemodyMakeMonster() {
-    MemodyMonsterBits = Array.from({ length: 34 }, (_, i) => ({
-      x: (Math.random() - 0.5) * 150,
-      y: (Math.random() - 0.5) * 105,
-      size: 18 + Math.random() * 22,
-      char: Memody_NOTE_SYMBOLS[i % Memody_NOTE_SYMBOLS.length],
-      shade: 25 + Math.floor(Math.random() * 90),
-      spin: (Math.random() - 0.5) * 0.55
+    const glyphs = ["♪", "♫", "♬", "♭", "♯", "𝄞"];
+    MemodyMonsterBits = Array.from({ length: 16 }, (_, i) => ({
+      angle: (i / 16) * Math.PI * 2,
+      radius: 24 + (i % 4) * 12 + Math.random() * 8,
+      drift: 0.4 + Math.random() * 0.9,
+      size: 14 + Math.random() * 14,
+      char: glyphs[i % glyphs.length],
+      side: i % 2 ? 1 : -1,
+      lift: 8 + Math.random() * 20,
+      alpha: 0.20 + Math.random() * 0.25
     }));
   }
+
 
   function MemodyTriggerOutcome(success) {
     MemodyPhase = "walk";
@@ -2606,6 +2660,146 @@
     MemodySetPrompt("The door opens...");
     MemodySoundDoor();
     if (!success) MemodyMakeMonster();
+  }
+
+
+  function MemodyBuildMobileTouchKeyboard() {
+    if (!memodyMobileKeyboard || memodyMobileKeyboard.dataset.built === "yes") return;
+    memodyMobileKeyboard.dataset.built = "yes";
+    memodyMobileKeyboard.innerHTML = "";
+
+    const whiteNotes = Memody_NOTES
+      .map((note, index) => ({ ...note, index }))
+      .filter(note => !note.black);
+    const whiteWidth = 100 / whiteNotes.length;
+
+    whiteNotes.forEach((note, i) => {
+      const key = document.createElement("button");
+      key.type = "button";
+      key.className = "memodyTouchWhiteKey memodyTouchKey";
+      key.dataset.noteIndex = String(note.index);
+      key.style.left = `${i * whiteWidth}%`;
+      key.style.width = `${whiteWidth}%`;
+      key.innerHTML = `<span class="memodyTouchKeyLabel">${note.key}</span>`;
+      memodyMobileKeyboard.appendChild(key);
+    });
+
+    const blackSpecs = [
+      { index: 1, left: whiteWidth * 0.68 },
+      { index: 3, left: whiteWidth * 1.68 },
+      { index: 6, left: whiteWidth * 3.68 },
+      { index: 8, left: whiteWidth * 4.68 },
+      { index: 10, left: whiteWidth * 5.68 }
+    ];
+    const blackWidth = whiteWidth * 0.64;
+
+    blackSpecs.forEach(spec => {
+      const note = Memody_NOTES[spec.index];
+      if (!note) return;
+      const key = document.createElement("button");
+      key.type = "button";
+      key.className = "memodyTouchBlackKey memodyTouchKey";
+      key.dataset.noteIndex = String(spec.index);
+      key.style.left = `${spec.left}%`;
+      key.style.width = `${blackWidth}%`;
+      key.innerHTML = `<span class="memodyTouchKeyLabel">${note.key}</span>`;
+      memodyMobileKeyboard.appendChild(key);
+    });
+  }
+
+  function MemodySetTouchKeyboardPressed(index) {
+    if (!memodyMobileKeyboard) return;
+    memodyMobileKeyboard.querySelectorAll(".memodyTouchKey.pressed").forEach(key => key.classList.remove("pressed"));
+    if (index == null) return;
+    const activeKey = memodyMobileKeyboard.querySelector(`.memodyTouchKey[data-note-index="${index}"]`);
+    if (activeKey) activeKey.classList.add("pressed");
+  }
+
+  function MemodyBindMobileTouchKeyboard() {
+    if (!memodyMobileKeyboard || memodyMobileKeyboard.dataset.bound === "yes") return;
+    memodyMobileKeyboard.dataset.bound = "yes";
+    MemodyBuildMobileTouchKeyboard();
+
+    const keyFromTarget = target => target && target.closest ? target.closest('.memodyTouchKey') : null;
+
+    memodyMobileKeyboard.addEventListener("pointerdown", event => {
+      if (!running || shellMenu.classList.contains("open")) return;
+      const key = keyFromTarget(event.target);
+      if (!key) return;
+      event.preventDefault();
+      const index = Number(key.dataset.noteIndex);
+      MemodyTouchKeyboardPointerId = event.pointerId;
+      MemodyTouchKeyboardActiveIndex = index;
+      try { memodyMobileKeyboard.setPointerCapture(event.pointerId); } catch (err) {}
+      MemodyIgnoreClickUntil = performance.now() + 700;
+      MemodySetTouchKeyboardPressed(index);
+      MemodyHandlePointerNote(index);
+    });
+
+    memodyMobileKeyboard.addEventListener("pointermove", event => {
+      if (MemodyTouchKeyboardPointerId == null || event.pointerId !== MemodyTouchKeyboardPointerId) return;
+      event.preventDefault();
+      const hoverKey = keyFromTarget(document.elementFromPoint(event.clientX, event.clientY));
+      const index = hoverKey ? Number(hoverKey.dataset.noteIndex) : null;
+      if (index === MemodyTouchKeyboardActiveIndex) return;
+      MemodyTouchKeyboardActiveIndex = index;
+      MemodySetTouchKeyboardPressed(index);
+      MemodyHandlePointerNote(index);
+    });
+
+    const releaseTouchKeyboard = event => {
+      if (MemodyTouchKeyboardPointerId == null || event.pointerId !== MemodyTouchKeyboardPointerId) return;
+      event.preventDefault();
+      const commitIndex = MemodyHeldNoteIndex;
+      MemodyTouchKeyboardPointerId = null;
+      MemodyTouchKeyboardActiveIndex = null;
+      MemodySetTouchKeyboardPressed(null);
+      MemodyIgnoreClickUntil = performance.now() + 500;
+      MemodyStopHeldTone();
+      MemodyActiveNote = null;
+      if (commitIndex != null) MemodyHandleNote(commitIndex);
+      try {
+        if (memodyMobileKeyboard.hasPointerCapture(event.pointerId)) memodyMobileKeyboard.releasePointerCapture(event.pointerId);
+      } catch (err) {}
+    };
+
+    memodyMobileKeyboard.addEventListener("pointerup", releaseTouchKeyboard);
+    memodyMobileKeyboard.addEventListener("pointercancel", releaseTouchKeyboard);
+    memodyMobileKeyboard.addEventListener("lostpointercapture", event => {
+      if (MemodyTouchKeyboardPointerId == null || event.pointerId !== MemodyTouchKeyboardPointerId) return;
+      MemodyTouchKeyboardPointerId = null;
+      MemodyTouchKeyboardActiveIndex = null;
+      MemodySetTouchKeyboardPressed(null);
+      MemodyStopHeldTone();
+      MemodyActiveNote = null;
+    });
+
+    if (memodyMenuBtn && !memodyMenuBtn.dataset.bound) {
+      memodyMenuBtn.dataset.bound = "yes";
+      let pointerId = null;
+      memodyMenuBtn.addEventListener("pointerdown", event => {
+        event.preventDefault();
+        pointerId = event.pointerId;
+        memodyMenuBtn.classList.add("pressed");
+        try { memodyMenuBtn.setPointerCapture(event.pointerId); } catch (err) {}
+      });
+      const releaseMenu = event => {
+        if (pointerId == null || event.pointerId !== pointerId) return;
+        event.preventDefault();
+        pointerId = null;
+        memodyMenuBtn.classList.remove("pressed");
+        try {
+          if (memodyMenuBtn.hasPointerCapture(event.pointerId)) memodyMenuBtn.releasePointerCapture(event.pointerId);
+        } catch (err) {}
+        openShellMenu("pause");
+      };
+      memodyMenuBtn.addEventListener("pointerup", releaseMenu);
+      memodyMenuBtn.addEventListener("pointercancel", event => {
+        if (pointerId == null || event.pointerId !== pointerId) return;
+        pointerId = null;
+        memodyMenuBtn.classList.remove("pressed");
+      });
+    }
   }
 
   function MemodyHandleNote(index) {
@@ -2644,115 +2838,480 @@
     MemodyStartHeldTone(index, 0.095);
   }
 
-    function MemodyDrawChest(x, y, scale, openAmount) {
-    const chestW = 120 * scale;
-    const chestH = 78 * scale;
-    const left = x - chestW / 2;
-    const top = y - chestH / 2;
-
-    ctx.save();
-    ctx.fillStyle = "#8a5a1d";
-    ctx.fillRect(left, top + chestH * 0.18, chestW, chestH * 0.56);
-    ctx.fillStyle = "#d4a72c";
-    ctx.fillRect(left + chestW * 0.08, top + chestH * 0.18, chestW * 0.84, chestH * 0.12);
-    ctx.fillRect(left + chestW * 0.08, top + chestH * 0.50, chestW * 0.84, chestH * 0.10);
-    ctx.fillStyle = "#4b2e10";
-    ctx.fillRect(left + chestW * 0.46, top + chestH * 0.40, chestW * 0.08, chestH * 0.20);
-    ctx.fillStyle = "#facc15";
-    ctx.fillRect(left + chestW * 0.47, top + chestH * 0.44, chestW * 0.06, chestH * 0.12);
-
-    ctx.save();
-    ctx.translate(x, top + chestH * 0.20);
-    ctx.rotate(-1.18 * openAmount);
-    ctx.fillStyle = "#a56b24";
+  
+  function MemodyRoundedRectPath(x, y, w, h, r) {
+    const radius = Math.min(r, w * 0.5, h * 0.5);
     ctx.beginPath();
-    ctx.moveTo(-chestW * 0.50, 0);
-    ctx.quadraticCurveTo(0, -chestH * 0.36, chestW * 0.50, 0);
-    ctx.lineTo(chestW * 0.44, chestH * 0.10);
-    ctx.quadraticCurveTo(0, -chestH * 0.20, -chestW * 0.44, chestH * 0.10);
+    ctx.moveTo(x + radius, y);
+    ctx.arcTo(x + w, y, x + w, y + h, radius);
+    ctx.arcTo(x + w, y + h, x, y + h, radius);
+    ctx.arcTo(x, y + h, x, y, radius);
+    ctx.arcTo(x, y, x + w, y, radius);
     ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = "#eab308";
-    ctx.lineWidth = 4 * scale;
-    ctx.stroke();
-    ctx.restore();
-    ctx.restore();
   }
 
-  function MemodyDrawTreasureBurst(now, x, y, reveal, scale) {
-    const rise = (1 - reveal) * 26 * scale;
-    const spread = 60 * scale;
-    const symbols = ["♪", "♫", "♬", "♩", "𝄞", "♬", "♫", "♪"];
+  function MemodyDrawSpark(x, y, size, rotation = 0, color = "#fff2a6", alpha = 1) {
     ctx.save();
-    ctx.textAlign = "center";
-    symbols.forEach((symbol, i) => {
-      const t = i / Math.max(1, symbols.length - 1);
-      const sx = x + (t - 0.5) * spread * 1.5;
-      const sy = y - rise - Math.sin(t * Math.PI) * 26 * scale;
-      ctx.fillStyle = i % 3 === 0 ? "#fde68a" : i % 3 === 1 ? "#facc15" : "#f59e0b";
-      ctx.font = `bold ${Math.round((22 + (i % 4) * 7) * scale)}px Arial`;
-      ctx.fillText(symbol, sx, sy);
-    });
-    for (let i = 0; i < 12; i += 1) {
-      const angle = i * 0.52 + now / 280;
-      const radius = 22 * scale + (i % 4) * 10 * scale;
-      ctx.fillStyle = i % 2 ? "#facc15" : "#f59e0b";
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    ctx.globalAlpha *= alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(1.2, size * 0.16);
+    ctx.lineCap = "round";
+    for (let i = 0; i < 4; i += 1) {
+      ctx.rotate(Math.PI / 4);
       ctx.beginPath();
-      ctx.arc(x + Math.cos(angle) * radius, y - 8 * scale + Math.sin(angle) * radius * 0.45, 4 * scale + (i % 3), 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(-size * 0.18, 0);
+      ctx.lineTo(-size, 0);
+      ctx.moveTo(size * 0.18, 0);
+      ctx.lineTo(size, 0);
+      ctx.stroke();
     }
     ctx.restore();
   }
 
-  function MemodyDrawMonsterFigure(now, x, y, reveal, scale) {
-    const jump = MemodyEaseOut(reveal);
-    const monsterScale = scale * (0.58 + jump * 0.95);
-    const bob = Math.sin(now / 120) * 7 * monsterScale;
-    const lunge = jump * 60 * scale;
+  function MemodyDrawCoin(x, y, radius, squash = 1, glow = 1) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(1, squash);
+    const grad = ctx.createRadialGradient(-radius * 0.25, -radius * 0.3, radius * 0.18, 0, 0, radius * 1.1);
+    grad.addColorStop(0, "#fff6bf");
+    grad.addColorStop(0.45, "#ffd95a");
+    grad.addColorStop(1, "#d18e14");
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#8a5c0e";
+    ctx.lineWidth = Math.max(1.2, radius * 0.16);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255, 255, 255, ${0.18 * glow})`;
+    ctx.beginPath();
+    ctx.ellipse(-radius * 0.22, -radius * 0.32, radius * 0.30, radius * 0.17, -0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function MemodyDrawGem(x, y, size, colorA, colorB, rotation = 0) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rotation);
+    const grad = ctx.createLinearGradient(0, -size, 0, size);
+    grad.addColorStop(0, colorA);
+    grad.addColorStop(1, colorB);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(size * 0.82, 0);
+    ctx.lineTo(0, size);
+    ctx.lineTo(-size * 0.82, 0);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,255,255,0.72)";
+    ctx.lineWidth = Math.max(1, size * 0.12);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -size);
+    ctx.lineTo(0, size);
+    ctx.moveTo(-size * 0.82, 0);
+    ctx.lineTo(size * 0.82, 0);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function MemodyDrawSharpSign(x, y, scale, color = "#ff6b6b") {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.6;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-8, -12); ctx.lineTo(-10, 12);
+    ctx.moveTo(8, -12); ctx.lineTo(6, 12);
+    ctx.moveTo(-14, -4); ctx.lineTo(14, -8);
+    ctx.moveTo(-14, 8); ctx.lineTo(14, 4);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function MemodyDrawFlatSign(x, y, scale, color = "#ff6b6b") {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-4, -14);
+    ctx.lineTo(-4, 13);
+    ctx.moveTo(-4, 1);
+    ctx.bezierCurveTo(6, -2, 11, 2, 9, 10);
+    ctx.bezierCurveTo(7, 17, -3, 15, -4, 9);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function MemodyDrawChest(x, y, scale, openAmount) {
+    const t = MemodyEaseOut(openAmount);
+    const chestW = 126 * scale;
+    const chestH = 84 * scale;
+    const left = x - chestW / 2;
+    const top = y - chestH / 2;
+    const baseY = top + chestH * 0.18;
+    const bodyH = chestH * 0.58;
 
     ctx.save();
-    ctx.translate(x, y - jump * 54 * scale + bob);
-    ctx.scale(monsterScale, monsterScale);
+
+    ctx.fillStyle = "rgba(0,0,0,0.30)";
+    ctx.beginPath();
+    ctx.ellipse(x, top + chestH * 0.94, chestW * 0.58, chestH * 0.14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    const bodyGrad = ctx.createLinearGradient(0, baseY, 0, baseY + bodyH);
+    bodyGrad.addColorStop(0, "#9b6330");
+    bodyGrad.addColorStop(0.58, "#6c431d");
+    bodyGrad.addColorStop(1, "#432512");
+    ctx.fillStyle = bodyGrad;
+    MemodyRoundedRectPath(left, baseY, chestW, bodyH, 10 * scale);
+    ctx.fill();
+    ctx.strokeStyle = "#24150d";
+    ctx.lineWidth = Math.max(2, 5 * scale);
+    ctx.stroke();
+
+    const trimGrad = ctx.createLinearGradient(0, baseY, 0, baseY + bodyH);
+    trimGrad.addColorStop(0, "#ffe694");
+    trimGrad.addColorStop(0.5, "#e6b537");
+    trimGrad.addColorStop(1, "#9b680d");
+    ctx.fillStyle = trimGrad;
+    [0.14, 0.50, 0.82].forEach(pos => {
+      const bandW = chestW * 0.1;
+      MemodyRoundedRectPath(left + chestW * pos - bandW / 2, baseY + 4 * scale, bandW, bodyH - 8 * scale, 5 * scale);
+      ctx.fill();
+    });
+    MemodyRoundedRectPath(left + chestW * 0.07, baseY + bodyH * 0.20, chestW * 0.86, bodyH * 0.14, 4 * scale);
+    ctx.fill();
+    MemodyRoundedRectPath(left + chestW * 0.09, baseY + bodyH * 0.66, chestW * 0.82, bodyH * 0.11, 4 * scale);
+    ctx.fill();
+
+    if (t > 0.03) {
+      const glowGrad = ctx.createRadialGradient(x, baseY + bodyH * 0.15, 0, x, baseY + bodyH * 0.15, chestW * 0.68);
+      glowGrad.addColorStop(0, `rgba(255, 246, 183, ${0.48 * t})`);
+      glowGrad.addColorStop(0.55, `rgba(255, 201, 76, ${0.26 * t})`);
+      glowGrad.addColorStop(1, "rgba(255, 141, 54, 0)");
+      ctx.fillStyle = glowGrad;
+      MemodyRoundedRectPath(left + 8 * scale, baseY + 6 * scale, chestW - 16 * scale, bodyH * 0.50, 8 * scale);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = "#47301a";
+    MemodyRoundedRectPath(x - 10 * scale, baseY + bodyH * 0.34, 20 * scale, 24 * scale, 4 * scale);
+    ctx.fill();
+    ctx.fillStyle = "#ffd556";
+    MemodyRoundedRectPath(x - 7 * scale, baseY + bodyH * 0.37, 14 * scale, 18 * scale, 3 * scale);
+    ctx.fill();
+    ctx.strokeStyle = "#7c5208";
+    ctx.lineWidth = Math.max(1.3, 2.2 * scale);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x, baseY + bodyH * 0.46, 2.3 * scale, 0, Math.PI * 2);
+    ctx.fillStyle = "#8d6410";
+    ctx.fill();
+
+    ctx.save();
+    ctx.translate(x, top + chestH * 0.17);
+    ctx.rotate(-1.08 * t);
+    const lidGrad = ctx.createLinearGradient(0, -chestH * 0.46, 0, chestH * 0.12);
+    lidGrad.addColorStop(0, "#b17238");
+    lidGrad.addColorStop(0.6, "#855026");
+    lidGrad.addColorStop(1, "#4d2d16");
+    ctx.fillStyle = lidGrad;
+    ctx.beginPath();
+    ctx.moveTo(-chestW * 0.52, 0);
+    ctx.quadraticCurveTo(0, -chestH * 0.50, chestW * 0.52, 0);
+    ctx.lineTo(chestW * 0.46, chestH * 0.13);
+    ctx.quadraticCurveTo(0, -chestH * 0.26, -chestW * 0.46, chestH * 0.13);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#24150d";
+    ctx.lineWidth = Math.max(2, 5 * scale);
+    ctx.stroke();
+    ctx.strokeStyle = "#f0c44f";
+    ctx.lineWidth = Math.max(1.6, 3.2 * scale);
+    ctx.beginPath();
+    ctx.moveTo(-chestW * 0.38, -chestH * 0.09);
+    ctx.quadraticCurveTo(0, -chestH * 0.28, chestW * 0.38, -chestH * 0.09);
+    ctx.stroke();
+    [0.24, 0.5, 0.76].forEach(pos => {
+      const bandX = -chestW * 0.52 + chestW * pos;
+      ctx.beginPath();
+      ctx.moveTo(bandX, -chestH * 0.06);
+      ctx.lineTo(bandX * 0.88, chestH * 0.10);
+      ctx.stroke();
+    });
+    ctx.restore();
+
+    ctx.restore();
+  }
+
+  function MemodyDrawTreasureBurst(now, x, y, reveal, scale) {
+    const t = MemodyEaseOut(reveal);
+    const pulse = 0.88 + Math.sin(now / 165) * 0.12;
+    const mouthY = y - 10 * scale;
+
+    ctx.save();
+    ctx.globalAlpha *= 0.98;
+
+    for (let i = 0; i < 10; i += 1) {
+      const angle = -1.72 + i * 0.19;
+      const len = (62 + (i % 3) * 18) * scale * (0.35 + 0.75 * t);
+      ctx.strokeStyle = `rgba(255, 226, 125, ${0.11 + 0.18 * t})`;
+      ctx.lineWidth = Math.max(1.5, (3.5 - (i % 2) * 0.6) * scale);
+      ctx.beginPath();
+      ctx.moveTo(x, mouthY);
+      ctx.lineTo(x + Math.cos(angle) * len, mouthY + Math.sin(angle) * len);
+      ctx.stroke();
+    }
+
+    const treasurePieces = [
+      { kind: "coin", spread: -72, lift: 76, size: 10, squash: 0.82 },
+      { kind: "coin", spread: -44, lift: 58, size: 8, squash: 0.92 },
+      { kind: "gem",  spread: -18, lift: 88, size: 8, rot: -0.25 },
+      { kind: "coin", spread: 12,  lift: 100, size: 9, squash: 0.86 },
+      { kind: "gem",  spread: 46,  lift: 72, size: 9, rot: 0.18 },
+      { kind: "coin", spread: 76,  lift: 62, size: 11, squash: 0.78 },
+      { kind: "coin", spread: 38,  lift: 46, size: 7, squash: 0.95 },
+      { kind: "gem",  spread: -58, lift: 44, size: 7, rot: 0.34 }
+    ];
+
+    treasurePieces.forEach((piece, i) => {
+      const wobble = Math.sin(now / 180 + i * 0.9) * 7 * scale;
+      const px = x + piece.spread * scale * (0.25 + 0.78 * t) + wobble * 0.25;
+      const py = mouthY - Math.sin(Math.PI * t) * piece.lift * scale - Math.max(0, t - 0.55) * 14 * scale + Math.cos(now / 220 + i) * 2.5 * scale;
+      if (piece.kind === "coin") {
+        MemodyDrawCoin(px, py, piece.size * scale, piece.squash + Math.sin(now / 130 + i) * 0.08, pulse);
+      } else {
+        const gemTop = i % 2 ? "#b7f3ff" : "#ffc2f0";
+        const gemBottom = i % 2 ? "#35c8ff" : "#db46b3";
+        MemodyDrawGem(px, py, piece.size * scale, gemTop, gemBottom, (piece.rot || 0) + now / 700);
+      }
+    });
+
+    ["♪", "♫", "♬"].forEach((glyph, i) => {
+      const gx = x + (-30 + i * 30) * scale + Math.sin(now / 240 + i) * 4 * scale;
+      const gy = mouthY - (70 + i * 18) * scale * t;
+      ctx.fillStyle = ["#fff0a3", "#ffd54d", "#ffb347"][i];
+      ctx.font = `bold ${Math.round((24 + i * 6) * scale)}px Georgia`;
+      ctx.textAlign = "center";
+      ctx.fillText(glyph, gx, gy);
+    });
+
+    for (let i = 0; i < 8; i += 1) {
+      const angle = i * 0.78 + now / 410;
+      const radius = (16 + (i % 4) * 10) * scale * (0.6 + 0.4 * t);
+      MemodyDrawSpark(
+        x + Math.cos(angle) * radius,
+        mouthY - 10 * scale + Math.sin(angle) * radius * 0.55,
+        (5 + (i % 3) * 1.7) * scale,
+        angle,
+        i % 2 ? "#fff6b4" : "#ffd465",
+        0.65 + 0.25 * t
+      );
+    }
+
+    ctx.restore();
+  }
+
+  function MemodyDrawMonsterFigure(now, x, y, reveal, scale) {
+    const t = MemodyEaseOut(reveal);
+    const bob = Math.sin(now / 140) * 4 * scale;
+    const bodyLift = t * 46 * scale;
+    const lunge = t * 26 * scale;
+
+    ctx.save();
+    ctx.translate(x, y - bodyLift + bob);
+
+    ctx.fillStyle = "rgba(0,0,0,0.33)";
+    ctx.beginPath();
+    ctx.ellipse(0, 48 * scale, 62 * scale, 14 * scale, 0, 0, Math.PI * 2);
+    ctx.fill();
 
     MemodyMonsterBits.forEach((bit, i) => {
-      const wobble = Math.sin(now / 145 + i) * 5;
+      const angle = bit.angle + now / 520 * bit.drift * bit.side;
+      const radius = bit.radius * scale * (0.68 + 0.3 * t);
+      const px = Math.cos(angle) * radius;
+      const py = -8 * scale - bit.lift * scale * 0.34 + Math.sin(angle * 1.15 + now / 420) * 12 * scale;
       ctx.save();
-      ctx.translate(bit.x * 0.55 + wobble, bit.y * 0.55 + Math.cos(now / 185 + i) * 4);
-      ctx.rotate(bit.spin * Math.sin(now / 170 + i));
-      ctx.fillStyle = `rgb(${bit.shade}, ${bit.shade}, ${bit.shade})`;
-      ctx.font = `bold ${Math.max(12, bit.size * 0.75)}px Arial`;
+      ctx.globalAlpha *= bit.alpha;
+      ctx.fillStyle = i % 2 ? "#6b7280" : "#4b5563";
+      ctx.font = `bold ${Math.round(bit.size * scale)}px Georgia`;
       ctx.textAlign = "center";
-      ctx.fillText(bit.char, 0, 0);
+      ctx.fillText(bit.char, px, py);
       ctx.restore();
     });
 
-    ctx.fillStyle = "#ef4444";
+    ctx.save();
+    ctx.translate(0, 4 * scale);
+    ctx.scale(1.04 + Math.sin(now / 180) * 0.03, 0.94 + Math.cos(now / 200) * 0.02);
+    const bodyGrad = ctx.createRadialGradient(-16 * scale, -22 * scale, 8 * scale, 0, 0, 84 * scale);
+    bodyGrad.addColorStop(0, "#2b3347");
+    bodyGrad.addColorStop(0.55, "#121826");
+    bodyGrad.addColorStop(1, "#05070d");
+    ctx.fillStyle = bodyGrad;
     ctx.beginPath();
-    ctx.arc(-20, -12, 9, 0, Math.PI * 2);
-    ctx.arc(20, -12, 9, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, 60 * scale, 48 * scale, -0.08, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = "#fff5f5";
-    ctx.beginPath();
-    ctx.arc(-20, -12, 3.4, 0, Math.PI * 2);
-    ctx.arc(20, -12, 3.4, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.strokeStyle = "#374151";
+    ctx.lineWidth = Math.max(1.6, 3 * scale);
+    ctx.stroke();
+    ctx.restore();
 
-    ctx.strokeStyle = "#ef4444";
-    ctx.lineWidth = 5;
+    const shoulderOffset = 34 * scale;
+    [[-1, -shoulderOffset], [1, shoulderOffset]].forEach(([side, offset]) => {
+      ctx.save();
+      ctx.translate(offset, -6 * scale);
+      ctx.rotate(side * (-0.28 + Math.sin(now / 220 + side) * 0.06));
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 18 * scale, 13 * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#374151";
+      ctx.lineWidth = Math.max(1.2, 2.2 * scale);
+      ctx.stroke();
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = Math.max(1.8, 4 * scale);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(11 * side * scale, -2 * scale);
+      ctx.lineTo(22 * side * scale, -43 * scale);
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    ctx.strokeStyle = "#111827";
+    ctx.lineWidth = Math.max(2, 5 * scale);
     ctx.lineCap = "round";
     ctx.beginPath();
-    ctx.moveTo(-44, 10);
-    ctx.lineTo(-72 - lunge, 40);
-    ctx.moveTo(44, 10);
-    ctx.lineTo(72 + lunge, 40);
+    ctx.moveTo(-28 * scale, -32 * scale);
+    ctx.lineTo(-14 * scale, -60 * scale);
+    ctx.lineTo(-1 * scale, -54 * scale);
+    ctx.moveTo(28 * scale, -32 * scale);
+    ctx.lineTo(14 * scale, -60 * scale);
+    ctx.lineTo(1 * scale, -54 * scale);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(-14 * scale, -58 * scale);
+    ctx.lineTo(14 * scale, -58 * scale);
     ctx.stroke();
 
-    ctx.fillStyle = "#ef4444";
-    ctx.font = "bold 22px Arial";
-    ctx.fillText("♯", -82 - lunge, 48);
-    ctx.fillText("♭", 82 + lunge, 48);
+    for (let i = 0; i < 4; i += 1) {
+      const px = -18 * scale + i * 12 * scale;
+      ctx.strokeStyle = `rgba(127, 29, 29, ${0.45 + i * 0.07})`;
+      ctx.lineWidth = Math.max(1.6, 2.4 * scale);
+      ctx.beginPath();
+      ctx.moveTo(px, 10 * scale);
+      ctx.lineTo(px + Math.sin(now / 190 + i) * 3 * scale, 28 * scale);
+      ctx.stroke();
+    }
+
+    const eyeGlow = 1 + Math.sin(now / 95) * 0.12;
+    [[-16, -10], [16, -10]].forEach(([ex, ey]) => {
+      const grad = ctx.createRadialGradient(ex * scale, ey * scale, 1, ex * scale, ey * scale, 14 * scale);
+      grad.addColorStop(0, `rgba(255, 245, 245, ${0.95 * eyeGlow})`);
+      grad.addColorStop(0.3, `rgba(255, 98, 98, ${0.95 * eyeGlow})`);
+      grad.addColorStop(1, "rgba(255, 98, 98, 0)");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(ex * scale, ey * scale, 14 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#ff5b5b";
+      ctx.beginPath();
+      ctx.arc(ex * scale, ey * scale, 6.5 * scale, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff7f7";
+      ctx.beginPath();
+      ctx.arc(ex * scale + 1.6 * scale, ey * scale - 1.2 * scale, 2.3 * scale, 0, Math.PI * 2);
+      ctx.fill();
+    });
+
+    ctx.strokeStyle = "#0b0f18";
+    ctx.lineWidth = Math.max(1.6, 3 * scale);
+    ctx.beginPath();
+    ctx.moveTo(-28 * scale, -26 * scale);
+    ctx.lineTo(-6 * scale, -18 * scale);
+    ctx.moveTo(28 * scale, -26 * scale);
+    ctx.lineTo(6 * scale, -18 * scale);
+    ctx.stroke();
+
+    ctx.fillStyle = "#7f1d1d";
+    ctx.beginPath();
+    ctx.moveTo(-22 * scale, 12 * scale);
+    ctx.quadraticCurveTo(0, 30 * scale, 22 * scale, 12 * scale);
+    ctx.quadraticCurveTo(0, 40 * scale, -22 * scale, 12 * scale);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#fecaca";
+    ctx.lineWidth = Math.max(1.2, 2.2 * scale);
+    ctx.beginPath();
+    [-14, -5, 4, 13].forEach(toothX => {
+      ctx.moveTo(toothX * scale, 13 * scale);
+      ctx.lineTo((toothX + 4) * scale, 22 * scale);
+      ctx.lineTo((toothX + 8) * scale, 13 * scale);
+    });
+    ctx.stroke();
+
+    [[-1, -1], [1, 1]].forEach(([side, dir], i) => {
+      ctx.save();
+      ctx.translate(side * (38 * scale + lunge * 0.35), 6 * scale);
+      ctx.rotate(side * (0.55 + Math.sin(now / 210 + i) * 0.08));
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = Math.max(1.8, 4.5 * scale);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(34 * side * scale, 22 * scale);
+      ctx.stroke();
+      ctx.fillStyle = "#0f172a";
+      ctx.beginPath();
+      ctx.ellipse(38 * side * scale, 25 * scale, 11 * scale, 8 * scale, 0.35 * side, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#fca5a5";
+      ctx.lineWidth = Math.max(1.2, 2.2 * scale);
+      for (let claw = 0; claw < 3; claw += 1) {
+        const baseX = 44 * side * scale;
+        const baseY = (18 + claw * 7) * scale;
+        ctx.beginPath();
+        ctx.moveTo(baseX, baseY);
+        ctx.lineTo(baseX + 10 * side * scale, (14 + claw * 7) * scale);
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
+
+    for (let i = 0; i < 4; i += 1) {
+      const tailX = -16 * scale - i * 16 * scale;
+      const tailY = 26 * scale + i * 7 * scale;
+      ctx.save();
+      ctx.translate(tailX, tailY);
+      ctx.rotate(-0.28 + i * 0.12);
+      ctx.fillStyle = i === 3 ? "#111827" : "#0f172a";
+      ctx.beginPath();
+      ctx.ellipse(0, 0, (10 - i) * scale, (7 - i * 0.7) * scale, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#111827";
+      ctx.lineWidth = Math.max(1.1, 2.1 * scale);
+      ctx.beginPath();
+      ctx.moveTo((8 - i) * scale, 0);
+      ctx.lineTo((18 - i * 2) * scale, (-12 - i * 2) * scale);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    MemodyDrawSharpSign(-70 * scale - lunge * 0.18, 8 * scale, 0.8 * scale);
+    MemodyDrawFlatSign(70 * scale + lunge * 0.18, 12 * scale, 0.78 * scale);
+
     ctx.restore();
   }
+
 
   function MemodyCorridorMetrics(scale = 1, centerOffset = 0) {
     const w = GAME_CANVAS_LOGICAL_WIDTH;
@@ -3189,6 +3748,9 @@ function MemodyDrawKeyboard() {
     }
   }
 
+  MemodyBuildMobileTouchKeyboard();
+  MemodyBindMobileTouchKeyboard();
+
   function gameInput(action) {
     if (action === "left" && MemodyPhase === "input") {
       MemodyMoveSelection(-1);
@@ -3227,6 +3789,9 @@ function MemodyDrawKeyboard() {
     MemodyStopHeldTone();
     MemodyPointerDown = false;
     MemodyPointerId = null;
+    MemodyTouchKeyboardPointerId = null;
+    MemodyTouchKeyboardActiveIndex = null;
+    MemodySetTouchKeyboardPressed(null);
     MemodyControlHeld = false;
     MemodySelectionVisible = false;
     MemodyActiveNote = null;
