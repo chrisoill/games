@@ -1350,11 +1350,15 @@
       if (!selectedPlayer) return null;
 
       if (!players[selectedPlayer] || typeof players[selectedPlayer] !== "object") {
-        players[selectedPlayer] = { best: 0 };
+        players[selectedPlayer] = { best: 0, lastScore: 0 };
       }
 
       if (!Number.isFinite(Number(players[selectedPlayer].best))) {
         players[selectedPlayer].best = 0;
+      }
+
+      if (!Number.isFinite(Number(players[selectedPlayer].lastScore))) {
+        players[selectedPlayer].lastScore = 0;
       }
 
       return players[selectedPlayer];
@@ -1498,17 +1502,18 @@
     function saveCurrentScoreForSelectedPlayer() {
       if (!selectedPlayer) return;
 
-      if (!players[selectedPlayer]) {
-        players[selectedPlayer] = { best: 0 };
-      }
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
 
-      if (score > (players[selectedPlayer].best || 0)) {
-        players[selectedPlayer].best = score;
+      playerData.lastScore = score;
+
+      if (score > (playerData.best || 0)) {
+        playerData.best = score;
       }
 
       savePlayers();
       renderLeaderboard();
-      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+      bestScoreEl.textContent = playerData.best || 0;
     }
 
     function exitToPlayerMenu(options = {}) {
@@ -1603,10 +1608,14 @@
         const best = isObjectData
           ? Number(data.best || 0)
           : Number(data || 0);
+        const lastScore = isObjectData
+          ? Number(data.lastScore || 0)
+          : 0;
 
         cleaned[cleanName] = {
           ...(isObjectData ? data : {}),
-          best: Math.max(0, Math.floor(best || 0))
+          best: Math.max(0, Math.floor(best || 0)),
+          lastScore: Math.max(0, Math.floor(lastScore || 0))
         };
       });
 
@@ -1618,7 +1627,7 @@
         Supports both:
         1. New format: { v: 1, selectedPlayer: "Chris", players: { ... } }
         2. Old format: { "Chris": { best: 100, lastScore: 80 }, ... }
-        Either way, this template stores only each player's best score.
+        Both formats retain each player's best and most recent scores.
       */
       if (!savedData || typeof savedData !== "object") {
         return { players: {}, selectedPlayer: null };
@@ -1868,7 +1877,7 @@
       if (!name) return;
 
       if (!players[name]) {
-        players[name] = { best: 0 };
+        players[name] = { best: 0, lastScore: 0 };
       }
 
       selectedPlayer = name;
@@ -1897,7 +1906,7 @@
 
       if (!selectedPlayer) {
         selectedPlayer = "Guest";
-        if (!players.Guest) players.Guest = { best: 0 };
+        if (!players.Guest) players.Guest = { best: 0, lastScore: 0 };
       }
 
       savePlayers();
@@ -2180,14 +2189,17 @@
       lastFrameTime = now;
       gameAccumulator += elapsed;
 
-      while (gameAccumulator >= FIXED_GAME_STEP_MS) {
+      while (running && gameAccumulator >= FIXED_GAME_STEP_MS) {
         gameUpdate();
+        if (!running) return;
         gameAccumulator -= FIXED_GAME_STEP_MS;
       }
 
+      if (!running) return;
       resetGameCanvasTransform();
       gameDraw();
 
+      if (!running) return;
       loopId = requestAnimationFrame(loop);
     }
 
@@ -2197,19 +2209,20 @@
       stopGame();
       soundLose();
 
-      if (!players[selectedPlayer]) {
-        players[selectedPlayer] = { best: 0 };
-      }
+      const playerData = ensureSelectedPlayerRecord();
+      if (!playerData) return;
 
-      if (score > (players[selectedPlayer].best || 0)) {
-        players[selectedPlayer].best = score;
+      playerData.lastScore = score;
+
+      if (score > (playerData.best || 0)) {
+        playerData.best = score;
       }
 
       savePlayers();
       renderLeaderboard();
-      bestScoreEl.textContent = players[selectedPlayer].best || 0;
+      bestScoreEl.textContent = playerData.best || 0;
 
-      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${players[selectedPlayer].best}`;
+      gameOverScore.textContent = `${reason} ${SCORE_LABEL}: ${score}. Best: ${playerData.best}`;
       gameOverBox.style.display = "block";
     }
 
@@ -5767,7 +5780,7 @@ function gameInit() {
     // Releasing the slider recenters the hardware but intentionally leaves the
     // chosen aim in place so the player can release it before tapping FIRE.
     const sliderX = clamp(leftStick.x || 0, -1, 1);
-    let dx = sliderX * 2.25;
+    let dx = sliderX * 4.35;
     let dy = -1;
 
     const length = Math.max(0.0001, Math.hypot(dx, dy));
