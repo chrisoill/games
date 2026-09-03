@@ -5781,7 +5781,11 @@ function gameInit() {
     // Releasing the slider recenters the hardware but intentionally leaves the
     // chosen aim in place so the player can release it before tapping FIRE.
     const sliderX = clamp(leftStick.x || 0, -1, 1);
-    let dx = sliderX * 4.35;
+    const sliderMagnitude = Math.abs(sliderX);
+    const curvedSliderX = Math.sign(sliderX) * (
+      sliderMagnitude * 0.35 + sliderMagnitude * sliderMagnitude * 0.65
+    );
+    let dx = curvedSliderX * 4.35;
     let dy = -1;
 
     const length = Math.max(0.0001, Math.hypot(dx, dy));
