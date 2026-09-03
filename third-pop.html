@@ -2830,6 +2830,7 @@
   let cbLastTimerWarningSecond = -1;
   let cbPendingFireStacks = 0;
   let cbWaterBarrierCharges = 0;
+  let cbWaterHitActive = false;
 
 
   function cbMod7(value) {
@@ -3001,6 +3002,7 @@
     cbLastTimerWarningSecond = -1;
     cbPendingFireStacks = 0;
     cbWaterBarrierCharges = 0;
+    cbWaterHitActive = false;
     cbAddOpeningRows(false);
     cbCurrentPitch = cbCreateBubble(cbGeneratePitch(), cbMaybePreviewPower("queue"));
     cbFillQueue();
@@ -3184,11 +3186,12 @@
   }
 
   function cbUpdateBoardClear(dt) {
+    if (cbWaterHitActive) return;
     if (cbBoardClearDelay <= 0) return;
     cbBoardClearDelay = Math.max(0, cbBoardClearDelay - dt);
     if (cbBoardClearDelay === 0 && cbBoard.size === 0) {
       cbAddOpeningRows(true);
-      if (cbMode === "resolving" && !cbResolutionAnimation) {
+      if (cbMode === "resolving" && !cbResolutionAnimation && !cbWaterHitActive) {
         cbMode = cbFeedAnimation ? "feeding" : "idle";
       }
     }
@@ -5133,6 +5136,10 @@ function cbDrawBackground() {
 
     cbStableChordSignatures = cbCollectChordSignatures();
     cbRoundAdvancePending = false;
+    if (opts.deferDangerCheck) {
+      cbMode = "resolving";
+      return;
+    }
     if (!cbCheckDanger()) {
       if (cbBoardClearDelay > 0) cbMode = "resolving";
       else cbMode = cbFeedAnimation ? "feeding" : "idle";
@@ -5341,6 +5348,7 @@ function cbDrawBackground() {
 
   function cbCheckDanger() {
     if (!running) return false;
+    if (cbWaterHitActive) return false;
 
     const crossedKeys = [];
     cbBoard.forEach((bubble, key) => {
@@ -5353,8 +5361,25 @@ function cbDrawBackground() {
       if (cbWaterBarrierCharges > 0) {
         const waterTargets = cbSnapshotKeys(new Set(crossedKeys));
         cbWaterBarrierCharges -= 1;
-        cbAddPowerAnimation({ type: "water-hit", targets: waterTargets, duration: 1.0 });
-        cbApplyRemovalCascade(new Set(crossedKeys), { noteText: `WATER x${cbWaterBarrierCharges}` });
+        cbWaterHitActive = true;
+        cbMode = "resolving";
+        cbAddPowerAnimation({
+          type: "water-hit",
+          targets: waterTargets,
+          duration: 1.0,
+          onComplete: () => {
+            cbWaterHitActive = false;
+            if (!running) return;
+            if (!cbCheckDanger()) {
+              if (cbBoardClearDelay > 0) cbMode = "resolving";
+              else cbMode = cbFeedAnimation ? "feeding" : "idle";
+            }
+          }
+        });
+        cbApplyRemovalCascade(new Set(crossedKeys), {
+          noteText: `WATER x${cbWaterBarrierCharges}`,
+          deferDangerCheck: true
+        });
         return false;
       }
       endGame("The bubbles reached the line.");
@@ -5824,7 +5849,13 @@ function gameInit() {
       cbPendingCeilingDrop = true;
     }
 
-    if (cbPendingCeilingDrop && !cbResolutionAnimation && !cbCeilingAnimation) {
+    if (
+      cbPendingCeilingDrop &&
+      !cbResolutionAnimation &&
+      !cbCeilingAnimation &&
+      !cbWaterHitActive &&
+      cbBoardClearDelay <= 0
+    ) {
       cbAddCeilingRow();
     }
 
