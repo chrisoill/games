@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Third Pop</title>
+  <!-- v2 audio: full-volume Third Pop soundtrack + approved 0.90 SFX mix -->
 
   <style>
     * {
@@ -945,6 +946,9 @@
       Example: "meloMemoPlayers_v1", "staffSurvivorPlayers_v1", etc.
     */
     const STORAGE_KEY = "thirdsBurstPlayers_v1";
+    const BACKING_TRACK_URL = "https://static.wixstatic.com/mp3/8e8c0c_79d7dfa44c5c44c997ad9b62038ab4a9.wav";
+    const BACKING_VOLUME_NORMAL = 1.0;
+    const BACKING_VOLUME_DUCKED = 0.23;
     const STORAGE_MESSAGE_SOURCE = "PianoArcadeShell";
     const WIX_STORAGE_MESSAGE_SOURCE = "PianoArcadeWixStorage";
     const SCORE_LABEL = "Score";
@@ -1068,6 +1072,18 @@
   let cbAudioCeiling = null;
   let cbNoiseBuffer = null;
     let shellMenuWasRunning = false;
+
+    // Third Pop backing track: full-volume gameplay, ducked menus, continuous across restarts/game-over.
+    let backingBuffer = null;
+    let backingSource = null;
+    let backingGain = null;
+    let backingTrackLoading = null;
+    let usingFallbackBackingTrack = false;
+    let backingTrackDucked = false;
+    const fallbackBackingTrack = new Audio();
+    fallbackBackingTrack.src = BACKING_TRACK_URL;
+    fallbackBackingTrack.loop = true;
+    fallbackBackingTrack.volume = BACKING_VOLUME_NORMAL;
     let wixStorageAnswered = false;
 
     /*
@@ -1310,6 +1326,9 @@
     function openShellMenu(tabId = "controls") {
       shellMenuWasRunning = running;
 
+      backingTrackDucked = true;
+      setBackingTrackDucked(true);
+
       if (running) {
         running = false;
         if (loopId) {
@@ -1327,6 +1346,8 @@
       const shouldResume = options.resume !== false;
       shellMenu.classList.remove("open");
       shellMenu.setAttribute("aria-hidden", "true");
+      backingTrackDucked = false;
+      setBackingTrackDucked(false);
 
       if (
         shouldResume &&
@@ -1525,6 +1546,7 @@
 
       closeShellMenu({ resume: false });
       stopGame();
+      stopBackingTrack();
       gameOverBox.style.display = "none";
       gameScreen.style.display = "none";
       menuScreen.style.display = "block";
@@ -1925,6 +1947,7 @@
     backToMenuBtn.onclick = () => {
       closeShellMenu({ resume: false });
       stopGame();
+      stopBackingTrack();
       gameOverBox.style.display = "none";
       gameScreen.style.display = "none";
       menuScreen.style.display = "block";
@@ -2151,6 +2174,9 @@
       scaleGameCanvasBackingStore();
       resetGameCanvasTransform();
       gameInit();
+      backingTrackDucked = false;
+      setBackingTrackDucked(false);
+      startBackingTrack();
       scheduleGameLoop();
     }
 
@@ -2361,6 +2387,152 @@
       return audioCtx;
     }
 
+    async function loadBackingTrack() {
+      if (!BACKING_TRACK_URL) return null;
+      if (backingBuffer) return backingBuffer;
+
+      if (!backingTrackLoading) {
+        const ac = getAudio();
+        if (!ac) return null;
+
+        backingTrackLoading = fetch(BACKING_TRACK_URL)
+          .then(response => {
+            if (!response.ok) throw new Error("Backing track failed to load.");
+            return response.arrayBuffer();
+          })
+          .then(arrayBuffer => ac.decodeAudioData(arrayBuffer))
+          .then(decodedBuffer => {
+            backingBuffer = decodedBuffer;
+            return backingBuffer;
+          })
+          .catch(error => {
+            backingTrackLoading = null;
+            throw error;
+          });
+      }
+
+      return backingTrackLoading;
+    }
+
+    function setBackingTrackDucked(ducked) {
+      backingTrackDucked = !!ducked;
+      const target = backingTrackDucked ? BACKING_VOLUME_DUCKED : BACKING_VOLUME_NORMAL;
+
+      if (backingGain && audioCtx) {
+        const now = audioCtx.currentTime;
+        backingGain.gain.cancelScheduledValues(now);
+        backingGain.gain.setTargetAtTime(target, now, 0.035);
+      }
+
+      fallbackBackingTrack.volume = target;
+    }
+
+    async function startBackingTrack() {
+      if (!BACKING_TRACK_URL) return;
+
+      const ac = getAudio();
+      if (!ac) return;
+      if (ac.state === "suspended") await ac.resume().catch(() => {});
+
+      if (backingSource || (usingFallbackBackingTrack && !fallbackBackingTrack.paused)) {
+        setBackingTrackDucked(backingTrackDucked);
+        return;
+      }
+
+      try {
+        const buffer = await loadBackingTrack();
+        if (!buffer) return;
+        if (backingSource || (usingFallbackBackingTrack && !fallbackBackingTrack.paused)) return;
+
+        usingFallbackBackingTrack = false;
+        backingGain = ac.createGain();
+        backingGain.gain.value = backingTrackDucked ? BACKING_VOLUME_DUCKED : BACKING_VOLUME_NORMAL;
+        backingGain.connect(ac.destination);
+
+        backingSource = ac.createBufferSource();
+        backingSource.buffer = buffer;
+        backingSource.loop = true;
+        backingSource.connect(backingGain);
+        backingSource.start(ac.currentTime + 0.03);
+        backingSource.onended = () => { backingSource = null; };
+      } catch (error) {
+        usingFallbackBackingTrack = true;
+        fallbackBackingTrack.volume = backingTrackDucked ? BACKING_VOLUME_DUCKED : BACKING_VOLUME_NORMAL;
+        fallbackBackingTrack.play().catch(() => {});
+      }
+    }
+
+    function stopBackingTrack() {
+      if (backingSource) {
+        try { backingSource.stop(); } catch (error) {}
+        try { backingSource.disconnect(); } catch (error) {}
+        backingSource = null;
+      }
+
+      if (backingGain) {
+        try { backingGain.disconnect(); } catch (error) {}
+        backingGain = null;
+      }
+
+      fallbackBackingTrack.pause();
+      try { fallbackBackingTrack.currentTime = 0; } catch (error) {}
+      usingFallbackBackingTrack = false;
+      backingTrackDucked = false;
+      fallbackBackingTrack.volume = BACKING_VOLUME_NORMAL;
+    }
+
+    // Same approved SFX mix as the desktop picker.
+    let pickerSfxContext = null;
+    let pickerSfxMaster = null;
+
+    function getPickerSfxInput(ac) {
+      if (!ac) return null;
+      if (pickerSfxContext === ac && pickerSfxMaster) return pickerSfxMaster;
+
+      pickerSfxContext = ac;
+      const master = ac.createGain();
+      const compressor = ac.createDynamicsCompressor();
+      const limiter = ac.createWaveShaper();
+      const ceiling = ac.createGain();
+      const postGain = ac.createGain();
+
+      master.gain.value = 1.0;
+      compressor.threshold.value = -18;
+      compressor.knee.value = 8;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.001;
+      compressor.release.value = 0.085;
+
+      const curve = new Float32Array(65536);
+      const drive = 2.2;
+      const norm = Math.tanh(drive);
+      for (let i = 0; i < curve.length; i += 1) {
+        const x = (i / (curve.length - 1)) * 2 - 1;
+        curve[i] = Math.tanh(drive * x) / norm;
+      }
+
+      limiter.curve = curve;
+      limiter.oversample = "4x";
+      ceiling.gain.value = 0.96055;
+      postGain.gain.value = 0.90;
+
+      master.connect(compressor);
+      compressor.connect(limiter);
+      limiter.connect(ceiling);
+      ceiling.connect(postGain);
+      postGain.connect(ac.destination);
+
+      pickerSfxMaster = master;
+      return master;
+    }
+
+    function connectPickerSfx(node, ac) {
+      const input = getPickerSfxInput(ac);
+      if (!node || !input) return false;
+      node.connect(input);
+      return true;
+    }
+
     function beep(freq, duration, type = "sine", volume = 0.08) {
       const ac = getAudio();
       if (!ac) return;
@@ -2375,7 +2547,7 @@
       gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
 
       osc.connect(gain);
-      gain.connect(ac.destination);
+      connectPickerSfx(gain, ac);
 
       osc.start();
       osc.stop(ac.currentTime + duration);
@@ -2406,40 +2578,36 @@
 
     cbAudioMaster = ac.createGain();
     cbAudioCompressor = ac.createDynamicsCompressor();
-    cbAudioLimiter = ac.createDynamicsCompressor();
-    cbAudioCeiling = ac.createWaveShaper();
+    cbAudioLimiter = ac.createWaveShaper();
+    cbAudioCeiling = ac.createGain();
+    const postGain = ac.createGain();
 
-    // Drive the synthesized SFX much harder so they can compete with mastered backing music.
-    // The downstream compressor/limiter keeps the added level controlled.
-    cbAudioMaster.gain.value = 7.5;
-    cbAudioCompressor.threshold.value = -8;
-    cbAudioCompressor.knee.value = 5;
-    cbAudioCompressor.ratio.value = 2.6;
-    cbAudioCompressor.attack.value = 0.004;
-    cbAudioCompressor.release.value = 0.13;
+    cbAudioMaster.gain.value = 1.0;
+    cbAudioCompressor.threshold.value = -18;
+    cbAudioCompressor.knee.value = 8;
+    cbAudioCompressor.ratio.value = 8;
+    cbAudioCompressor.attack.value = 0.001;
+    cbAudioCompressor.release.value = 0.085;
 
-    // Fast peak control immediately before the absolute output ceiling.
-    cbAudioLimiter.threshold.value = -0.35;
-    cbAudioLimiter.knee.value = 0;
-    cbAudioLimiter.ratio.value = 20;
-    cbAudioLimiter.attack.value = 0.001;
-    cbAudioLimiter.release.value = 0.07;
-
-    // Absolute digital ceiling at -0.35 dBFS (about 0.9605 linear amplitude).
-    // This final waveshaper catches any transient the compressor may let through.
-    const ceilingLinear = Math.pow(10, -0.35 / 20);
-    const ceilingCurve = new Float32Array(4096);
+    const ceilingCurve = new Float32Array(65536);
+    const drive = 2.2;
+    const norm = Math.tanh(drive);
     for (let i = 0; i < ceilingCurve.length; i += 1) {
       const x = (i / (ceilingCurve.length - 1)) * 2 - 1;
-      ceilingCurve[i] = Math.max(-ceilingLinear, Math.min(ceilingLinear, x));
+      ceilingCurve[i] = Math.tanh(drive * x) / norm;
     }
-    cbAudioCeiling.curve = ceilingCurve;
-    cbAudioCeiling.oversample = "4x";
+
+    cbAudioLimiter.curve = ceilingCurve;
+    cbAudioLimiter.oversample = "4x";
+    cbAudioCeiling.gain.value = 0.96055;
+    postGain.gain.value = 0.90;
 
     cbAudioMaster.connect(cbAudioCompressor);
     cbAudioCompressor.connect(cbAudioLimiter);
     cbAudioLimiter.connect(cbAudioCeiling);
-    cbAudioCeiling.connect(ac.destination);
+    cbAudioCeiling.connect(postGain);
+    postGain.connect(ac.destination);
+
     cbNoiseBuffer = null;
     return { ac, input: cbAudioMaster };
   }
