@@ -1162,6 +1162,8 @@
         }
       }
 
+      backingTrackDucked = true;
+      setBackingTrackDucked(true);
       renderShellMenuTabs(tabId);
       shellMenu.classList.add("open");
       shellMenu.setAttribute("aria-hidden", "false");
@@ -1171,6 +1173,8 @@
       const shouldResume = options.resume !== false;
       shellMenu.classList.remove("open");
       shellMenu.setAttribute("aria-hidden", "true");
+      backingTrackDucked = false;
+      setBackingTrackDucked(false);
 
       if (
         shouldResume &&
@@ -1363,6 +1367,7 @@
 
       closeShellMenu({ resume: false });
       stopGame();
+      stopBackingTrack();
       gameOverBox.style.display = "none";
       gameScreen.style.display = "none";
       menuScreen.style.display = "block";
@@ -1755,6 +1760,7 @@
     backToMenuBtn.onclick = () => {
       closeShellMenu({ resume: false });
       stopGame();
+      stopBackingTrack();
       gameOverBox.style.display = "none";
       gameScreen.style.display = "none";
       menuScreen.style.display = "block";
@@ -2166,6 +2172,55 @@
       return audioCtx;
     }
 
+
+    // Shared Arcade SFX standard: Tie Impostor loudness/ceiling reference.
+    let pickerSfxContext = null;
+    let pickerSfxMaster = null;
+
+    function getPickerSfxInput(ac) {
+      if (!ac) return null;
+      if (pickerSfxContext === ac && pickerSfxMaster) return pickerSfxMaster;
+
+      pickerSfxContext = ac;
+      const master = ac.createGain();
+      const compressor = ac.createDynamicsCompressor();
+      const limiter = ac.createWaveShaper();
+      const ceiling = ac.createGain();
+
+      master.gain.value = 4.5;
+      compressor.threshold.value = -18;
+      compressor.knee.value = 8;
+      compressor.ratio.value = 8;
+      compressor.attack.value = 0.001;
+      compressor.release.value = 0.085;
+
+      const curve = new Float32Array(65536);
+      const drive = 2.2;
+      const norm = Math.tanh(drive);
+      for (let i = 0; i < curve.length; i += 1) {
+        const x = (i / (curve.length - 1)) * 2 - 1;
+        curve[i] = Math.tanh(drive * x) / norm;
+      }
+      limiter.curve = curve;
+      limiter.oversample = "4x";
+      ceiling.gain.value = 0.96055; // -0.35 dBFS
+
+      master.connect(compressor);
+      compressor.connect(limiter);
+      limiter.connect(ceiling);
+      ceiling.connect(ac.destination);
+
+      pickerSfxMaster = master;
+      return master;
+    }
+
+    function connectPickerSfx(node, ac) {
+      const input = getPickerSfxInput(ac);
+      if (!node || !input) return false;
+      node.connect(input);
+      return true;
+    }
+
     function beep(freq, duration, type = "sine", volume = 0.08) {
       const ac = getAudio();
       if (!ac) return;
@@ -2180,7 +2235,7 @@
       gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
 
       osc.connect(gain);
-      gain.connect(ac.destination);
+      connectPickerSfx(gain, ac);
 
       osc.start();
       osc.stop(ac.currentTime + duration);
@@ -2256,7 +2311,7 @@
        - MENU in the established system-button position
        ========================= */
 
-    const BACKING_TRACK_URL = "https://static.wixstatic.com/mp3/8e8c0c_8b6b8e66a3c14b0ba1882d1be7eb3375.wav";
+    const BACKING_TRACK_URL = "https://static.wixstatic.com/mp3/8e8c0c_07986e4a15ba4e49b383ea920f97147b.wav";
     // Rhythm symbols are drawn manually in both HTML and canvas.
     // Do not replace them with music-font glyphs; mobile font loading is unreliable.
     const RHYTHM_SNAKE_STEP_MS = 115;
@@ -2275,11 +2330,14 @@
     let backingGain = null;
     let backingTrackLoading = null;
     let usingFallbackBackingTrack = false;
+    let backingTrackDucked = false;
+    const BACKING_VOLUME_NORMAL = 0.35;
+    const BACKING_VOLUME_DUCKED = 0.08;
 
     const fallbackBackingTrack = new Audio();
     fallbackBackingTrack.src = BACKING_TRACK_URL;
     fallbackBackingTrack.loop = true;
-    fallbackBackingTrack.volume = 0.35;
+    fallbackBackingTrack.volume = BACKING_VOLUME_NORMAL;
 
     const rhythms = [
       { value: 0.5, type: "eighthNote", label: "eighth note" },
@@ -2438,25 +2496,38 @@
       return backingTrackLoading;
     }
 
+    function setBackingTrackDucked(ducked) {
+      backingTrackDucked = !!ducked;
+      const target = backingTrackDucked ? BACKING_VOLUME_DUCKED : BACKING_VOLUME_NORMAL;
+      if (backingGain && audioCtx) {
+        const now = audioCtx.currentTime;
+        backingGain.gain.cancelScheduledValues(now);
+        backingGain.gain.setTargetAtTime(target, now, 0.035);
+      }
+      fallbackBackingTrack.volume = target;
+    }
+
     async function startBackingTrack() {
       if (!BACKING_TRACK_URL) return;
 
       const ac = getAudio();
       if (!ac) return;
+      if (ac.state === "suspended") await ac.resume().catch(() => {});
 
-      if (ac.state === "suspended") {
-        await ac.resume().catch(() => {});
+      // Play Again and other restarts keep the existing loop at its current position.
+      if (backingSource || (usingFallbackBackingTrack && !fallbackBackingTrack.paused)) {
+        setBackingTrackDucked(backingTrackDucked);
+        return;
       }
-
-      stopBackingTrack();
 
       try {
         const buffer = await loadBackingTrack();
         if (!buffer || gameScreen.style.display !== "block") return;
+        if (backingSource || (usingFallbackBackingTrack && !fallbackBackingTrack.paused)) return;
 
         usingFallbackBackingTrack = false;
         backingGain = ac.createGain();
-        backingGain.gain.value = 0.35;
+        backingGain.gain.value = backingTrackDucked ? BACKING_VOLUME_DUCKED : BACKING_VOLUME_NORMAL;
         backingGain.connect(ac.destination);
 
         backingSource = ac.createBufferSource();
@@ -2464,9 +2535,10 @@
         backingSource.loop = true;
         backingSource.connect(backingGain);
         backingSource.start(ac.currentTime + 0.03);
+        backingSource.onended = () => { backingSource = null; };
       } catch (error) {
         usingFallbackBackingTrack = true;
-        fallbackBackingTrack.currentTime = 0;
+        fallbackBackingTrack.volume = backingTrackDucked ? BACKING_VOLUME_DUCKED : BACKING_VOLUME_NORMAL;
         fallbackBackingTrack.play().catch(() => {});
       }
     }
@@ -2913,7 +2985,6 @@
     function gamePointer() {}
 
     function gameStop() {
-      stopBackingTrack();
       leftStickLastDirection = "";
       snakeStepAccumulator = 0;
     }
@@ -2951,6 +3022,7 @@
     function shutDownMobileArcade() {
       try {
         stopGame();
+        stopBackingTrack();
       } catch (err) {}
 
       if (audioCtx && audioCtx.state !== "closed") {
