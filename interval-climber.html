@@ -1,18 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-/*
-  PIANO ARCADE GLOBAL AUDIO STANDARD — synced from desktop picker v75.
-  IMPORTANT FOR FUTURE EDITS: sound design in this game must preserve the shared
-  signal-class rules and master chain unless the user explicitly requests a GLOBAL
-  Arcade audio redesign. Do not fix one game with a game-name loudness patch.
-  Upper simple beeps (>220 Hz) use the finalized -10 dB class trim; <=220 Hz is
-  protected for bass/swept-tone harmonic support. All ordinary procedural SFX use
-  the -36 dB / 2:1 leveler (+4.404 dB makeup), then the frozen -18 dB / 8:1 master,
-  tanh limiter, -0.35 dBFS ceiling, and 0.90 post gain. SFX is warmed on player select.
-  Music: normal 1.0, Help/Pause 0.23, no gameplay ducking, continue through Game Over
-  and Play Again, reset only on Player Menu/page exit.
-*/
+<!--
+PIANO ARCADE GLOBAL AUDIO STANDARD — synced from desktop picker v75.
+IMPORTANT FOR FUTURE EDITS: sound design in this game must preserve the shared
+signal-class rules and master chain unless the user explicitly requests a GLOBAL
+Arcade audio redesign. Do not fix one game with a game-name loudness patch.
+Upper simple beeps (>220 Hz) use the finalized -10 dB class trim; <=220 Hz is
+protected for bass/swept-tone harmonic support. All ordinary procedural SFX use
+the -36 dB / 2:1 leveler (+4.404 dB makeup), then the frozen -18 dB / 8:1 master,
+tanh limiter, -0.35 dBFS ceiling, and 0.90 post gain. SFX is warmed on player select.
+Music: normal 1.0, Help/Pause 0.23, no gameplay ducking, continue through Game Over
+and Play Again, reset only on Player Menu/page exit.
+-->
 
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
