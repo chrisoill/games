@@ -1993,6 +1993,7 @@ and Play Again, reset only on Player Menu/page exit.
 
     startGameBtn.onclick = () => {
   arcadeWarmSfxEngine();
+  loadArcadePianoSamples();
       closeShellMenu({ resume: false });
 
       if (!selectedPlayer) {
@@ -2120,7 +2121,7 @@ and Play Again, reset only on Player Menu/page exit.
 
     
 // GLOBAL AUDIO: player-select warm-up
-menuScreen.addEventListener("pointerdown", () => { arcadeWarmSfxEngine(); }, { passive: true });
+menuScreen.addEventListener("pointerdown", () => { arcadeWarmSfxEngine(); loadArcadePianoSamples(); }, { passive: true });
 
 function startGame() {
   arcadeWarmSfxEngine();
@@ -2971,7 +2972,127 @@ function getAudio() {
     return audioCtx;
   }
 
-    function getArcadeSfxOutput(ac) {
+    
+
+/* =========================
+   ARCADE PIANO SAMPLE STANDARD
+   Salamander Yamaha C5 strong layer (v12).
+   1.00 s musical release; mechanical/pedal release samples intentionally omitted.
+   Keep this piano path separate from procedural SFX normalization.
+   ========================= */
+const ARCADE_PIANO_RELEASE_SECONDS = 1.00;
+const ARCADE_PIANO_BASE_URL = "https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity12@1.0.5/audio/";
+const ARCADE_PIANO_ANCHORS = [
+  [60, "C4"],
+  [63, "D#4"],
+  [66, "F#4"],
+  [69, "A4"],
+  [72, "C5"],
+  [75, "D#5"],
+  [78, "F#5"],
+  [81, "A5"],
+  [84, "C6"]
+];
+const arcadePianoBuffers = new Map();
+let arcadePianoReady = false;
+let arcadePianoLoadPromise = null;
+let arcadePianoOutput = null;
+let arcadePianoOutputContext = null;
+
+// Fetch samples as soon as the page loads. Decoding waits until a user gesture
+// has created/resumed the AudioContext.
+const arcadePianoRawPromise = Promise.all(ARCADE_PIANO_ANCHORS.map(async ([midi, noteName]) => {
+  const stem = encodeURIComponent(noteName + "v12");
+  const response = await fetch(ARCADE_PIANO_BASE_URL + stem + ".mp3", {
+    mode: "cors",
+    cache: "force-cache"
+  });
+  if (!response.ok) throw new Error("Piano sample failed: " + noteName);
+  return { midi, bytes: await response.arrayBuffer() };
+})).catch(() => null);
+
+function getArcadePianoOutput(ac) {
+  if (arcadePianoOutput && arcadePianoOutputContext === ac) return arcadePianoOutput;
+  const bus = ac.createGain();
+  const limiter = ac.createDynamicsCompressor();
+  bus.gain.setValueAtTime(1.10, ac.currentTime);
+  limiter.threshold.setValueAtTime(-3, ac.currentTime);
+  limiter.knee.setValueAtTime(3, ac.currentTime);
+  limiter.ratio.setValueAtTime(16, ac.currentTime);
+  limiter.attack.setValueAtTime(0.003, ac.currentTime);
+  limiter.release.setValueAtTime(0.14, ac.currentTime);
+  bus.connect(limiter);
+  limiter.connect(ac.destination);
+  arcadePianoOutput = bus;
+  arcadePianoOutputContext = ac;
+  return bus;
+}
+
+function loadArcadePianoSamples() {
+  if (arcadePianoReady) return Promise.resolve(true);
+  if (arcadePianoLoadPromise) return arcadePianoLoadPromise;
+  const ac = getAudio();
+  if (!ac) return Promise.resolve(false);
+  arcadePianoLoadPromise = arcadePianoRawPromise.then(async raw => {
+    if (!raw) return false;
+    const decoded = await Promise.all(raw.map(async item => ({
+      midi: item.midi,
+      buffer: await ac.decodeAudioData(item.bytes.slice(0))
+    })));
+    decoded.forEach(item => arcadePianoBuffers.set(item.midi, item.buffer));
+    arcadePianoReady = true;
+    return true;
+  }).catch(() => false);
+  return arcadePianoLoadPromise;
+}
+
+function nearestArcadePianoSample(midi) {
+  let bestMidi = null;
+  let bestDistance = Infinity;
+  for (const sourceMidi of arcadePianoBuffers.keys()) {
+    const distance = Math.abs(sourceMidi - midi);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestMidi = sourceMidi;
+    }
+  }
+  if (bestMidi == null) return null;
+  return { sourceMidi: bestMidi, buffer: arcadePianoBuffers.get(bestMidi) };
+}
+
+function startArcadePianoMidi(midi, level = 1.05) {
+  const ac = getAudio();
+  if (!ac) return null;
+  const sample = nearestArcadePianoSample(midi);
+  if (!sample) {
+    loadArcadePianoSamples();
+    return null;
+  }
+  const now = ac.currentTime;
+  const source = ac.createBufferSource();
+  const gain = ac.createGain();
+  source.buffer = sample.buffer;
+  source.playbackRate.setValueAtTime(Math.pow(2, (midi - sample.sourceMidi) / 12), now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(level, now + 0.006);
+  source.connect(gain);
+  gain.connect(getArcadePianoOutput(ac));
+  source.start(now);
+  return { kind: "sample", ac, source, gain, stopped: false, midi };
+}
+
+function stopArcadePianoVoice(voice, releaseSeconds = ARCADE_PIANO_RELEASE_SECONDS) {
+  if (!voice || voice.stopped || voice.kind !== "sample") return;
+  voice.stopped = true;
+  const now = voice.ac.currentTime;
+  const current = Math.max(0.0001, voice.gain.gain.value || 0.0001);
+  voice.gain.gain.cancelScheduledValues(now);
+  voice.gain.gain.setValueAtTime(current, now);
+  voice.gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseSeconds);
+  try { voice.source.stop(now + releaseSeconds + 0.03); } catch (_) {}
+}
+
+function getArcadeSfxOutput(ac) {
     if (arcadeSfxOutput && arcadeSfxOutputContext === ac) return arcadeSfxOutput;
     const master = ac.createGain();
     const compressor = ac.createDynamicsCompressor();
@@ -3058,19 +3179,21 @@ function beep(freq, duration, type = "sine", volume = 0.08) {
     };
 
     function stopPianoVoice(voice) {
-      if (!voice) return;
-
+      if (!voice || voice.stopped) return;
+      if (voice.kind === "sample") {
+        stopArcadePianoVoice(voice, ARCADE_PIANO_RELEASE_SECONDS);
+        return;
+      }
       const ac = audioCtx;
       if (!ac) return;
-
+      voice.stopped = true;
       try {
         voice.gain.gain.cancelScheduledValues(ac.currentTime);
         voice.gain.gain.setValueAtTime(Math.max(voice.gain.gain.value || 0.001, 0.001), ac.currentTime);
-        voice.gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.08);
-        voice.osc.stop(ac.currentTime + 0.09);
+        voice.gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.12);
+        voice.osc.stop(ac.currentTime + 0.13);
       } catch (err) {}
     }
-
 
     function pianoVoiceId(note, octaveIndex = 0) {
       return `${String(note || "").trim()}@${Number(octaveIndex) || 0}`;
@@ -3084,22 +3207,30 @@ function beep(freq, duration, type = "sine", volume = 0.08) {
 
     function startPianoNote(note, octaveIndex = 0, voiceId = null) {
       const cleanNote = String(note || "").trim();
-      const id = voiceId || pianoVoiceId(cleanNote, octaveIndex);
+      const octave = Number(octaveIndex) || 0;
+      const id = voiceId || pianoVoiceId(cleanNote, octave);
       if (activePianoVoices.has(id)) return;
+      const pitchClass = { C: 0, "C#": 1, D: 2, "D#": 3, E: 4, F: 5, "F#": 6, G: 7, "G#": 8, A: 9, "A#": 10, B: 11 }[cleanNote];
+      const midi = 60 + (pitchClass == null ? 4 : pitchClass) + 12 * octave;
+      const sampled = startArcadePianoMidi(midi, 1.05);
+      if (sampled) {
+        activePianoVoices.set(id, sampled);
+        return;
+      }
 
+      // Emergency fallback while the remote samples are still decoding/offline.
       const ac = getAudio();
       if (!ac) return;
-
       const osc = ac.createOscillator();
       const gain = ac.createGain();
       osc.type = "triangle";
-      osc.frequency.value = pianoFrequency(cleanNote, octaveIndex);
+      osc.frequency.value = pianoFrequency(cleanNote, octave);
       gain.gain.setValueAtTime(0.001, ac.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.085, ac.currentTime + 0.025);
       osc.connect(gain);
-      gain.connect(ac.destination);
+      gain.connect(getArcadePianoOutput(ac));
       osc.start();
-      activePianoVoices.set(id, { osc, gain });
+      activePianoVoices.set(id, { kind: "fallback", osc, gain, stopped: false });
     }
 
     function stopPianoNote(note, octaveIndex = 0, voiceId = null) {
@@ -3107,34 +3238,25 @@ function beep(freq, duration, type = "sine", volume = 0.08) {
       const id = voiceId || pianoVoiceId(cleanNote, octaveIndex);
       const existing = activePianoVoices.get(id);
       if (!existing) return;
-
       activePianoVoices.delete(id);
       stopPianoVoice(existing);
     }
 
     function startPianoKeyVoice(key) {
       if (!key) return;
-      startPianoNote(
-        key.dataset.note,
-        Number(key.dataset.octave || 0),
-        key.dataset.voiceId
-      );
+      startPianoNote(key.dataset.note, Number(key.dataset.octave || 0), key.dataset.voiceId);
     }
 
     function stopPianoKeyVoice(key) {
       if (!key) return;
-      stopPianoNote(
-        key.dataset.note,
-        Number(key.dataset.octave || 0),
-        key.dataset.voiceId
-      );
+      stopPianoNote(key.dataset.note, Number(key.dataset.octave || 0), key.dataset.voiceId);
     }
 
     function soundPianoNote(note, octaveIndex = 0) {
-    const voiceId = `preview:${pianoVoiceId(note, octaveIndex)}:${Date.now()}:${Math.random()}`;
-    startPianoNote(note, octaveIndex, voiceId);
-    window.setTimeout(() => stopPianoNote(note, octaveIndex, voiceId), 180);
-  }
+      const voiceId = `preview:${pianoVoiceId(note, octaveIndex)}:${Date.now()}:${Math.random()}`;
+      startPianoNote(note, octaveIndex, voiceId);
+      window.setTimeout(() => stopPianoNote(note, octaveIndex, voiceId), 180);
+    }
 
     function soundWin() {
     [523, 659, 784, 1046].forEach((n, i) => {
