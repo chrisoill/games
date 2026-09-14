@@ -1857,6 +1857,7 @@ and Play Again, reset only on Player Menu/page exit.
 
     startGameBtn.onclick = () => {
   arcadeWarmSfxEngine();
+  loadArcadePianoSamples();
       closeShellMenu({ resume: false });
 
       if (!selectedPlayer) {
@@ -2078,7 +2079,7 @@ and Play Again, reset only on Player Menu/page exit.
 
     
 // GLOBAL AUDIO: player-select warm-up
-menuScreen.addEventListener("pointerdown", () => { arcadeWarmSfxEngine(); }, { passive: true });
+menuScreen.addEventListener("pointerdown", () => { arcadeWarmSfxEngine(); loadArcadePianoSamples(); }, { passive: true });
 
 function startGame() {
   arcadeWarmSfxEngine();
@@ -2736,7 +2737,127 @@ function getAudio() {
     return audioCtx;
   }
 
-    function getArcadeSfxOutput(ac) {
+    
+
+/* =========================
+   ARCADE PIANO SAMPLE STANDARD
+   Salamander Yamaha C5 strong layer (v12).
+   1.00 s musical release; mechanical/pedal release samples intentionally omitted.
+   Keep this piano path separate from procedural SFX normalization.
+   ========================= */
+const ARCADE_PIANO_RELEASE_SECONDS = 1.00;
+const ARCADE_PIANO_BASE_URL = "https://cdn.jsdelivr.net/npm/@audio-samples/piano-mp3-velocity12@1.0.5/audio/";
+const ARCADE_PIANO_ANCHORS = [
+  [48, "C3"],
+  [51, "D#3"],
+  [54, "F#3"],
+  [57, "A3"],
+  [60, "C4"],
+  [63, "D#4"],
+  [66, "F#4"],
+  [69, "A4"],
+  [72, "C5"]
+];
+const arcadePianoBuffers = new Map();
+let arcadePianoReady = false;
+let arcadePianoLoadPromise = null;
+let arcadePianoOutput = null;
+let arcadePianoOutputContext = null;
+
+// Fetch samples as soon as the page loads. Decoding waits until a user gesture
+// has created/resumed the AudioContext.
+const arcadePianoRawPromise = Promise.all(ARCADE_PIANO_ANCHORS.map(async ([midi, noteName]) => {
+  const stem = encodeURIComponent(noteName + "v12");
+  const response = await fetch(ARCADE_PIANO_BASE_URL + stem + ".mp3", {
+    mode: "cors",
+    cache: "force-cache"
+  });
+  if (!response.ok) throw new Error("Piano sample failed: " + noteName);
+  return { midi, bytes: await response.arrayBuffer() };
+})).catch(() => null);
+
+function getArcadePianoOutput(ac) {
+  if (arcadePianoOutput && arcadePianoOutputContext === ac) return arcadePianoOutput;
+  const bus = ac.createGain();
+  const limiter = ac.createDynamicsCompressor();
+  bus.gain.setValueAtTime(1.10, ac.currentTime);
+  limiter.threshold.setValueAtTime(-3, ac.currentTime);
+  limiter.knee.setValueAtTime(3, ac.currentTime);
+  limiter.ratio.setValueAtTime(16, ac.currentTime);
+  limiter.attack.setValueAtTime(0.003, ac.currentTime);
+  limiter.release.setValueAtTime(0.14, ac.currentTime);
+  bus.connect(limiter);
+  limiter.connect(ac.destination);
+  arcadePianoOutput = bus;
+  arcadePianoOutputContext = ac;
+  return bus;
+}
+
+function loadArcadePianoSamples() {
+  if (arcadePianoReady) return Promise.resolve(true);
+  if (arcadePianoLoadPromise) return arcadePianoLoadPromise;
+  const ac = getAudio();
+  if (!ac) return Promise.resolve(false);
+  arcadePianoLoadPromise = arcadePianoRawPromise.then(async raw => {
+    if (!raw) return false;
+    const decoded = await Promise.all(raw.map(async item => ({
+      midi: item.midi,
+      buffer: await ac.decodeAudioData(item.bytes.slice(0))
+    })));
+    decoded.forEach(item => arcadePianoBuffers.set(item.midi, item.buffer));
+    arcadePianoReady = true;
+    return true;
+  }).catch(() => false);
+  return arcadePianoLoadPromise;
+}
+
+function nearestArcadePianoSample(midi) {
+  let bestMidi = null;
+  let bestDistance = Infinity;
+  for (const sourceMidi of arcadePianoBuffers.keys()) {
+    const distance = Math.abs(sourceMidi - midi);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestMidi = sourceMidi;
+    }
+  }
+  if (bestMidi == null) return null;
+  return { sourceMidi: bestMidi, buffer: arcadePianoBuffers.get(bestMidi) };
+}
+
+function startArcadePianoMidi(midi, level = 1.05) {
+  const ac = getAudio();
+  if (!ac) return null;
+  const sample = nearestArcadePianoSample(midi);
+  if (!sample) {
+    loadArcadePianoSamples();
+    return null;
+  }
+  const now = ac.currentTime;
+  const source = ac.createBufferSource();
+  const gain = ac.createGain();
+  source.buffer = sample.buffer;
+  source.playbackRate.setValueAtTime(Math.pow(2, (midi - sample.sourceMidi) / 12), now);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(level, now + 0.006);
+  source.connect(gain);
+  gain.connect(getArcadePianoOutput(ac));
+  source.start(now);
+  return { kind: "sample", ac, source, gain, stopped: false, midi };
+}
+
+function stopArcadePianoVoice(voice, releaseSeconds = ARCADE_PIANO_RELEASE_SECONDS) {
+  if (!voice || voice.stopped || voice.kind !== "sample") return;
+  voice.stopped = true;
+  const now = voice.ac.currentTime;
+  const current = Math.max(0.0001, voice.gain.gain.value || 0.0001);
+  voice.gain.gain.cancelScheduledValues(now);
+  voice.gain.gain.setValueAtTime(current, now);
+  voice.gain.gain.exponentialRampToValueAtTime(0.0001, now + releaseSeconds);
+  try { voice.source.stop(now + releaseSeconds + 0.03); } catch (_) {}
+}
+
+function getArcadeSfxOutput(ac) {
     if (arcadeSfxOutput && arcadeSfxOutputContext === ac) return arcadeSfxOutput;
     const master = ac.createGain();
     const compressor = ac.createDynamicsCompressor();
@@ -3376,33 +3497,37 @@ function beep(freq, duration, type = "sine", volume = 0.08) {
 
     function safePlayPitch(frequency, duration) {
       try {
-        const audioContext = MobileArcadeShell.getAudio();
+        const audioContext = getAudio();
         if (!audioContext) return;
+        const midi = Math.round(69 + 12 * Math.log2(Math.max(1, frequency) / 440));
+        const sampled = startArcadePianoMidi(midi, 1.05);
+        if (sampled) {
+          window.setTimeout(() => stopArcadePianoVoice(sampled, ARCADE_PIANO_RELEASE_SECONDS), Math.max(80, duration * 1000));
+          return;
+        }
 
+        // Emergency fallback while the remote samples are still decoding/offline.
         const now = audioContext.currentTime;
         const attack = 0.012;
-        const release = 0.045;
+        const release = 0.12;
         const endTime = now + Math.max(0.08, duration);
         const releaseStart = Math.max(now + attack, endTime - release);
-
         const output = audioContext.createGain();
         output.gain.setValueAtTime(0.0001, now);
         output.gain.linearRampToValueAtTime(0.205, now + attack);
         output.gain.setValueAtTime(0.205, releaseStart);
         output.gain.linearRampToValueAtTime(0.0001, endTime);
-        output.connect(audioContext.destination);
-
+        output.connect(getArcadePianoOutput(audioContext));
         const square = audioContext.createOscillator();
         square.type = "square";
         square.frequency.setValueAtTime(frequency, now);
         square.connect(output);
         square.start(now);
         square.stop(endTime + 0.02);
-
         setTimeout(() => {
           try { square.disconnect(); } catch (error) {}
           try { output.disconnect(); } catch (error) {}
-        }, Math.ceil((duration + 0.12) * 1000));
+        }, Math.ceil((duration + 0.2) * 1000));
       } catch (error) {}
     }
 
