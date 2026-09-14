@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Rhythm Snake Mobile</title>
+  <!-- v13: exact approved v9 SFX reference chain restored -->
 
   <style>
     * {
@@ -841,6 +842,138 @@
   </main>
 
   <script>
+  // Universal Arcade SFX audibility rules.
+  // These rules are signal-based, not game-based: quiet swept sine/triangle tones
+  // receive low-frequency harmonic support, and quiet filtered-noise events receive
+  // filter-loss/presence compensation. Fixed beeps, louder events, samples, and the
+  // shared Rhythm Snake master chain pass through unchanged.
+  function arcadeSfxToneRules(startFrequency, endFrequency, requestedLevel, waveType = "sine") {
+    const rawStart = Number(startFrequency);
+    const rawEnd = Number(endFrequency);
+    const rawLevel = Math.max(0.0001, Number(requestedLevel) || 0.0001);
+    const f0 = Math.max(20, Number.isFinite(rawStart) ? rawStart : 440);
+    const f1 = Math.max(20, Number.isFinite(rawEnd) ? rawEnd : f0);
+    const swept = Math.abs(f1 - f0) > 0.01;
+    const quiet = rawLevel <= 0.15;
+    const wave = String(waveType || "sine").toLowerCase();
+    const harmonicEligible = swept && quiet && (wave === "sine" || wave === "triangle");
+    const level = swept && quiet ? Math.max(0.05, rawLevel) : rawLevel;
+    const supportAt = (hz) => {
+      const low = 70;
+      const high = 220;
+      if (hz <= low) return 1;
+      if (hz >= high) return 0;
+      const x = (high - hz) / (high - low);
+      return x * x * (3 - 2 * x);
+    };
+    return {
+      f0,
+      f1,
+      level,
+      swept,
+      harmonicEligible,
+      supportStart: harmonicEligible ? supportAt(f0) : 0,
+      supportEnd: harmonicEligible ? supportAt(f1) : 0
+    };
+  }
+
+  function arcadeSfxAddToneHarmonics(ac, destination, rules, options = {}) {
+    if (!ac || !destination || !rules || !rules.harmonicEligible) return;
+    if (!(rules.supportStart > 0 || rules.supportEnd > 0)) return;
+    const start = Number(options.start);
+    const end = Number(options.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+    const attackEnd = Number.isFinite(options.attackEnd)
+      ? Math.min(end, Math.max(start, Number(options.attackEnd)))
+      : null;
+    const holdUntil = Number.isFinite(options.holdUntil)
+      ? Math.min(end, Math.max(attackEnd ?? start, Number(options.holdUntil)))
+      : null;
+    const stopPadding = Math.max(0, Number(options.stopPadding ?? 0.02));
+    const harmonics = [
+      { multiple: 2, level: 0.50 },
+      { multiple: 3, level: 0.25 },
+      { multiple: 4, level: 0.12 },
+      { multiple: 5, level: 0.07 },
+      { multiple: 6, level: 0.04 }
+    ];
+    harmonics.forEach(({ multiple, level }) => {
+      const osc = ac.createOscillator();
+      const envelope = ac.createGain();
+      const support = ac.createGain();
+      const peak = Math.max(0.0002, rules.level * level);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(Math.max(20 * multiple, rules.f0 * multiple), start);
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20 * multiple, rules.f1 * multiple), end);
+      if (attackEnd !== null && attackEnd > start) {
+        envelope.gain.setValueAtTime(0.0001, start);
+        envelope.gain.exponentialRampToValueAtTime(peak, attackEnd);
+      } else {
+        envelope.gain.setValueAtTime(peak, start);
+      }
+      if (holdUntil !== null && holdUntil > (attackEnd ?? start)) {
+        envelope.gain.setValueAtTime(peak, holdUntil);
+      }
+      envelope.gain.exponentialRampToValueAtTime(0.0001, end);
+      support.gain.setValueAtTime(rules.supportStart, start);
+      support.gain.linearRampToValueAtTime(rules.supportEnd, end);
+      osc.connect(envelope);
+      envelope.connect(support);
+      support.connect(destination);
+      osc.start(start);
+      osc.stop(end + stopPadding);
+    });
+  }
+
+  function arcadeSfxNoiseRules(filterKind, requestedLevel) {
+    const rawLevel = Math.max(0.0001, Number(requestedLevel) || 0.0001);
+    const kind = String(filterKind || "").toLowerCase();
+    const supported = kind === "bandpass" || kind === "highpass" || kind === "lowpass" || kind === "bandlimited";
+    const quiet = rawLevel <= 0.15;
+    const enhance = supported && quiet;
+    const baseLevel = enhance ? Math.max(0.05, rawLevel) : rawLevel;
+    const makeupDb = !enhance ? 0 : kind === "bandpass" ? 9 : 7;
+    const effectiveLevel = baseLevel * Math.pow(10, makeupDb / 20);
+    return {
+      baseLevel,
+      effectiveLevel,
+      presenceLevel: enhance ? baseLevel * 0.25 : 0,
+      enhance
+    };
+  }
+
+  function arcadeSfxAddNoisePresence(ac, source, destination, rules, options = {}) {
+    if (!ac || !source || !destination || !rules || !(rules.presenceLevel > 0)) return;
+    const start = Number(options.start);
+    const end = Number(options.end);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) return;
+    const attackEnd = Number.isFinite(options.attackEnd)
+      ? Math.min(end, Math.max(start, Number(options.attackEnd)))
+      : null;
+    const holdUntil = Number.isFinite(options.holdUntil)
+      ? Math.min(end, Math.max(attackEnd ?? start, Number(options.holdUntil)))
+      : null;
+    const presenceFilter = ac.createBiquadFilter();
+    const presenceGain = ac.createGain();
+    presenceFilter.type = "bandpass";
+    presenceFilter.frequency.setValueAtTime(1600, start);
+    presenceFilter.Q.value = 0.75;
+    if (attackEnd !== null && attackEnd > start) {
+      presenceGain.gain.setValueAtTime(0.0001, start);
+      presenceGain.gain.exponentialRampToValueAtTime(Math.max(0.0002, rules.presenceLevel), attackEnd);
+    } else {
+      presenceGain.gain.setValueAtTime(Math.max(0.0002, rules.presenceLevel), start);
+    }
+    if (holdUntil !== null && holdUntil > (attackEnd ?? start)) {
+      presenceGain.gain.setValueAtTime(Math.max(0.0002, rules.presenceLevel), holdUntil);
+    }
+    presenceGain.gain.exponentialRampToValueAtTime(0.0001, end);
+    source.connect(presenceFilter);
+    presenceFilter.connect(presenceGain);
+    presenceGain.connect(destination);
+  }
+
+
     const DESIGN_WIDTH = 390;
     const DESIGN_HEIGHT = 670;
 
@@ -2187,7 +2320,7 @@
       const limiter = ac.createWaveShaper();
       const ceiling = ac.createGain();
 
-      master.gain.value = 2.5;
+      master.gain.value = 1.0;
       compressor.threshold.value = -18;
       compressor.knee.value = 8;
       compressor.ratio.value = 8;
@@ -2208,7 +2341,10 @@
       master.connect(compressor);
       compressor.connect(limiter);
       limiter.connect(ceiling);
-      ceiling.connect(ac.destination);
+      const arcadeSfxPostGain1 = ac.createGain();
+      arcadeSfxPostGain1.gain.value = 0.90; // true post-limiter SFX mix level
+      ceiling.connect(arcadeSfxPostGain1);
+      arcadeSfxPostGain1.connect(ac.destination);
 
       pickerSfxMaster = master;
       return master;
@@ -2225,13 +2361,14 @@
       const ac = getAudio();
       if (!ac) return;
 
-      const osc = ac.createOscillator();
+      const toneRules = arcadeSfxToneRules(freq, freq, volume, type);
+    const osc = ac.createOscillator();
       const gain = ac.createGain();
 
       osc.type = type;
       osc.frequency.value = freq;
 
-      gain.gain.setValueAtTime(volume, ac.currentTime);
+      gain.gain.setValueAtTime(toneRules.level, ac.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
 
       osc.connect(gain);
@@ -2331,8 +2468,8 @@
     let backingTrackLoading = null;
     let usingFallbackBackingTrack = false;
     let backingTrackDucked = false;
-    const BACKING_VOLUME_NORMAL = 0.35;
-    const BACKING_VOLUME_DUCKED = 0.08;
+    const BACKING_VOLUME_NORMAL = 1.0;
+    const BACKING_VOLUME_DUCKED = 0.23;
 
     const fallbackBackingTrack = new Audio();
     fallbackBackingTrack.src = BACKING_TRACK_URL;
