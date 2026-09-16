@@ -14314,7 +14314,7 @@ if (!ssObstacleSpawnAllowed(x, z, collisionRadius)) continue;
           ssAudioPlayerStepDistance += movedDistance;
           if (ssAudioPlayerStepDistance >= 1.12) {
             ssAudioPlayerStepDistance %= 1.12;
-            ssAudioPlay("footstep", ssPlayer.x, ssPlayer.z, { spatial:false, variant:"player", volume:0.84 });
+            ssAudioPlay("footstep", ssPlayer.x, ssPlayer.z, { spatial:false, variant:"player", volume:0.42 }); // local background-foley trim: -6 dB
           }
         }
       } else {
