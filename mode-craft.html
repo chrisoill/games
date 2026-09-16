@@ -3464,6 +3464,7 @@ function getAudio() {
     });
 
     let ssAudioMaster = null;
+    let ssAudioBackgroundBus = null;
     let ssAudioCompressor = null;
     let ssAudioNoiseBuffer = null;
     let ssAudioGraphContext = null;
@@ -3520,6 +3521,13 @@ function getAudio() {
     arcadeSfxPostGain22.gain.value = 0.90; // true post-limiter SFX mix level
     ssAudioCeiling.connect(arcadeSfxPostGain22);
     arcadeSfxPostGain22.connect(ac.destination);
+
+    // Mode Craft background-foley path. Footsteps intentionally bypass the
+    // universal quiet-effect normalization/leveler, then enter the frozen
+    // compressor/limiter safety chain at a strongly reduced local level.
+    ssAudioBackgroundBus = ac.createGain();
+    ssAudioBackgroundBus.gain.value = 0.16; // -15.9 dB local background trim
+    ssAudioBackgroundBus.connect(ssAudioCompressor);
 
     const noiseLength = Math.max(1, Math.floor(ac.sampleRate * 1.0));
     ssAudioNoiseBuffer = ac.createBuffer(1, noiseLength, ac.sampleRate);
@@ -3668,6 +3676,50 @@ function getAudio() {
     source.stop(start + duration + 0.01);
   }
 
+    function ssAudioToneRaw(ac, destination, options = {}) {
+      const start = ac.currentTime + Math.max(0, Number(options.delay || 0));
+      const duration = Math.max(0.015, Number(options.duration || 0.08));
+      const osc = ac.createOscillator();
+      const gain = ac.createGain();
+      osc.type = options.type || "sine";
+      const f0 = Math.max(20, Number(options.frequency || 440));
+      const f1 = Math.max(20, Number(options.endFrequency || f0));
+      osc.frequency.setValueAtTime(f0, start);
+      if (Math.abs(f1 - f0) > 0.01) osc.frequency.exponentialRampToValueAtTime(f1, start + duration);
+      const level = Math.max(0.0001, Number(options.gain || 0.12));
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(level, start + Math.min(0.008, duration * 0.18));
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain);
+      gain.connect(destination);
+      osc.start(start);
+      osc.stop(start + duration + 0.01);
+    }
+
+    function ssAudioNoiseRaw(ac, destination, options = {}) {
+      if (!ssAudioNoiseBuffer) return;
+      const start = ac.currentTime + Math.max(0, Number(options.delay || 0));
+      const duration = Math.max(0.015, Number(options.duration || 0.07));
+      const source = ac.createBufferSource();
+      source.buffer = ssAudioNoiseBuffer;
+      const filter = ac.createBiquadFilter();
+      filter.type = options.filterType || "bandpass";
+      filter.frequency.value = Math.max(40, Number(options.frequency || 900));
+      filter.Q.value = Math.max(0.1, Number(options.q || 0.8));
+      const gain = ac.createGain();
+      const level = Math.max(0.0001, Number(options.gain || 0.08));
+      const attack = Math.min(0.005, duration * 0.18);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(level, start + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(destination);
+      const maxOffset = Math.max(0, ssAudioNoiseBuffer.duration - duration - 0.01);
+      source.start(start, Math.random() * maxOffset, duration);
+      source.stop(start + duration + 0.01);
+    }
+
     function ssAudioPlay(eventName, x = ssPlayer.x, z = ssPlayer.z, options = {}) {
     const ac = ssAudioEnsureGraph();
     if (!ac || ssAudioActiveVoices >= SS_AUDIO_MAX_VOICES) return false;
@@ -3689,15 +3741,16 @@ function getAudio() {
     const eventVolume = Math.max(0, Number(options.volume ?? 1));
     voice.gain.value = Math.max(0.0001, mix.gain * eventVolume);
 
+    const eventBus = eventName === "footstep" && ssAudioBackgroundBus ? ssAudioBackgroundBus : ssAudioMaster;
     let output = voice;
     let panner = null;
     if (spatial && typeof ac.createStereoPanner === "function") {
       panner = ac.createStereoPanner();
       panner.pan.value = mix.pan;
       voice.connect(panner);
-      panner.connect(ssAudioMaster);
+      panner.connect(eventBus);
     } else {
-      voice.connect(ssAudioMaster);
+      voice.connect(eventBus);
     }
 
     const variant = options.variant || "";
@@ -3709,10 +3762,11 @@ function getAudio() {
 
     switch (eventName) {
       case "footstep":
-        // Soft but clearly audible bootfall: body thump + sole scrape + tiny surface grit.
-        ssAudioTone(ac, voice, { frequency:92*vr, endFrequency:61*vr, duration:0.060, gain:0.055, type:"sine" });
-        ssAudioNoise(ac, voice, { duration:0.050, gain:0.090, frequency:560*vr, filterType:"lowpass", q:0.55 });
-        ssAudioNoise(ac, voice, { duration:0.026, delay:0.012, gain:0.028, frequency:1700*vr, filterType:"bandpass", q:1.1 });
+        // Background foley: preserve the original bootfall character, but do not let
+        // foreground-SFX normalization/harmonic/noise-presence rules pull it forward.
+        ssAudioToneRaw(ac, voice, { frequency:92*vr, endFrequency:61*vr, duration:0.060, gain:0.055, type:"sine" });
+        ssAudioNoiseRaw(ac, voice, { duration:0.050, gain:0.090, frequency:560*vr, filterType:"lowpass", q:0.55 });
+        ssAudioNoiseRaw(ac, voice, { duration:0.026, delay:0.012, gain:0.028, frequency:1700*vr, filterType:"bandpass", q:1.1 });
         voiceLife = 0.09;
         break;
       case "gather":
@@ -14314,7 +14368,7 @@ if (!ssObstacleSpawnAllowed(x, z, collisionRadius)) continue;
           ssAudioPlayerStepDistance += movedDistance;
           if (ssAudioPlayerStepDistance >= 1.12) {
             ssAudioPlayerStepDistance %= 1.12;
-            ssAudioPlay("footstep", ssPlayer.x, ssPlayer.z, { spatial:false, variant:"player", volume:0.42 }); // local background-foley trim: -6 dB
+            ssAudioPlay("footstep", ssPlayer.x, ssPlayer.z, { spatial:false, variant:"player", volume:0.42 }); // dedicated background path: no foreground lift + -15.9 dB local bus trim
           }
         }
       } else {
