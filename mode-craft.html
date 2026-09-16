@@ -3526,7 +3526,7 @@ function getAudio() {
     // universal quiet-effect normalization/leveler, then enter the frozen
     // compressor/limiter safety chain at a strongly reduced local level.
     ssAudioBackgroundBus = ac.createGain();
-    ssAudioBackgroundBus.gain.value = 0.35; // -9.1 dB local background trim
+    ssAudioBackgroundBus.gain.value = 0.68; // restore Mode Craft pre-global local master level; still bypasses foreground lift
     ssAudioBackgroundBus.connect(ssAudioCompressor);
 
     const noiseLength = Math.max(1, Math.floor(ac.sampleRate * 1.0));
@@ -14368,7 +14368,7 @@ if (!ssObstacleSpawnAllowed(x, z, collisionRadius)) continue;
           ssAudioPlayerStepDistance += movedDistance;
           if (ssAudioPlayerStepDistance >= 1.12) {
             ssAudioPlayerStepDistance %= 1.12;
-            ssAudioPlay("footstep", ssPlayer.x, ssPlayer.z, { spatial:false, variant:"player", volume:0.42 }); // dedicated background path: no foreground lift + -9.1 dB local bus trim
+            ssAudioPlay("footstep", ssPlayer.x, ssPlayer.z, { spatial:false, variant:"player", volume:0.84 }); // original Mode Craft footstep event level; dedicated background path still bypasses foreground lift
           }
         }
       } else {
