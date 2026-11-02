@@ -2009,109 +2009,118 @@ and Play Again, reset only on Player Menu/page exit.
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
 
-    /*
-      PREMIUM SUBSCRIPTION BRIDGE
-      The Wix page owns the actual member / Pricing Plans lookup.
-      This iframe only asks for the shared result and gates Start Game.
-    */
-    const SUBSCRIPTION_STATUS_MESSAGE = "wix-subscriber-status";
-    const SUBSCRIPTION_READY_MESSAGE = "subscriber-test-ready";
-    let subscriptionAccessResolved = false;
-    let hasSubscriptionAccess = false;
-    let subscriptionCheckTimer = null;
-    let subscriptionCheckAttempts = 0;
+    // FREE_ARCADE_PAYWALL_DISABLED — original Wix subscription bridge preserved below.
+    // To restore the paid version: uncomment this bridge, restore the Start Game guard,
+    // and remove the three free-access button-state assignments after the block.
+    // /*
+    //   PREMIUM SUBSCRIPTION BRIDGE
+    //   The Wix page owns the actual member / Pricing Plans lookup.
+    //   This iframe only asks for the shared result and gates Start Game.
+    // */
+    // const SUBSCRIPTION_STATUS_MESSAGE = "wix-subscriber-status";
+    // const SUBSCRIPTION_READY_MESSAGE = "subscriber-test-ready";
+    // let subscriptionAccessResolved = false;
+    // let hasSubscriptionAccess = false;
+    // let subscriptionCheckTimer = null;
+    // let subscriptionCheckAttempts = 0;
+    //
+    // const subscriptionWixParentOrigin = (() => {
+    //   try {
+    //     return document.referrer ? new URL(document.referrer).origin : "*";
+    //   } catch (err) {
+    //     return "*";
+    //   }
+    // })();
+    //
+    // function sendSubscriptionMessageToWix(type = SUBSCRIPTION_READY_MESSAGE) {
+    //   const message = { type };
+    //
+    //   try {
+    //     window.parent.postMessage(message, subscriptionWixParentOrigin);
+    //   } catch (err) {
+    //     window.parent.postMessage(message, "*");
+    //   }
+    // }
+    //
+    // function setSubscriptionStartButtonState(state) {
+    //   if (!startGameBtn) return;
+    //
+    //   if (state === "subscriber") {
+    //     startGameBtn.textContent = "Start Game";
+    //     startGameBtn.disabled = false;
+    //     startGameBtn.setAttribute("aria-label", "Start Game");
+    //     return;
+    //   }
+    //
+    //   if (state === "not-subscribed") {
+    //     startGameBtn.textContent = "Not Subscribed";
+    //     startGameBtn.disabled = true;
+    //     startGameBtn.setAttribute("aria-label", "Not Subscribed");
+    //     return;
+    //   }
+    //
+    //   startGameBtn.textContent = "Checking...";
+    //   startGameBtn.disabled = true;
+    //   startGameBtn.setAttribute("aria-label", "Checking subscription");
+    // }
+    //
+    // function applySubscriptionAccess(data = {}) {
+    //   subscriptionAccessResolved = true;
+    //   hasSubscriptionAccess = data.isSubscriber === true;
+    //
+    //   if (subscriptionCheckTimer) {
+    //     clearTimeout(subscriptionCheckTimer);
+    //     subscriptionCheckTimer = null;
+    //   }
+    //
+    //   setSubscriptionStartButtonState(
+    //     hasSubscriptionAccess ? "subscriber" : "not-subscribed"
+    //   );
+    // }
+    //
+    // function scheduleSubscriptionHandshake() {
+    //   if (subscriptionAccessResolved) return;
+    //
+    //   setSubscriptionStartButtonState("checking");
+    //   sendSubscriptionMessageToWix(SUBSCRIPTION_READY_MESSAGE);
+    //   subscriptionCheckAttempts += 1;
+    //
+    //   if (subscriptionCheckAttempts >= 8) {
+    //     return;
+    //   }
+    //
+    //   subscriptionCheckTimer = setTimeout(
+    //     scheduleSubscriptionHandshake,
+    //     1200
+    //   );
+    // }
+    //
+    // window.addEventListener("message", event => {
+    //   if (event.source !== window.parent) return;
+    //
+    //   if (
+    //     subscriptionWixParentOrigin !== "*" &&
+    //     event.origin !== subscriptionWixParentOrigin
+    //   ) {
+    //     return;
+    //   }
+    //
+    //   const data = event.data;
+    //   if (!data || typeof data !== "object") return;
+    //   if (data.type !== SUBSCRIPTION_STATUS_MESSAGE) return;
+    //
+    //   applySubscriptionAccess(data);
+    // });
+    //
+    // setSubscriptionStartButtonState("checking");
+    // scheduleSubscriptionHandshake();
+    //
+    // END_FREE_ARCADE_PAYWALL_DISABLED
 
-    const subscriptionWixParentOrigin = (() => {
-      try {
-        return document.referrer ? new URL(document.referrer).origin : "*";
-      } catch (err) {
-        return "*";
-      }
-    })();
-
-    function sendSubscriptionMessageToWix(type = SUBSCRIPTION_READY_MESSAGE) {
-      const message = { type };
-
-      try {
-        window.parent.postMessage(message, subscriptionWixParentOrigin);
-      } catch (err) {
-        window.parent.postMessage(message, "*");
-      }
-    }
-
-    function setSubscriptionStartButtonState(state) {
-      if (!startGameBtn) return;
-
-      if (state === "subscriber") {
-        startGameBtn.textContent = "Start Game";
-        startGameBtn.disabled = false;
-        startGameBtn.setAttribute("aria-label", "Start Game");
-        return;
-      }
-
-      if (state === "not-subscribed") {
-        startGameBtn.textContent = "Not Subscribed";
-        startGameBtn.disabled = true;
-        startGameBtn.setAttribute("aria-label", "Not Subscribed");
-        return;
-      }
-
-      startGameBtn.textContent = "Checking...";
-      startGameBtn.disabled = true;
-      startGameBtn.setAttribute("aria-label", "Checking subscription");
-    }
-
-    function applySubscriptionAccess(data = {}) {
-      subscriptionAccessResolved = true;
-      hasSubscriptionAccess = data.isSubscriber === true;
-
-      if (subscriptionCheckTimer) {
-        clearTimeout(subscriptionCheckTimer);
-        subscriptionCheckTimer = null;
-      }
-
-      setSubscriptionStartButtonState(
-        hasSubscriptionAccess ? "subscriber" : "not-subscribed"
-      );
-    }
-
-    function scheduleSubscriptionHandshake() {
-      if (subscriptionAccessResolved) return;
-
-      setSubscriptionStartButtonState("checking");
-      sendSubscriptionMessageToWix(SUBSCRIPTION_READY_MESSAGE);
-      subscriptionCheckAttempts += 1;
-
-      if (subscriptionCheckAttempts >= 8) {
-        return;
-      }
-
-      subscriptionCheckTimer = setTimeout(
-        scheduleSubscriptionHandshake,
-        1200
-      );
-    }
-
-    window.addEventListener("message", event => {
-      if (event.source !== window.parent) return;
-
-      if (
-        subscriptionWixParentOrigin !== "*" &&
-        event.origin !== subscriptionWixParentOrigin
-      ) {
-        return;
-      }
-
-      const data = event.data;
-      if (!data || typeof data !== "object") return;
-      if (data.type !== SUBSCRIPTION_STATUS_MESSAGE) return;
-
-      applySubscriptionAccess(data);
-    });
-
-    setSubscriptionStartButtonState("checking");
-    scheduleSubscriptionHandshake();
-
+    // FREE ACCESS: allow everyone to start immediately, without Wix membership checks.
+    startGameBtn.textContent = "Start Game";
+    startGameBtn.disabled = false;
+    startGameBtn.setAttribute("aria-label", "Start Game");
 
 
     const sticks = {
@@ -2839,10 +2848,11 @@ and Play Again, reset only on Player Menu/page exit.
 
     startGameBtn.onclick = () => {
   arcadeWarmSfxEngine();
-      // Fail closed: do not enter gameplay until Wix explicitly confirms entitlement.
-      if (!subscriptionAccessResolved || !hasSubscriptionAccess) {
-        return;
-      }
+      // FREE_ARCADE_PAYWALL_DISABLED — original launch guard preserved for restoration.
+      // // Fail closed: do not enter gameplay until Wix explicitly confirms entitlement.
+      // if (!subscriptionAccessResolved || !hasSubscriptionAccess) {
+      //   return;
+      // }
       closeShellMenu({ resume: false });
 
       if (!selectedPlayer) {
