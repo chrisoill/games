@@ -1093,108 +1093,113 @@ and Play Again, reset only on Player Menu/page exit.
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
 
-    /*
-      PREMIUM SUBSCRIPTION BRIDGE
-      The Wix page owns the actual member / Pricing Plans lookup.
-      This iframe only asks for the shared result and gates Start Game.
-    */
-    const SUBSCRIPTION_STATUS_MESSAGE = "wix-subscriber-status";
-    const SUBSCRIPTION_READY_MESSAGE = "subscriber-test-ready";
-    let subscriptionAccessResolved = false;
-    let hasSubscriptionAccess = false;
-    let subscriptionCheckTimer = null;
-    let subscriptionCheckAttempts = 0;
-
-    const subscriptionWixParentOrigin = (() => {
-      try {
-        return document.referrer ? new URL(document.referrer).origin : "*";
-      } catch (err) {
-        return "*";
-      }
-    })();
-
-    function sendSubscriptionMessageToWix(type = SUBSCRIPTION_READY_MESSAGE) {
-      const message = { type };
-
-      try {
-        window.parent.postMessage(message, subscriptionWixParentOrigin);
-      } catch (err) {
-        window.parent.postMessage(message, "*");
-      }
-    }
-
-    function setSubscriptionStartButtonState(state) {
-      if (!startGameBtn) return;
-
-      if (state === "subscriber") {
-        startGameBtn.textContent = "Start Game";
-        startGameBtn.disabled = false;
-        startGameBtn.setAttribute("aria-label", "Start Game");
-        return;
-      }
-
-      if (state === "not-subscribed") {
-        startGameBtn.textContent = "Not Subscribed";
-        startGameBtn.disabled = true;
-        startGameBtn.setAttribute("aria-label", "Not Subscribed");
-        return;
-      }
-
-      startGameBtn.textContent = "Checking...";
-      startGameBtn.disabled = true;
-      startGameBtn.setAttribute("aria-label", "Checking subscription");
-    }
-
-    function applySubscriptionAccess(data = {}) {
-      subscriptionAccessResolved = true;
-      hasSubscriptionAccess = data.isSubscriber === true;
-
-      if (subscriptionCheckTimer) {
-        clearTimeout(subscriptionCheckTimer);
-        subscriptionCheckTimer = null;
-      }
-
-      setSubscriptionStartButtonState(
-        hasSubscriptionAccess ? "subscriber" : "not-subscribed"
-      );
-    }
-
-    function scheduleSubscriptionHandshake() {
-      if (subscriptionAccessResolved) return;
-
-      setSubscriptionStartButtonState("checking");
-      sendSubscriptionMessageToWix(SUBSCRIPTION_READY_MESSAGE);
-      subscriptionCheckAttempts += 1;
-
-      if (subscriptionCheckAttempts >= 8) {
-        return;
-      }
-
-      subscriptionCheckTimer = setTimeout(
-        scheduleSubscriptionHandshake,
-        1200
-      );
-    }
-
-    window.addEventListener("message", event => {
-      if (event.source !== window.parent) return;
-
-      if (
-        subscriptionWixParentOrigin !== "*" &&
-        event.origin !== subscriptionWixParentOrigin
-      ) {
-        return;
-      }
-
-      const data = event.data;
-      if (!data || typeof data !== "object") return;
-      if (data.type !== SUBSCRIPTION_STATUS_MESSAGE) return;
-
-      applySubscriptionAccess(data);
-    });
-
-    setSubscriptionStartButtonState("checking");
-    scheduleSubscriptionHandshake();
+    // FREE_ARCADE_PAYWALL_DISABLED — Free access; original membership code below is retained as comments.
+    startGameBtn.textContent = "Start Game";
+    startGameBtn.disabled = false;
+    startGameBtn.setAttribute("aria-label", "Start Game");
+    // Original Wix subscription bridge, preserved for optional restoration:
+// FREE_ARCADE_PAYWALL_DISABLED |     /*
+// FREE_ARCADE_PAYWALL_DISABLED |       PREMIUM SUBSCRIPTION BRIDGE
+// FREE_ARCADE_PAYWALL_DISABLED |       The Wix page owns the actual member / Pricing Plans lookup.
+// FREE_ARCADE_PAYWALL_DISABLED |       This iframe only asks for the shared result and gates Start Game.
+// FREE_ARCADE_PAYWALL_DISABLED |     */
+// FREE_ARCADE_PAYWALL_DISABLED |     const SUBSCRIPTION_STATUS_MESSAGE = "wix-subscriber-status";
+// FREE_ARCADE_PAYWALL_DISABLED |     const SUBSCRIPTION_READY_MESSAGE = "subscriber-test-ready";
+// FREE_ARCADE_PAYWALL_DISABLED |     let subscriptionAccessResolved = false;
+// FREE_ARCADE_PAYWALL_DISABLED |     let hasSubscriptionAccess = false;
+// FREE_ARCADE_PAYWALL_DISABLED |     let subscriptionCheckTimer = null;
+// FREE_ARCADE_PAYWALL_DISABLED |     let subscriptionCheckAttempts = 0;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     const subscriptionWixParentOrigin = (() => {
+// FREE_ARCADE_PAYWALL_DISABLED |       try {
+// FREE_ARCADE_PAYWALL_DISABLED |         return document.referrer ? new URL(document.referrer).origin : "*";
+// FREE_ARCADE_PAYWALL_DISABLED |       } catch (err) {
+// FREE_ARCADE_PAYWALL_DISABLED |         return "*";
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED |     })();
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     function sendSubscriptionMessageToWix(type = SUBSCRIPTION_READY_MESSAGE) {
+// FREE_ARCADE_PAYWALL_DISABLED |       const message = { type };
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       try {
+// FREE_ARCADE_PAYWALL_DISABLED |         window.parent.postMessage(message, subscriptionWixParentOrigin);
+// FREE_ARCADE_PAYWALL_DISABLED |       } catch (err) {
+// FREE_ARCADE_PAYWALL_DISABLED |         window.parent.postMessage(message, "*");
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED |     }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     function setSubscriptionStartButtonState(state) {
+// FREE_ARCADE_PAYWALL_DISABLED |       if (!startGameBtn) return;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       if (state === "subscriber") {
+// FREE_ARCADE_PAYWALL_DISABLED |         startGameBtn.textContent = "Start Game";
+// FREE_ARCADE_PAYWALL_DISABLED |         startGameBtn.disabled = false;
+// FREE_ARCADE_PAYWALL_DISABLED |         startGameBtn.setAttribute("aria-label", "Start Game");
+// FREE_ARCADE_PAYWALL_DISABLED |         return;
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       if (state === "not-subscribed") {
+// FREE_ARCADE_PAYWALL_DISABLED |         startGameBtn.textContent = "Not Subscribed";
+// FREE_ARCADE_PAYWALL_DISABLED |         startGameBtn.disabled = true;
+// FREE_ARCADE_PAYWALL_DISABLED |         startGameBtn.setAttribute("aria-label", "Not Subscribed");
+// FREE_ARCADE_PAYWALL_DISABLED |         return;
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       startGameBtn.textContent = "Checking...";
+// FREE_ARCADE_PAYWALL_DISABLED |       startGameBtn.disabled = true;
+// FREE_ARCADE_PAYWALL_DISABLED |       startGameBtn.setAttribute("aria-label", "Checking subscription");
+// FREE_ARCADE_PAYWALL_DISABLED |     }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     function applySubscriptionAccess(data = {}) {
+// FREE_ARCADE_PAYWALL_DISABLED |       subscriptionAccessResolved = true;
+// FREE_ARCADE_PAYWALL_DISABLED |       hasSubscriptionAccess = data.isSubscriber === true;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       if (subscriptionCheckTimer) {
+// FREE_ARCADE_PAYWALL_DISABLED |         clearTimeout(subscriptionCheckTimer);
+// FREE_ARCADE_PAYWALL_DISABLED |         subscriptionCheckTimer = null;
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       setSubscriptionStartButtonState(
+// FREE_ARCADE_PAYWALL_DISABLED |         hasSubscriptionAccess ? "subscriber" : "not-subscribed"
+// FREE_ARCADE_PAYWALL_DISABLED |       );
+// FREE_ARCADE_PAYWALL_DISABLED |     }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     function scheduleSubscriptionHandshake() {
+// FREE_ARCADE_PAYWALL_DISABLED |       if (subscriptionAccessResolved) return;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       setSubscriptionStartButtonState("checking");
+// FREE_ARCADE_PAYWALL_DISABLED |       sendSubscriptionMessageToWix(SUBSCRIPTION_READY_MESSAGE);
+// FREE_ARCADE_PAYWALL_DISABLED |       subscriptionCheckAttempts += 1;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       if (subscriptionCheckAttempts >= 8) {
+// FREE_ARCADE_PAYWALL_DISABLED |         return;
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       subscriptionCheckTimer = setTimeout(
+// FREE_ARCADE_PAYWALL_DISABLED |         scheduleSubscriptionHandshake,
+// FREE_ARCADE_PAYWALL_DISABLED |         1200
+// FREE_ARCADE_PAYWALL_DISABLED |       );
+// FREE_ARCADE_PAYWALL_DISABLED |     }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     window.addEventListener("message", event => {
+// FREE_ARCADE_PAYWALL_DISABLED |       if (event.source !== window.parent) return;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       if (
+// FREE_ARCADE_PAYWALL_DISABLED |         subscriptionWixParentOrigin !== "*" &&
+// FREE_ARCADE_PAYWALL_DISABLED |         event.origin !== subscriptionWixParentOrigin
+// FREE_ARCADE_PAYWALL_DISABLED |       ) {
+// FREE_ARCADE_PAYWALL_DISABLED |         return;
+// FREE_ARCADE_PAYWALL_DISABLED |       }
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       const data = event.data;
+// FREE_ARCADE_PAYWALL_DISABLED |       if (!data || typeof data !== "object") return;
+// FREE_ARCADE_PAYWALL_DISABLED |       if (data.type !== SUBSCRIPTION_STATUS_MESSAGE) return;
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |       applySubscriptionAccess(data);
+// FREE_ARCADE_PAYWALL_DISABLED |     });
+// FREE_ARCADE_PAYWALL_DISABLED | 
+// FREE_ARCADE_PAYWALL_DISABLED |     setSubscriptionStartButtonState("checking");
+// FREE_ARCADE_PAYWALL_DISABLED |     scheduleSubscriptionHandshake();
 
 
     const activeRhythmKeys = new Set();
@@ -1961,10 +1966,11 @@ and Play Again, reset only on Player Menu/page exit.
 
     startGameBtn.onclick = () => {
   arcadeWarmSfxEngine();
-      // Fail closed: do not enter gameplay until Wix explicitly confirms entitlement.
-      if (!subscriptionAccessResolved || !hasSubscriptionAccess) {
-        return;
-      }
+      // FREE_ARCADE_PAYWALL_DISABLED — Original launch guard preserved as comments:
+// FREE_ARCADE_PAYWALL_DISABLED |       // Fail closed: do not enter gameplay until Wix explicitly confirms entitlement.
+// FREE_ARCADE_PAYWALL_DISABLED |       if (!subscriptionAccessResolved || !hasSubscriptionAccess) {
+// FREE_ARCADE_PAYWALL_DISABLED |         return;
+// FREE_ARCADE_PAYWALL_DISABLED |       }
       closeShellMenu({ resume: false });
 
       if (!selectedPlayer) {
