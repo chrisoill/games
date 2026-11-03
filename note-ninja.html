@@ -10,6 +10,8 @@ Upper simple beeps (>220 Hz) use the finalized -10 dB class trim; <=220 Hz is
 protected for bass/swept-tone harmonic support. All ordinary procedural SFX use
 the -36 dB / 2:1 leveler (+4.404 dB makeup), then the frozen -18 dB / 8:1 master,
 tanh limiter, -0.35 dBFS ceiling, and 0.90 post gain. SFX is warmed on player select.
+Note Ninja override: ordinary SFX 0.40, metronome 8.00, super and sustained
+attack mixes 0.20 each (dedicated post-sum compressed buses).
 Music: normal 1.0, Help/Pause 0.23, no gameplay ducking, continue through Game Over
 and Play Again, reset only on Player Menu/page exit.
 -->
@@ -2523,6 +2525,24 @@ function startGame() {
   let audioNoiseBuffer = null;
   let lastCorrectAudioTime = -Infinity;
 
+  // NOTE NINJA AUDIO CALIBRATION — matched to desktop picker (2026-11-03).
+  // Preserve the global SFX limiter and leveler, but mix timing, super moves,
+  // and sustained attacks on their own paths, exactly as on desktop.
+  const RHYTHM_NINJA_SFX_MIX_GAIN = 0.40;
+  const RHYTHM_NINJA_METRONOME_MIX_GAIN = 8.00;
+  const RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN = 0.25;
+  const RHYTHM_NINJA_SUPER_SFX_MIX_GAIN = 0.20;
+  const RHYTHM_NINJA_HELD_ATTACK_SFX_MIX_GAIN = 0.20;
+
+  let metronomeBus = null;
+  let metronomeSafetyLimiter = null;
+  let superSfxInput = null;
+  let superSfxLimiter = null;
+  let superSfxOutput = null;
+  let heldAttackSfxInput = null;
+  let heldAttackSfxLimiter = null;
+  let heldAttackSfxOutput = null;
+
   function buildAudioGraph(ac) {
     if (audioMasterInput) return;
 
@@ -2568,9 +2588,67 @@ function startGame() {
     audioLimiter.connect(audioSafetyCeiling);
     audioSafetyCeiling.connect(audioFinalCeiling);
     const arcadeSfxPostGain17 = ac.createGain();
-    arcadeSfxPostGain17.gain.value = 0.90; // true post-limiter SFX mix level
+    arcadeSfxPostGain17.gain.value = RHYTHM_NINJA_SFX_MIX_GAIN; // independent gameplay SFX mix level
     audioFinalCeiling.connect(arcadeSfxPostGain17);
     arcadeSfxPostGain17.connect(ac.destination);
+
+    // SUPER-MOVE AUDIO RULE:
+    // The super move is a dense stack of simultaneous launch, beam, weapon,
+    // impact, and texture layers. Source-level trims alone are not enough because
+    // the shared SFX compressor can partially make that loss back up. Sum every
+    // super layer on a dedicated bus, control the aggregate there, and apply the
+    // decisive trim AFTER summing so the complete move has a predictable ceiling.
+    superSfxInput = ac.createGain();
+    superSfxInput.gain.value = 1.0;
+    superSfxLimiter = ac.createDynamicsCompressor();
+    superSfxLimiter.threshold.value = -12;
+    superSfxLimiter.knee.value = 4;
+    superSfxLimiter.ratio.value = 12;
+    superSfxLimiter.attack.value = 0.001;
+    superSfxLimiter.release.value = 0.07;
+    superSfxOutput = ac.createGain();
+    superSfxOutput.gain.value = RHYTHM_NINJA_SUPER_SFX_MIX_GAIN;
+    superSfxInput.connect(superSfxLimiter);
+    superSfxLimiter.connect(superSfxOutput);
+    superSfxOutput.connect(ac.destination);
+
+    // HELD-ATTACK AUDIO RULE:
+    // Dotted-quarter-and-longer right-hand notes create a launch transient plus
+    // many tightly overlapping texture pulses. Treat that aggregate like the
+    // super move: sum it on a dedicated bus and trim AFTER summing so sustained
+    // attacks cannot overwhelm the metronome or ordinary one-shot SFX.
+    heldAttackSfxInput = ac.createGain();
+    heldAttackSfxInput.gain.value = 1.0;
+    heldAttackSfxLimiter = ac.createDynamicsCompressor();
+    heldAttackSfxLimiter.threshold.value = -12;
+    heldAttackSfxLimiter.knee.value = 4;
+    heldAttackSfxLimiter.ratio.value = 12;
+    heldAttackSfxLimiter.attack.value = 0.001;
+    heldAttackSfxLimiter.release.value = 0.07;
+    heldAttackSfxOutput = ac.createGain();
+    heldAttackSfxOutput.gain.value = RHYTHM_NINJA_HELD_ATTACK_SFX_MIX_GAIN;
+    heldAttackSfxInput.connect(heldAttackSfxLimiter);
+    heldAttackSfxLimiter.connect(heldAttackSfxOutput);
+    heldAttackSfxOutput.connect(ac.destination);
+
+    // TIMING-REFERENCE AUDIO RULE:
+    // Metronomes, count-ins, and other timing-critical pulse cues must not share
+    // dynamics processing with gameplay SFX. Their level must stay predictable
+    // even when loud or overlapping gameplay effects occur on the same beat.
+    metronomeBus = ac.createGain();
+    metronomeBus.gain.value = RHYTHM_NINJA_METRONOME_MIX_GAIN; // strong, fixed timing-reference level
+
+    // Emergency protection only. Even after the dedicated 8.00x mix boost, the
+    // normal 0.055 / 0.035 click levels remain comfortably below this threshold, so
+    // the limiter does nothing and the timing reference stays fixed.
+    metronomeSafetyLimiter = ac.createDynamicsCompressor();
+    metronomeSafetyLimiter.threshold.value = -1;
+    metronomeSafetyLimiter.knee.value = 0;
+    metronomeSafetyLimiter.ratio.value = 20;
+    metronomeSafetyLimiter.attack.value = 0.001;
+    metronomeSafetyLimiter.release.value = 0.05;
+    metronomeBus.connect(metronomeSafetyLimiter);
+    metronomeSafetyLimiter.connect(ac.destination);
   }
 
   function arcadeSfxQuietEffectLiftDb(requestedLevel) {
@@ -3066,10 +3144,16 @@ function getAudio() {
     return audioCtx;
   }
 
-  function gameAudioConnect(node) {
+  function gameAudioConnect(node, routeToSuper = false, routeToHeldAttack = false) {
     const ac = getAudio();
     if (!ac || !audioMasterInput) return false;
-    node.connect(audioMasterInput);
+    if (routeToSuper && superSfxInput) {
+      node.connect(superSfxInput);
+    } else if (routeToHeldAttack && heldAttackSfxInput) {
+      node.connect(heldAttackSfxInput);
+    } else {
+      node.connect(audioMasterInput);
+    }
     return true;
   }
 
@@ -3115,10 +3199,12 @@ function getAudio() {
 
     source.connect(filter);
     filter.connect(gain);
-    gameAudioConnect(gain);
+    const routeToSuper = options.super === true;
+    const routeToHeldAttack = options.heldAttack === true;
+    gameAudioConnect(gain, routeToSuper, routeToHeldAttack);
     if (noiseRules.presenceLevel > 0) {
       const presenceBus = ac.createGain();
-      gameAudioConnect(presenceBus);
+      gameAudioConnect(presenceBus, routeToSuper, routeToHeldAttack);
       arcadeSfxAddNoisePresence(ac, source, presenceBus, noiseRules, { start, end, attackEnd: start + attack });
     }
     source.start(start);
@@ -3132,15 +3218,25 @@ function getAudio() {
     const duration = Math.max(0.035, options.duration || 0.09);
     const start = ac.currentTime + delay;
     const end = start + duration;
+    const startFrequency = options.startFrequency || 105;
+    const endFrequency = options.endFrequency || 38;
+    const toneRules = arcadeSfxToneRules(startFrequency, endFrequency, options.volume || 0.025, 'sine', duration);
     const osc = ac.createOscillator();
     const gain = ac.createGain();
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(options.startFrequency || 105, start);
-    osc.frequency.exponentialRampToValueAtTime(options.endFrequency || 38, end);
-    gain.gain.setValueAtTime(options.volume || 0.025, start);
+    osc.frequency.setValueAtTime(toneRules.f0, start);
+    osc.frequency.exponentialRampToValueAtTime(toneRules.f1, end);
+    gain.gain.setValueAtTime(toneRules.level, start);
     gain.gain.exponentialRampToValueAtTime(0.0001, end);
     osc.connect(gain);
-    gameAudioConnect(gain);
+    const routeToSuper = options.super === true;
+    const routeToHeldAttack = options.heldAttack === true;
+    gameAudioConnect(gain, routeToSuper, routeToHeldAttack);
+    if (toneRules.harmonicEligible) {
+      const harmonicBus = ac.createGain();
+      gameAudioConnect(harmonicBus, routeToSuper, routeToHeldAttack);
+      arcadeSfxAddToneHarmonics(ac, harmonicBus, toneRules, { start, end });
+    }
     osc.start(start);
     osc.stop(end + 0.02);
   }
@@ -3155,7 +3251,9 @@ function getAudio() {
       q: options.q ?? 0.65,
       delay: options.delay || 0,
       attack: options.attack ?? 0.012,
-      playbackRate: options.playbackRate || 0.82
+      playbackRate: options.playbackRate || 0.82,
+      super: options.super === true,
+      heldAttack: options.heldAttack === true
     });
   }
 
@@ -3163,7 +3261,7 @@ function getAudio() {
 
   function playBeatClick(beatInMeasure, isCountIn = false) {
     const ac = getAudio();
-    if (!ac || !audioMasterInput) return;
+    if (!ac || !metronomeBus) return;
     const now = ac.currentTime;
     const accent = beatInMeasure === 0;
     const osc = ac.createOscillator();
@@ -3173,7 +3271,7 @@ function getAudio() {
     gain.gain.setValueAtTime(accent ? 0.055 : 0.035, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
     osc.connect(gain);
-    gameAudioConnect(gain);
+    gain.connect(metronomeBus);
     osc.start(now);
     osc.stop(now + 0.04);
   }
@@ -3218,50 +3316,54 @@ function getAudio() {
     noiseBurst({ duration: 0.026, volume: 0.010, filterType: 'highpass', frequency: 3600, endFrequency: 5400, attack: 0.001 });
   }
 
-  function soundMovement(event) {
+  function soundMovement(event, routeToSuper = false) {
     if (isRapidLeftEvent(event)) {
       const profile = rapidDeflectProfile(event);
       if (profile.style === 0) {
-        noiseBurst({ duration: 0.032, volume: 0.024, filterType: 'highpass', frequency: 3600, endFrequency: 7200, playbackRate: 1.45 });
+        noiseBurst({ duration: 0.032, volume: 0.024, filterType: 'highpass', frequency: 3600, endFrequency: 7200, playbackRate: 1.45, super: routeToSuper });
       } else {
-        noiseWhoosh({ duration: 0.045, volume: 0.026, frequency: 2100, endFrequency: 620, playbackRate: 1.2 });
-        sweptThump({ duration: 0.036, volume: 0.010, startFrequency: 110, endFrequency: 58, delay: 0.014 });
+        noiseWhoosh({ duration: 0.045, volume: 0.026, frequency: 2100, endFrequency: 620, playbackRate: 1.2, super: routeToSuper });
+        sweptThump({ duration: 0.036, volume: 0.010, startFrequency: 110, endFrequency: 58, delay: 0.014, super: routeToSuper });
       }
       return;
     }
     const placement = event ? movementPlacement(event) : 'ground';
     if (placement === 'lowAir') {
-      noiseBurst({ duration: 0.13, volume: 0.028, filterType: 'bandpass', frequency: 760, endFrequency: 310, q: 0.7, playbackRate: 0.72 });
+      noiseBurst({ duration: 0.13, volume: 0.028, filterType: 'bandpass', frequency: 760, endFrequency: 310, q: 0.7, playbackRate: 0.72, super: routeToSuper });
       return;
     }
     if (placement === 'highAir') {
-      noiseWhoosh({ duration: 0.15, volume: 0.031, frequency: 2100, endFrequency: 390, playbackRate: 0.9 });
+      noiseWhoosh({ duration: 0.15, volume: 0.031, frequency: 2100, endFrequency: 390, playbackRate: 0.9, super: routeToSuper });
       return;
     }
-    noiseWhoosh({ duration: 0.10, volume: 0.027, frequency: 1600, endFrequency: 420 });
+    noiseWhoosh({ duration: 0.10, volume: 0.027, frequency: 1600, endFrequency: 420, super: routeToSuper });
   }
 
-  function soundWeapon(weapon, durationBeats = 1, incorrect = false) {
+  function soundWeapon(weapon, durationBeats = 1, incorrect = false, mixScale = 1, routeToSuper = false, routeToHeldAttack = false) {
     const kind = weapon?.kind || 'kunai';
-    const level = incorrect ? 0.78 : 1;
+    const superRoute = routeToSuper || kind === 'chakraBeam';
+    const heldAttackRoute = routeToHeldAttack && !superRoute;
+    const level = (incorrect ? 0.78 : 1) * Math.max(0, mixScale);
     if (kind === 'senbon') {
-      noiseBurst({ duration: 0.025, volume: 0.020 * level, filterType: 'highpass', frequency: 4300, endFrequency: 7600, playbackRate: 1.6 });
+      noiseBurst({ duration: 0.025, volume: 0.020 * level, filterType: 'highpass', frequency: 4300, endFrequency: 7600, playbackRate: 1.6, super: superRoute, heldAttack: heldAttackRoute });
     } else if (kind === 'shuriken') {
-      noiseBurst({ duration: 0.06, volume: 0.024 * level, filterType: 'bandpass', frequency: 2800, endFrequency: 1100, q: 2.1, playbackRate: 1.25 });
+      noiseBurst({ duration: 0.06, volume: 0.024 * level, filterType: 'bandpass', frequency: 2800, endFrequency: 1100, q: 2.1, playbackRate: 1.25, super: superRoute, heldAttack: heldAttackRoute });
     } else if (kind === 'paperBomb') {
-      noiseBurst({ duration: 0.055, volume: 0.022 * level, filterType: 'highpass', frequency: 1700, endFrequency: 4300, playbackRate: 1.15 });
-      noiseBurst({ duration: 0.055, volume: 0.025 * level, filterType: 'bandpass', frequency: 720, endFrequency: 260, delay: 0.065, attack: 0.001 });
+      noiseBurst({ duration: 0.055, volume: 0.022 * level, filterType: 'highpass', frequency: 1700, endFrequency: 4300, playbackRate: 1.15, super: superRoute, heldAttack: heldAttackRoute });
+      noiseBurst({ duration: 0.055, volume: 0.025 * level, filterType: 'bandpass', frequency: 720, endFrequency: 260, delay: 0.065, attack: 0.001, super: superRoute, heldAttack: heldAttackRoute });
     } else if (kind === 'fireBlast') {
-      noiseBurst({ duration: 0.16, volume: 0.040 * level, filterType: 'lowpass', frequency: 1700, endFrequency: 360, playbackRate: 0.72, attack: 0.01 });
+      noiseBurst({ duration: 0.16, volume: 0.040 * level, filterType: 'lowpass', frequency: 1700, endFrequency: 360, playbackRate: 0.72, attack: 0.01, super: superRoute, heldAttack: heldAttackRoute });
     } else if (kind === 'airBlade') {
-      noiseWhoosh({ duration: 0.15, volume: 0.038 * level, frequency: 3000, endFrequency: 520, playbackRate: 1.1 });
+      noiseWhoosh({ duration: 0.15, volume: 0.038 * level, frequency: 3000, endFrequency: 520, playbackRate: 1.1, super: superRoute, heldAttack: heldAttackRoute });
     } else if (kind === 'waterStream') {
-      noiseBurst({ duration: Math.min(0.34, 0.12 + durationBeats * 0.035), volume: 0.034 * level, filterType: 'bandpass', frequency: 1450, endFrequency: 620, q: 0.55, playbackRate: 0.62, attack: 0.025 });
+      noiseBurst({ duration: Math.min(0.34, 0.12 + durationBeats * 0.035), volume: 0.034 * level, filterType: 'bandpass', frequency: 1450, endFrequency: 620, q: 0.55, playbackRate: 0.62, attack: 0.025, super: superRoute, heldAttack: heldAttackRoute });
     } else if (kind === 'chakraBeam') {
-      noiseBurst({ duration: 0.42, volume: 0.043 * level, filterType: 'bandpass', frequency: 930, endFrequency: 310, q: 0.48, playbackRate: 0.58, attack: 0.035 });
-      sweptThump({ duration: 0.18, volume: 0.018 * level, startFrequency: 86, endFrequency: 42 });
+      // Super-move beam is intentionally source-trimmed before the shared SFX chain.
+      // Its many simultaneous layers otherwise build into an overwhelmingly loud wall.
+      noiseBurst({ duration: 0.42, volume: 0.043 * level * RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, filterType: 'bandpass', frequency: 930, endFrequency: 310, q: 0.48, playbackRate: 0.58, attack: 0.035, super: superRoute, heldAttack: heldAttackRoute });
+      sweptThump({ duration: 0.18, volume: 0.018 * level * RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, startFrequency: 86, endFrequency: 42, super: superRoute, heldAttack: heldAttackRoute });
     } else {
-      noiseBurst({ duration: 0.045, volume: 0.023 * level, filterType: 'highpass', frequency: 2700, endFrequency: 5200, playbackRate: 1.3 });
+      noiseBurst({ duration: 0.045, volume: 0.023 * level, filterType: 'highpass', frequency: 2700, endFrequency: 5200, playbackRate: 1.3, super: superRoute, heldAttack: heldAttackRoute });
     }
   }
 
@@ -3280,7 +3382,7 @@ function getAudio() {
 
   function soundAttackTexturePulse(sequence, incorrect = false) {
     const kind = sequence?.weapon?.kind || 'kunai';
-    const level = incorrect ? 0.62 : 1;
+    const level = (incorrect ? 0.62 : 1) * (kind === 'chakraBeam' ? RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN : 1);
     const tick = sequence?.attackSoundTick || 0;
     const jitter = (tick % 5) * 35;
 
@@ -3288,22 +3390,22 @@ function getAudio() {
     // rate. The original launch keeps its distinct transient; this layer only
     // fills the visual stream so it reads as one sustained weapon sound.
     if (kind === 'chakraBeam') {
-      noiseBurst({ duration: 0.17, volume: 0.0072 * level, filterType: 'bandpass', frequency: 980 + jitter, endFrequency: 340, q: 0.45, playbackRate: 0.58, attack: 0.018 });
-      noiseBurst({ duration: 0.11, volume: 0.0032 * level, filterType: 'highpass', frequency: 2100 + jitter, endFrequency: 4700, playbackRate: 0.82, attack: 0.012 });
+      noiseBurst({ duration: 0.17, volume: 0.0072 * level, filterType: 'bandpass', frequency: 980 + jitter, endFrequency: 340, q: 0.45, playbackRate: 0.58, attack: 0.018, super: true });
+      noiseBurst({ duration: 0.11, volume: 0.0032 * level, filterType: 'highpass', frequency: 2100 + jitter, endFrequency: 4700, playbackRate: 0.82, attack: 0.012, super: true });
     } else if (kind === 'waterStream') {
-      noiseBurst({ duration: 0.16, volume: 0.0064 * level, filterType: 'bandpass', frequency: 1600 + jitter, endFrequency: 690, q: 0.5, playbackRate: 0.68, attack: 0.014 });
+      noiseBurst({ duration: 0.16, volume: 0.0064 * level, filterType: 'bandpass', frequency: 1600 + jitter, endFrequency: 690, q: 0.5, playbackRate: 0.68, attack: 0.014, heldAttack: true });
     } else if (kind === 'fireBlast') {
-      noiseBurst({ duration: 0.15, volume: 0.0068 * level, filterType: 'lowpass', frequency: 1900 + jitter, endFrequency: 470, playbackRate: 0.78, attack: 0.012 });
+      noiseBurst({ duration: 0.15, volume: 0.0068 * level, filterType: 'lowpass', frequency: 1900 + jitter, endFrequency: 470, playbackRate: 0.78, attack: 0.012, heldAttack: true });
     } else if (kind === 'airBlade') {
-      noiseBurst({ duration: 0.12, volume: 0.0058 * level, filterType: 'bandpass', frequency: 3200 + jitter, endFrequency: 720, q: 0.62, playbackRate: 1.08, attack: 0.008 });
+      noiseBurst({ duration: 0.12, volume: 0.0058 * level, filterType: 'bandpass', frequency: 3200 + jitter, endFrequency: 720, q: 0.62, playbackRate: 1.08, attack: 0.008, heldAttack: true });
     } else if (kind === 'paperBomb') {
-      noiseBurst({ duration: 0.11, volume: 0.0051 * level, filterType: 'highpass', frequency: 1900 + jitter, endFrequency: 4800, playbackRate: 1.08, attack: 0.007 });
+      noiseBurst({ duration: 0.11, volume: 0.0051 * level, filterType: 'highpass', frequency: 1900 + jitter, endFrequency: 4800, playbackRate: 1.08, attack: 0.007, heldAttack: true });
     } else if (kind === 'senbon') {
-      noiseBurst({ duration: 0.075, volume: 0.0038 * level, filterType: 'highpass', frequency: 4400 + jitter, endFrequency: 7600, playbackRate: 1.5, attack: 0.003 });
+      noiseBurst({ duration: 0.075, volume: 0.0038 * level, filterType: 'highpass', frequency: 4400 + jitter, endFrequency: 7600, playbackRate: 1.5, attack: 0.003, heldAttack: true });
     } else if (kind === 'shuriken') {
-      noiseBurst({ duration: 0.09, volume: 0.0043 * level, filterType: 'bandpass', frequency: 3000 + jitter, endFrequency: 1250, q: 1.5, playbackRate: 1.2, attack: 0.005 });
+      noiseBurst({ duration: 0.09, volume: 0.0043 * level, filterType: 'bandpass', frequency: 3000 + jitter, endFrequency: 1250, q: 1.5, playbackRate: 1.2, attack: 0.005, heldAttack: true });
     } else {
-      noiseBurst({ duration: 0.085, volume: 0.0041 * level, filterType: 'highpass', frequency: 2800 + jitter, endFrequency: 5600, playbackRate: 1.25, attack: 0.004 });
+      noiseBurst({ duration: 0.085, volume: 0.0041 * level, filterType: 'highpass', frequency: 2800 + jitter, endFrequency: 5600, playbackRate: 1.25, attack: 0.004, heldAttack: true });
     }
   }
 
@@ -3406,15 +3508,15 @@ function getAudio() {
   }
 
   function soundSuperWarp() {
-    noiseWhoosh({ duration: 0.16, volume: 0.030, frequency: 720, endFrequency: 2100, attack: 0.010, playbackRate: 0.94 });
-    sweptThump({ duration: 0.09, volume: 0.012, startFrequency: 74, endFrequency: 42, delay: 0.03 });
+    noiseWhoosh({ duration: 0.16, volume: 0.030 * RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, frequency: 720, endFrequency: 2100, attack: 0.010, playbackRate: 0.94, super: true });
+    sweptThump({ duration: 0.09, volume: 0.012 * RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, startFrequency: 74, endFrequency: 42, delay: 0.03, super: true });
   }
 
   function soundSuperNova() {
-    noiseWhoosh({ duration: 0.34, volume: 0.040, frequency: 900, endFrequency: 260, attack: 0.02, playbackRate: 0.74 });
+    noiseWhoosh({ duration: 0.34, volume: 0.040 * RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, frequency: 900, endFrequency: 260, attack: 0.02, playbackRate: 0.74, super: true });
     [0, 0.07, 0.13, 0.20].forEach((delay, index) => {
-      soundWeapon({ kind: ['shuriken', 'kunai', 'senbon', 'paperBomb', 'airBlade', 'fireBlast'][index % 6] }, 1.5, false);
-      noiseBurst({ duration: 0.060 + index * 0.01, volume: 0.020, filterType: 'highpass', frequency: 2600 + index * 500, endFrequency: 6800, delay, attack: 0.001 });
+      soundWeapon({ kind: ['shuriken', 'kunai', 'senbon', 'paperBomb', 'airBlade', 'fireBlast'][index % 6] }, 1.5, false, RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, true);
+      noiseBurst({ duration: 0.060 + index * 0.01, volume: 0.020 * RHYTHM_NINJA_SUPER_SFX_SOURCE_GAIN, filterType: 'highpass', frequency: 2600 + index * 500, endFrequency: 6800, delay, attack: 0.001, super: true });
     });
   }
 
@@ -6806,7 +6908,14 @@ function getAudio() {
       ? sequence.lastLaunchAt + Math.max(travelMs, intervalMs || travelMs)
       : sequence.lastLaunchAt + travelMs;
     incorrectAttackSequences.push(sequence);
-    soundWeapon(weapon, event.duration || 1, true);
+    soundWeapon(
+      weapon,
+      event.duration || 1,
+      true,
+      1,
+      false,
+      attackSequenceNeedsOngoingSound(sequence)
+    );
     return sequence;
   }
 
@@ -6841,7 +6950,14 @@ function getAudio() {
 
     if (hand === 'right') {
       const sequence = createAttackSequence(event, now, targetBeat);
-      soundWeapon(sequence.weapon, event.duration || 1, false);
+      soundWeapon(
+      sequence.weapon,
+      event.duration || 1,
+      false,
+      1,
+      false,
+      attackSequenceNeedsOngoingSound(sequence)
+    );
       worldActionMemory.right = {
         kind: sequence.weapon.kind,
         label: sequence.weapon.label,
@@ -6918,7 +7034,7 @@ function getAudio() {
       until = Math.max(until, extendedUntil);
     }
 
-    soundMovement(event);
+    soundMovement(event, isSuperMovement);
     if (isSuperMovement) soundSuperWarp();
     const rapidLabel = rapidLeft ? 'DEFLECT' : event.worldLabel;
     const deflectProfile = rapidLeft ? rapidDeflectProfile(event) : null;
