@@ -207,6 +207,7 @@ and Play Again, reset only on Player Menu/page exit.
     #selectedPlayerActions button,
     #addPlayerBtn,
     #startGameBtn,
+    #newRunBtn,
     #exitPageBtn {
       min-height: 38px;
       border-radius: 12px;
@@ -251,6 +252,9 @@ and Play Again, reset only on Player Menu/page exit.
     #exitPageBtn {
       min-width: 110px;
     }
+
+    #newRunBtn { background: #fff3bf; min-width: 150px; margin-top: 6px; }
+    #newRunBtn[hidden] { display: none; }
 
 
     /* =========================
@@ -840,6 +844,7 @@ and Play Again, reset only on Player Menu/page exit.
 
         <p id="selectedPlayerText">No player selected</p>
         <button id="startGameBtn">Start Game</button>
+        <button id="newRunBtn" type="button" hidden>Start New Run</button>
       </div>
 
 
@@ -957,6 +962,7 @@ and Play Again, reset only on Player Menu/page exit.
     const newPlayerName = document.getElementById("newPlayerName");
     const addPlayerBtn = document.getElementById("addPlayerBtn");
     const startGameBtn = document.getElementById("startGameBtn");
+    const newRunBtn = document.getElementById("newRunBtn");
     const selectedPlayerText = document.getElementById("selectedPlayerText");
 
     const canvas = document.getElementById("gameCanvas");
@@ -1054,6 +1060,7 @@ and Play Again, reset only on Player Menu/page exit.
     let audioCtx = null;
     let shellMenuWasRunning = false;
     let wixStorageAnswered = false;
+    let resumeSavedRunOnNextStart = false;
 
     const sticks = {
       left: {
@@ -1094,10 +1101,10 @@ and Play Again, reset only on Player Menu/page exit.
         label: "Pause",
         html: `
           <h3>Pause</h3>
-          <p>Need a break? Use this menu to resume, read the help, or return to the player screen.</p>
+          <p>Save your whole run and continue later using the same player and browser.</p>
           <div class="pauseMenuActions">
             <button type="button" class="pauseActionBtn resumeGame" data-pause-action="resume">Resume Game</button>
-            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Score &amp; Exit</button>
+            <button type="button" class="pauseActionBtn saveExit" data-pause-action="save-exit">Save Run &amp; Exit</button>
             <button type="button" class="pauseActionBtn noSaveExit" data-pause-action="exit-no-save">Exit Without Saving</button>
           </div>
         `
@@ -1455,6 +1462,16 @@ and Play Again, reset only on Player Menu/page exit.
       }
 
       if (action === "save-exit") {
+        if (!selectedPlayer || !ps || ps.hp <= 0) {
+          exitToPlayerMenu({ save: false });
+          return;
+        }
+        const checkpoint = psCaptureRunState();
+        if (!checkpoint) {
+          window.alert("Could not capture this run. Please try again.");
+          return;
+        }
+        ensureSelectedPlayerRecord().savedRun = checkpoint;
         exitToPlayerMenu({ save: true });
       }
     });
@@ -1671,9 +1688,12 @@ and Play Again, reset only on Player Menu/page exit.
     function updateSelectedPlayerUI() {
       const hasSelection = selectedPlayer && players[selectedPlayer];
 
+      const saved = hasSelection && psValidSavedRun(players[selectedPlayer].savedRun);
       selectedPlayerText.textContent = hasSelection
-        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}`
+        ? `Selected: ${selectedPlayer} — Best: ${players[selectedPlayer].best || 0}${saved ? ` — Saved: ${Math.floor(players[selectedPlayer].savedRun.ps.time / 3600)}m ${Math.floor(players[selectedPlayer].savedRun.ps.time % 3600 / 60)}s` : ""}`
         : "No player selected";
+      startGameBtn.textContent = saved ? "Continue Saved Run" : "Start Game";
+      newRunBtn.hidden = !saved;
 
       resetSelectedPlayerBtn.disabled = !hasSelection;
       removeSelectedPlayerBtn.disabled = !hasSelection;
@@ -1737,6 +1757,7 @@ and Play Again, reset only on Player Menu/page exit.
       if (!selectedPlayer || !players[selectedPlayer]) return;
 
       players[selectedPlayer].best = 0;
+      delete players[selectedPlayer].savedRun;
 
       savePlayers();
       resetRemoveConfirmButton();
@@ -1809,6 +1830,10 @@ and Play Again, reset only on Player Menu/page exit.
         if (!players.Guest) players.Guest = { best: 0 };
       }
 
+      resumeSavedRunOnNextStart = psValidSavedRun(players[selectedPlayer]?.savedRun);
+      if (players[selectedPlayer]?.savedRun && !resumeSavedRunOnNextStart) {
+        delete players[selectedPlayer].savedRun;
+      }
       savePlayers();
 
       menuScreen.style.display = "none";
@@ -1817,7 +1842,19 @@ and Play Again, reset only on Player Menu/page exit.
       maybeOpenFirstTimeHelp();
     };
 
+    newRunBtn.onclick = () => {
+      if (psValidSavedRun(players[selectedPlayer]?.savedRun) &&
+          !window.confirm("Start a new run? This replaces this player's saved Piano Survivor run.")) return;
+      if (players[selectedPlayer]) delete players[selectedPlayer].savedRun;
+      resumeSavedRunOnNextStart = false;
+      savePlayers();
+      startGameBtn.click();
+    };
+
     playAgainBtn.onclick = () => {
+      resumeSavedRunOnNextStart = false;
+      if (players[selectedPlayer]) delete players[selectedPlayer].savedRun;
+      savePlayers();
       startGame();
       maybeOpenFirstTimeHelp();
     };
@@ -2044,6 +2081,15 @@ function startGame() {
       scaleGameCanvasBackingStore();
       resetGameCanvasTransform();
       gameInit();
+      if (resumeSavedRunOnNextStart) {
+        if (!psRestoreRunState(players[selectedPlayer]?.savedRun)) {
+          gameInit(); // Fall back to a clean, playable run if a checkpoint is damaged.
+          delete players[selectedPlayer].savedRun;
+          savePlayers();
+        }
+      }
+      resumeSavedRunOnNextStart = false;
+      gameDraw();
       scheduleGameLoop();
     }
 
@@ -2106,6 +2152,7 @@ function startGame() {
       if (score > (players[selectedPlayer].best || 0)) {
         players[selectedPlayer].best = score;
       }
+      delete players[selectedPlayer].savedRun;
 
       savePlayers();
       renderLeaderboard();
@@ -2870,6 +2917,74 @@ function beep(freq, duration, type = "sine", volume = 0.08) {
   const PS_ENEMY_RESPAWN_MAX = 660;
 
   let ps = null;
+
+  // SAVE STATE v1: a complete, per-player checkpoint. Enemy references inside
+  // projectile hit Sets are represented as indexes, then rebuilt when loaded.
+  // This preserves piercing/bounce behavior instead of silently forgetting hits.
+  function psValidSavedRun(saved) {
+    return !!(saved && saved.v === 1 && Number.isFinite(saved.score) &&
+      saved.ps && typeof saved.ps === "object" &&
+      Number.isFinite(saved.ps.time) && saved.ps.time >= 0 &&
+      saved.ps.player && Number.isFinite(saved.ps.player.x) &&
+      Number.isFinite(saved.ps.player.y) &&
+      Number.isFinite(saved.ps.hp) && saved.ps.hp > 0 &&
+      Array.isArray(saved.ps.enemies) && Array.isArray(saved.ps.drops) &&
+      Array.isArray(saved.ps.bullets) && Array.isArray(saved.ps.shockwaves));
+  }
+
+  function psCaptureRunState() {
+    if (!ps || !Number.isFinite(score) || ps.hp <= 0) return null;
+    const enemyIndexes = new Map(ps.enemies.map((enemy, i) => [enemy, i]));
+    const encodeHits = hits => hits instanceof Set
+      ? [...hits].map(enemy => enemyIndexes.get(enemy)).filter(Number.isInteger)
+      : [];
+    return {
+      v: 1,
+      savedAt: Date.now(),
+      score,
+      ps: {
+        ...ps,
+        // Never restore held controls; these belong to the new browser session.
+        keys: {},
+        dpad: { x: 0, y: 0 },
+        mouseDown: false,
+        bullets: ps.bullets.map(bullet => ({ ...bullet, hitIds: encodeHits(bullet.hitIds) })),
+        shockwaves: ps.shockwaves.map(wave => ({ ...wave, hitIds: encodeHits(wave.hitIds) }))
+      }
+    };
+  }
+
+  function psRestoreRunState(saved) {
+    if (!psValidSavedRun(saved)) return false;
+    try {
+      // The original snapshot remains intact if a student later starts anew.
+      const restored = JSON.parse(JSON.stringify(saved.ps));
+      const restoreHits = hits => new Set((Array.isArray(hits) ? hits : [])
+        .filter(index => Number.isInteger(index) && index >= 0 && index < restored.enemies.length)
+        .map(index => restored.enemies[index]));
+      restored.bullets = restored.bullets.map(bullet => ({
+        ...bullet, hitIds: restoreHits(bullet.hitIds)
+      }));
+      restored.shockwaves = restored.shockwaves.map(wave => ({
+        ...wave, hitIds: restoreHits(wave.hitIds)
+      }));
+      ps = {
+        ...ps,
+        ...restored,
+        keys: {},
+        dpad: { x: 0, y: 0 },
+        mouseDown: false,
+        aim: { x: 1, y: 0 }
+      };
+      setScore(saved.score);
+      psUpdateCamera();
+      psUpdateHud();
+      return true;
+    } catch (err) {
+      console.warn("Piano Survivor: saved run could not be restored.", err);
+      return false;
+    }
+  }
 
   function psClamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
